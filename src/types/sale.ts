@@ -1,5 +1,6 @@
 import type { Product } from './product';
 import type { User } from './user';
+export type { Product } from './product';
 
 export interface SaleItem {
   id?: string;

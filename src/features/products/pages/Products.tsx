@@ -155,16 +155,16 @@ export const Products = () => {
   ] as string[];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-neutral-50 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="text-3xl font-bold text-neutral-900">
                 Product Management
               </h1>
-              <p className="mt-1 text-gray-600">
+              <p className="mt-1 text-neutral-600">
                 Manage your product inventory
               </p>
             </div>
@@ -175,15 +175,15 @@ export const Products = () => {
                   onClick={isListening ? stopScanning : startScanning}
                   className={`px-4 py-2 rounded-lg font-medium transition ${
                     isListening
-                      ? "bg-red-600 hover:bg-red-700 text-white"
-                      : "bg-blue-600 hover:bg-blue-700 text-white"
+                      ? "bg-error-600 hover:bg-error-700 text-white"
+                      : "bg-primary-600 hover:bg-primary-700 text-white"
                   }`}
                 >
                   {isListening ? "⊚ Stop Scanning" : "📱 Start Scanner"}
                 </button>
                 <button
                   onClick={handleCreateProduct}
-                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition"
+                  className="px-4 py-2 bg-success-600 hover:bg-success-700 text-white rounded-lg font-medium transition"
                 >
                   + Add Product
                 </button>
@@ -194,24 +194,24 @@ export const Products = () => {
           {/* Stats */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="bg-white p-4 rounded-lg shadow">
-              <p className="text-sm text-gray-600">Total Products</p>
-              <p className="text-2xl font-bold text-gray-900">{total}</p>
+              <p className="text-sm text-neutral-600">Total Products</p>
+              <p className="text-2xl font-bold text-neutral-900">{total}</p>
             </div>
             <div className="bg-white p-4 rounded-lg shadow">
-              <p className="text-sm text-gray-600">Categories</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-sm text-neutral-600">Categories</p>
+              <p className="text-2xl font-bold text-neutral-900">
                 {categories.length}
               </p>
             </div>
             <div className="bg-white p-4 rounded-lg shadow">
-              <p className="text-sm text-gray-600">Low Stock</p>
+              <p className="text-sm text-neutral-600">Low Stock</p>
               <p className="text-2xl font-bold text-orange-600">
                 {products.filter(productsAPI.needsReorder).length}
               </p>
             </div>
             <div className="bg-white p-4 rounded-lg shadow">
-              <p className="text-sm text-gray-600">Inactive</p>
-              <p className="text-2xl font-bold text-gray-600">
+              <p className="text-sm text-neutral-600">Inactive</p>
+              <p className="text-2xl font-bold text-neutral-600">
                 {products.filter((p) => !p.is_active).length}
               </p>
             </div>
@@ -220,8 +220,8 @@ export const Products = () => {
 
         {/* Error Alert */}
         {error && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-800">{error}</p>
+          <div className="mb-4 p-4 bg-error-50 border border-error-200 rounded-lg">
+            <p className="text-error-700">{error}</p>
           </div>
         )}
 
@@ -272,10 +272,10 @@ export const Products = () => {
       {deletingProduct && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-2">
+            <h3 className="text-lg font-bold text-neutral-900 mb-2">
               Delete Product?
             </h3>
-            <p className="text-gray-600 mb-4">
+            <p className="text-neutral-600 mb-4">
               Are you sure you want to delete{" "}
               <strong>{deletingProduct.name}</strong>? This action cannot be
               undone.
@@ -284,14 +284,14 @@ export const Products = () => {
               <button
                 onClick={() => setDeletingProduct(null)}
                 disabled={loading}
-                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-900 rounded-lg font-medium transition disabled:opacity-50"
+                className="px-4 py-2 bg-neutral-200 hover:bg-neutral-300 text-neutral-900 rounded-lg font-medium transition disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmDelete}
                 disabled={loading}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition disabled:opacity-50"
+                className="px-4 py-2 bg-error-600 hover:bg-error-700 text-white rounded-lg font-medium transition disabled:opacity-50"
               >
                 {loading ? "Deleting..." : "Delete"}
               </button>

@@ -1,48 +1,96 @@
-import { X } from 'lucide-react';
-import type { Product } from '../pos.types';
+import { X, Minus, Plus } from "lucide-react";
+import type { CartItem } from "../../../types/sale";
 
 export const Cart = ({
   items,
   onRemoveItem,
-  className = ''
+  onUpdateQuantity,
+  className = "",
 }: {
-  items: Product[];
-  onRemoveItem: (productId: string) => void;
+  items: CartItem[];
+  onRemoveItem: (productId: number) => void;
+  onUpdateQuantity: (productId: number, quantity: number) => void;
   className?: string;
 }) => {
-  const cartItems = items.reduce<{product: Product; quantity: number}[]>((acc, item) => {
-    const existingItem = acc.find(i => i.product.id === item.id);
-    if (existingItem) {
-      existingItem.quantity++;
-    } else {
-      acc.push({ product: item, quantity: 1 });
-    }
-    return acc;
-  }, []);
-
-  if (cartItems.length === 0) {
+  if (items.length === 0) {
     return (
-      <div className={`flex items-center justify-center h-32 text-gray-500 ${className}`}>
-        <p>Your cart is empty</p>
+      <div
+        className={`flex items-center justify-center h-full text-center ${className}`}
+      >
+        <div className="py-12">
+          <svg
+            className="w-16 h-16 text-neutral-300 mx-auto mb-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+            />
+          </svg>
+          <p className="text-neutral-500">Your cart is empty</p>
+          <p className="text-neutral-400 text-sm mt-2">
+            Add products to get started
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className={`p-4 overflow-auto ${className}`}>
-      <ul className="space-y-4">
-        {cartItems.map(({ product, quantity }) => (
-          <li key={product.id} className="flex items-center justify-between border-b pb-2">
-            <div className="flex-1">
-              <div className="flex justify-between">
-                <h4 className="font-medium">{product.name}</h4>
-                <span className="font-semibold">${(product.price * quantity).toFixed(2)}</span>
+    <div className={`overflow-auto ${className}`}>
+      <ul className="divide-y divide-neutral-200">
+        {items.map((item) => (
+          <li
+            key={item.product_id}
+            className="p-4 hover:bg-neutral-50 transition-colors"
+          >
+            <div className="flex justify-between items-start mb-2">
+              <div className="flex-1">
+                <h4 className="text-primary font-semibold text-sm">
+                  {item.product.name}
+                </h4>
+                <p className="text-neutral-500 text-xs mt-1">
+                  {item.product.category}
+                </p>
               </div>
-              <div className="flex justify-between text-sm text-gray-500 mt-1">
-                <span>${product.price.toFixed(2)} × {quantity}</span>
-                <button 
-                  onClick={() => onRemoveItem(product.id)}
-                  className="text-red-500 hover:text-red-700"
+              <span className="text-secondary font-bold text-sm ml-2">
+                KES {Number(item.total).toFixed(2)}
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center text-xs text-neutral-600">
+              <span>KES {Number(item.price).toFixed(2)} each</span>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 bg-neutral-100 rounded-lg p-1">
+                  <button
+                    onClick={() =>
+                      onUpdateQuantity(item.product_id, item.quantity - 1)
+                    }
+                    className="p-1 hover:bg-neutral-200 rounded transition"
+                    aria-label="Decrease quantity"
+                  >
+                    <Minus className="h-3 w-3 text-neutral-600" />
+                  </button>
+                  <span className="w-5 text-center font-semibold text-neutral-700">
+                    {item.quantity}
+                  </span>
+                  <button
+                    onClick={() =>
+                      onUpdateQuantity(item.product_id, item.quantity + 1)
+                    }
+                    className="p-1 hover:bg-neutral-200 rounded transition"
+                    aria-label="Increase quantity"
+                  >
+                    <Plus className="h-3 w-3 text-neutral-600" />
+                  </button>
+                </div>
+                <button
+                  onClick={() => onRemoveItem(item.product_id)}
+                  className="p-1 text-error-500 hover:text-error-700 hover:bg-error-50 rounded transition"
                   aria-label="Remove item"
                 >
                   <X className="h-4 w-4" />

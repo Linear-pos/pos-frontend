@@ -86,21 +86,21 @@ export const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-primary-600 to-primary-700 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-lg shadow-xl p-8">
           {/* Logo/Title */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">
+            <h1 className="text-3xl font-bold text-neutral-800 mb-2">
               POS System
             </h1>
-            <p className="text-gray-600">Sign in to your account</p>
+            <p className="text-neutral-600">Sign in to your account</p>
           </div>
 
           {/* Error Alert */}
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-800">{error}</p>
+            <div className="mb-6 p-4 bg-error-50 border border-error-200 rounded-lg">
+              <p className="text-sm text-error-700">{error}</p>
             </div>
           )}
 
@@ -110,7 +110,7 @@ export const LoginPage = () => {
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mb-2"
+                className="block text-sm font-medium text-neutral-700 mb-2"
               >
                 Email Address
               </label>
@@ -122,15 +122,15 @@ export const LoginPage = () => {
                 value={formData.email}
                 onChange={handleChange}
                 disabled={isLoading}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 transition ${
                   validationErrors.email
-                    ? "border-red-500 focus:ring-red-500"
-                    : "border-gray-300"
-                } ${isLoading ? "bg-gray-100 cursor-not-allowed" : "bg-white"}`}
+                    ? "border-error-500 focus:ring-error-500"
+                    : "border-neutral-300"
+                } ${isLoading ? "bg-neutral-100 cursor-not-allowed" : "bg-white"}`}
                 placeholder="Enter your email"
               />
               {validationErrors.email && (
-                <p className="mt-1 text-sm text-red-600">
+                <p className="mt-1 text-sm text-error-600">
                   {validationErrors.email}
                 </p>
               )}
@@ -140,7 +140,7 @@ export const LoginPage = () => {
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-2"
+                className="block text-sm font-medium text-neutral-700 mb-2"
               >
                 Password
               </label>
@@ -152,15 +152,15 @@ export const LoginPage = () => {
                 value={formData.password}
                 onChange={handleChange}
                 disabled={isLoading}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 transition ${
                   validationErrors.password
-                    ? "border-red-500 focus:ring-red-500"
-                    : "border-gray-300"
-                } ${isLoading ? "bg-gray-100 cursor-not-allowed" : "bg-white"}`}
+                    ? "border-error-500 focus:ring-error-500"
+                    : "border-neutral-300"
+                } ${isLoading ? "bg-neutral-100 cursor-not-allowed" : "bg-white"}`}
                 placeholder="Enter your password"
               />
               {validationErrors.password && (
-                <p className="mt-1 text-sm text-red-600">
+                <p className="mt-1 text-sm text-error-600">
                   {validationErrors.password}
                 </p>
               )}
@@ -170,7 +170,7 @@ export const LoginPage = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white font-semibold py-2 px-4 rounded-lg transition duration-200"
+              className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 disabled:cursor-not-allowed text-white font-semibold py-2 px-4 rounded-lg transition duration-200"
             >
               {isLoading ? (
                 <div className="flex items-center justify-center">
@@ -203,14 +203,14 @@ export const LoginPage = () => {
           </form>
 
           {/* Demo Credentials Info */}
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <p className="text-xs text-gray-600 mb-2 font-semibold">
+          <div className="mt-6 p-4 bg-info-50 rounded-lg border border-info-200">
+            <p className="text-xs text-neutral-600 mb-2 font-semibold">
               Demo Credentials:
             </p>
-            <p className="text-xs text-gray-600">
+            <p className="text-xs text-neutral-600">
               <span className="font-medium">Email:</span> admin@pos.test
             </p>
-            <p className="text-xs text-gray-600">
+            <p className="text-xs text-neutral-600">
               <span className="font-medium">Password:</span> password
             </p>
           </div>
