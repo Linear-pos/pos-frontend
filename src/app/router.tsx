@@ -1,16 +1,30 @@
 import { createBrowserRouter } from "react-router-dom";
-import { PosPage } from "../features/pos/PosPage";
-import { LoginPage } from "../features/auth/LoginPage";
-import Products from "../features/products/pages/Products";
-import SalesHistory from "../features/sales/SalesHistory";
+import { Suspense, lazy } from "react";
 import { AuthGuard } from "./guards/AuthGuard";
 import { RoleGuard } from "./guards/RoleGuard";
 import { RootLayout } from "./RootLayout";
 
+// Lazy load components
+const PosPage = lazy(() => import("../features/pos/PosPage").then(module => ({ default: module.PosPage })));
+const LoginPage = lazy(() => import("../features/auth/LoginPage").then(module => ({ default: module.LoginPage })));
+const Products = lazy(() => import("../features/products/pages/Products"));
+const SalesHistory = lazy(() => import("../features/sales/SalesHistory"));
+
+// Loading component
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center w-full h-64">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+  </div>
+);
+
 export const router = createBrowserRouter([
   {
     path: "/login",
-    element: <LoginPage />,
+    element: (
+      <Suspense fallback={<LoadingFallback />}>
+        <LoginPage />
+      </Suspense>
+    ),
   },
   {
     path: "/",
@@ -20,7 +34,9 @@ export const router = createBrowserRouter([
         path: "/",
         element: (
           <AuthGuard>
-            <PosPage />
+            <Suspense fallback={<LoadingFallback />}>
+              <PosPage />
+            </Suspense>
           </AuthGuard>
         ),
       },
@@ -28,7 +44,9 @@ export const router = createBrowserRouter([
         path: "/pos",
         element: (
           <AuthGuard>
-            <PosPage />
+            <Suspense fallback={<LoadingFallback />}>
+              <PosPage />
+            </Suspense>
           </AuthGuard>
         ),
       },
@@ -37,7 +55,9 @@ export const router = createBrowserRouter([
         element: (
           <AuthGuard>
             <RoleGuard allowedRoles={["SYSTEM_OWNER", "BRANCH_MANAGER"]}>
-              <Products />
+              <Suspense fallback={<LoadingFallback />}>
+                <Products />
+              </Suspense>
             </RoleGuard>
           </AuthGuard>
         ),
@@ -47,7 +67,9 @@ export const router = createBrowserRouter([
         element: (
           <AuthGuard>
             <RoleGuard allowedRoles={["SYSTEM_OWNER", "BRANCH_MANAGER", "CASHIER"]}>
-              <SalesHistory />
+              <Suspense fallback={<LoadingFallback />}>
+                <SalesHistory />
+              </Suspense>
             </RoleGuard>
           </AuthGuard>
         ),

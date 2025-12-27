@@ -1,4 +1,4 @@
-import { Home, Settings } from "lucide-react";
+import { Settings } from "lucide-react";
 
 interface PagePlaceholderProps {
   pageName: string;

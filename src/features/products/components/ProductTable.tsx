@@ -22,20 +22,20 @@ export const ProductTable = ({
 }: ProductTableProps) => {
   if (loading && products.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow p-8 text-center">
+      <div className="bg-card text-card-foreground rounded-lg shadow p-8 text-center">
         <div className="inline-block">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
-        <p className="mt-4 text-neutral-600">Loading products...</p>
+        <p className="mt-4 text-muted-foreground">Loading products...</p>
       </div>
     );
   }
 
   if (products.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow p-8 text-center">
-        <p className="text-neutral-600 mb-4">No products found</p>
-        <p className="text-sm text-neutral-500">
+      <div className="bg-card text-card-foreground rounded-lg shadow p-8 text-center">
+        <p className="text-muted-foreground mb-4">No products found</p>
+        <p className="text-sm text-muted-foreground">
           Try adjusting your search or filters
         </p>
       </div>
@@ -43,32 +43,32 @@ export const ProductTable = ({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
+    <div className="bg-card text-card-foreground rounded-lg shadow overflow-hidden">
       {/* Table */}
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="bg-neutral-50 border-b">
-              <th className="px-6 py-3 text-left text-sm font-semibold text-neutral-900">
+            <tr className="bg-muted/50 border-b">
+              <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
                 Product
               </th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-neutral-900">
+              <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
                 SKU
               </th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-neutral-900">
+              <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
                 Category
               </th>
-              <th className="px-6 py-3 text-right text-sm font-semibold text-neutral-900">
+              <th className="px-6 py-3 text-right text-sm font-semibold text-foreground">
                 Price
               </th>
-              <th className="px-6 py-3 text-right text-sm font-semibold text-neutral-900">
+              <th className="px-6 py-3 text-right text-sm font-semibold text-foreground">
                 Stock
               </th>
-              <th className="px-6 py-3 text-center text-sm font-semibold text-neutral-900">
+              <th className="px-6 py-3 text-center text-sm font-semibold text-foreground">
                 Status
               </th>
               {(onEdit || onDelete) && (
-                <th className="px-6 py-3 text-right text-sm font-semibold text-neutral-900">
+                <th className="px-6 py-3 text-right text-sm font-semibold text-foreground">
                   Actions
                 </th>
               )}
@@ -80,20 +80,20 @@ export const ProductTable = ({
               const isLowStock = product.stock_quantity <= 5;
 
               return (
-                <tr key={product.id} className="hover:bg-neutral-50 transition">
+                <tr key={product.id} className="hover:bg-muted/50 transition">
                   {/* Product Name */}
                   <td className="px-6 py-4">
                     <div>
-                      <p className="font-medium text-neutral-900">
+                      <p className="font-medium text-foreground">
                         {product.name}
                         {product.unit_size && (
-                          <span className="text-sm text-neutral-500 ml-2">
+                          <span className="text-sm text-muted-foreground ml-2">
                             ({product.unit_size} {product.unit})
                           </span>
                         )}
                       </p>
                       {product.description && (
-                        <p className="text-sm text-neutral-500 truncate">
+                         <p className="text-sm text-muted-foreground truncate">
                           {product.description}
                         </p>
                       )}
@@ -102,21 +102,21 @@ export const ProductTable = ({
 
                   {/* SKU */}
                   <td className="px-6 py-4">
-                    <code className="bg-neutral-100 px-2 py-1 rounded text-sm text-neutral-700">
+                     <code className="bg-muted px-2 py-1 rounded text-sm text-muted-foreground">
                       {product.sku}
                     </code>
                   </td>
 
                   {/* Category */}
                   <td className="px-6 py-4">
-                    <span className="inline-block bg-info-100 text-primary-700 px-3 py-1 rounded-full text-sm font-medium">
+                     <span className="inline-block bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
                       {product.category || "Uncategorized"}
                     </span>
                   </td>
 
                   {/* Price */}
                   <td className="px-6 py-4 text-right">
-                    <p className="font-semibold text-neutral-900">
+                     <p className="font-semibold text-foreground">
                       {new Intl.NumberFormat("en-KE", {
                         style: "currency",
                         currency: "KES",
@@ -137,17 +137,17 @@ export const ProductTable = ({
                           isLowStock
                             ? "text-error-600"
                             : needsReorder
-                            ? "text-orange-600"
+                            ? "text-warning-600"
                             : "text-success-600"
                         }`}
                       >
                         {product.stock_quantity} {product.unit || "pcs"}
                       </p>
-                      <p className="text-xs text-neutral-500">
-                        Reorder at: {product.reorder_level}
-                      </p>
+                       <p className="text-xs text-muted-foreground">
+                         Reorder at: {product.reorder_level}
+                       </p>
                       {needsReorder && (
-                        <span className="inline-block bg-orange-100 text-orange-800 px-2 py-0.5 rounded text-xs font-medium">
+                         <span className="inline-block bg-warning-100 text-warning-800 dark:bg-warning-900/20 dark:text-warning-300 px-2 py-0.5 rounded text-xs font-medium">
                           ⚠️ Low Stock
                         </span>
                       )}
@@ -158,9 +158,9 @@ export const ProductTable = ({
                   <td className="px-6 py-4 text-center">
                     <span
                       className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                        product.is_active
-                          ? "bg-success-100 text-success-700"
-                          : "bg-neutral-100 text-neutral-600"
+                         product.is_active
+                           ? "bg-success-100 text-success-700 dark:bg-success-900/20 dark:text-success-300"
+                           : "bg-muted text-muted-foreground"
                       }`}
                     >
                       {product.is_active ? "Active" : "Inactive"}
@@ -174,7 +174,7 @@ export const ProductTable = ({
                         {onEdit && (
                           <button
                             onClick={() => onEdit(product)}
-                            className="px-3 py-1 bg-info-100 hover:bg-info-200 text-primary-700 rounded font-medium text-sm transition"
+                            className="px-3 py-1 bg-primary/10 hover:bg-primary/20 text-primary rounded font-medium text-sm transition"
                           >
                             Edit
                           </button>
@@ -182,7 +182,7 @@ export const ProductTable = ({
                         {onDelete && (
                           <button
                             onClick={() => onDelete(product)}
-                            className="px-3 py-1 bg-error-100 hover:bg-error-200 text-error-700 rounded font-medium text-sm transition"
+                            className="px-3 py-1 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded font-medium text-sm transition"
                           >
                             Delete
                           </button>
@@ -199,8 +199,8 @@ export const ProductTable = ({
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="border-t bg-neutral-50 px-6 py-4 flex items-center justify-between">
-          <div className="text-sm text-neutral-600">
+        <div className="border-t bg-muted/50 px-6 py-4 flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">
             Page <span className="font-semibold">{currentPage}</span> of{" "}
             <span className="font-semibold">{totalPages}</span>
           </div>
@@ -209,7 +209,7 @@ export const ProductTable = ({
             <button
               onClick={() => onPageChange(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1 || loading}
-              className="px-4 py-2 bg-neutral-200 hover:bg-neutral-300 disabled:opacity-50 text-neutral-900 rounded font-medium transition"
+              className="px-4 py-2 bg-muted hover:bg-muted/80 disabled:opacity-50 text-foreground rounded font-medium transition"
             >
               ← Previous
             </button>
@@ -218,7 +218,7 @@ export const ProductTable = ({
                 onPageChange(Math.min(totalPages, currentPage + 1))
               }
               disabled={currentPage === totalPages || loading}
-              className="px-4 py-2 bg-neutral-200 hover:bg-neutral-300 disabled:opacity-50 text-neutral-900 rounded font-medium transition"
+              className="px-4 py-2 bg-muted hover:bg-muted/80 disabled:opacity-50 text-foreground rounded font-medium transition"
             >
               Next →
             </button>

@@ -19,7 +19,7 @@ function ErrorFallback({ error, resetErrorBoundary }: ErrorFallbackProps) {
         </div>
 
         <div className="mb-6">
-          <p className="text-neutral-600 mb-4">
+          <p className="text-muted-foreground mb-4">
             An unexpected error occurred. Our team has been notified. Please try
             again or contact support.
           </p>

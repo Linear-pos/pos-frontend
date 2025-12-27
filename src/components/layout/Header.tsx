@@ -17,8 +17,10 @@ import {
   User,
   LogOut,
   Settings,
-//   Bell,
+  X,
+  //   Bell,
 } from "lucide-react";
+import { useTheme } from "@/app/providers/ThemeProvider";
 
 interface BreadcrumbItem {
   label: string;
@@ -57,11 +59,12 @@ const Header = ({
   onSearch,
   onNotificationClick,
   onProfileClick,
-  onSettingsClick,  
+  onSettingsClick,
   onLogoutClick,
 }: HeaderProps) => {
   const [searchActive, setSearchActive] = useState(false);
   const [query, setQuery] = useState("");
+  const { theme, setTheme } = useTheme();
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -131,47 +134,47 @@ const Header = ({
                     <span className="sr-only">Search</span>
                   </Button>
                 )}
-
               </div>
             )}
 
-              {/* Notification Bell and Theme Toggle - Aligned together */}
-              <div className="flex items-center gap-1">
-                {/* Notification Bell */}
-                {showNotifications && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9 relative"
-                    onClick={onNotificationClick}
-                  >
-                    {/* <NotificationBell  */}
-                   
-                    <span className="sr-only">Notifications</span>
-                  </Button>
-                )}
-
-                {/* Theme Toggle */}
+            {/* Notification Bell and Theme Toggle - Aligned together */}
+            <div className="flex items-center gap-1">
+              {/* Notification Bell */}
+              {showNotifications && (
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-9 w-9"
-                  onClick={() => {
-                    // Toggle theme
-                    document.documentElement.classList.toggle('dark');
-                  }}
+                  className="h-9 w-9 relative"
+                  onClick={onNotificationClick}
                 >
-                  <Sun className="h-4 w-4 dark:hidden" />
-                  <Moon className="h-4 w-4 hidden dark:inline" />
+                  {/* <NotificationBell  */}
+
+                  <span className="sr-only">Notifications</span>
                 </Button>
-              </div>
+              )}
+
+              {/* Theme Toggle */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9"
+                onClick={() => {
+                  const newTheme = theme === "dark" ? "light" : "dark";
+                  setTheme(newTheme);
+                }}
+              >
+                <Sun className="h-4 w-4 dark:hidden" />
+                <Moon className="h-4 w-4 hidden dark:inline" />
+              </Button>
+            </div>
 
             {/* User Menu */}
             {showUserMenu && userInfo && (
-              
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-
+                  <Button variant="ghost" size="sm">
+                    <User className="h-4 w-4" />
+                  </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                   <DropdownMenuLabel className="font-normal">

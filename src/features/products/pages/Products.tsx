@@ -155,16 +155,16 @@ export const Products = () => {
   ] as string[];
 
   return (
-    <div className="min-h-screen bg-neutral-50 p-6">
+    <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+        <div className="mb-8 animate-fade-in">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-neutral-900">
+              <h1 className="text-3xl font-bold text-foreground tracking-tight">
                 Product Management
               </h1>
-              <p className="mt-1 text-neutral-600">
+              <p className="mt-1 text-muted-foreground">
                 Manage your product inventory
               </p>
             </div>
@@ -173,55 +173,88 @@ export const Products = () => {
               <div className="flex gap-3">
                 <button
                   onClick={isListening ? stopScanning : startScanning}
-                  className={`px-4 py-2 rounded-lg font-medium transition ${
-                    isListening
-                      ? "bg-error-600 hover:bg-error-700 text-white"
-                      : "bg-primary-600 hover:bg-primary-700 text-white"
-                  }`}
+                   className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 ${
+                     isListening
+                       ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-lg shadow-destructive/20"
+                       : "bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
+                   }`}
                 >
-                  {isListening ? "⊚ Stop Scanning" : "📱 Start Scanner"}
+                  <span className="flex items-center gap-2">
+                    {isListening ? "⊚ Stop Scanning" : "📱 Start Scanner"}
+                  </span>
                 </button>
                 <button
                   onClick={handleCreateProduct}
-                  className="px-4 py-2 bg-success-600 hover:bg-success-700 text-white rounded-lg font-medium transition"
+                  className="px-4 py-2 bg-success-600 hover:bg-success-700 text-white rounded-lg font-medium transition-all duration-200 transform hover:scale-105 shadow-lg shadow-success-600/20"
                 >
-                  + Add Product
+                  <span className="flex items-center gap-2">
+                    <span className="text-lg">+</span>
+                    Add Product
+                  </span>
                 </button>
               </div>
             )}
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-white p-4 rounded-lg shadow">
-              <p className="text-sm text-neutral-600">Total Products</p>
-              <p className="text-2xl font-bold text-neutral-900">{total}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-card text-card-foreground p-6 rounded-lg shadow-md border border-border hover:shadow-lg transition-all duration-200 animate-slide-up">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Total Products</p>
+                  <p className="text-2xl font-bold text-foreground mt-1">{total}</p>
+                </div>
+                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <span className="text-primary text-xl">📦</span>
+                </div>
+              </div>
             </div>
-            <div className="bg-white p-4 rounded-lg shadow">
-              <p className="text-sm text-neutral-600">Categories</p>
-              <p className="text-2xl font-bold text-neutral-900">
-                {categories.length}
-              </p>
+            <div className="bg-card text-card-foreground p-6 rounded-lg shadow-md border border-border hover:shadow-lg transition-all duration-200 animate-slide-up" style={{ animationDelay: '50ms' }}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Categories</p>
+                  <p className="text-2xl font-bold text-foreground mt-1">
+                    {categories.length}
+                  </p>
+                </div>
+                <div className="w-12 h-12 bg-info/10 rounded-lg flex items-center justify-center">
+                  <span className="text-info text-xl">🏷️</span>
+                </div>
+              </div>
             </div>
-            <div className="bg-white p-4 rounded-lg shadow">
-              <p className="text-sm text-neutral-600">Low Stock</p>
-              <p className="text-2xl font-bold text-orange-600">
-                {products.filter(productsAPI.needsReorder).length}
-              </p>
+            <div className="bg-card text-card-foreground p-6 rounded-lg shadow-md border border-border hover:shadow-lg transition-all duration-200 animate-slide-up" style={{ animationDelay: '100ms' }}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Low Stock</p>
+                  <p className="text-2xl font-bold text-warning-600 mt-1">
+                    {products.filter(productsAPI.needsReorder).length}
+                  </p>
+                </div>
+                <div className="w-12 h-12 bg-warning/10 rounded-lg flex items-center justify-center">
+                  <span className="text-warning text-xl">⚠️</span>
+                </div>
+              </div>
             </div>
-            <div className="bg-white p-4 rounded-lg shadow">
-              <p className="text-sm text-neutral-600">Inactive</p>
-              <p className="text-2xl font-bold text-neutral-600">
-                {products.filter((p) => !p.is_active).length}
-              </p>
+            <div className="bg-card text-card-foreground p-6 rounded-lg shadow-md border border-border hover:shadow-lg transition-all duration-200 animate-slide-up" style={{ animationDelay: '150ms' }}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Inactive</p>
+                  <p className="text-2xl font-bold text-muted-foreground mt-1">
+                    {products.filter((p) => !p.is_active).length}
+                  </p>
+                </div>
+                <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
+                  <span className="text-muted-foreground text-xl">🔒</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Error Alert */}
         {error && (
-          <div className="mb-4 p-4 bg-error-50 border border-error-200 rounded-lg">
-            <p className="text-error-700">{error}</p>
+          <div className="mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+            <p className="text-destructive-foreground">{error}</p>
           </div>
         )}
 
@@ -270,12 +303,12 @@ export const Products = () => {
 
       {/* Delete Confirmation Modal */}
       {deletingProduct && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-bold text-neutral-900 mb-2">
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-card text-card-foreground rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-bold text-foreground mb-2">
               Delete Product?
             </h3>
-            <p className="text-neutral-600 mb-4">
+            <p className="text-muted-foreground mb-4">
               Are you sure you want to delete{" "}
               <strong>{deletingProduct.name}</strong>? This action cannot be
               undone.
@@ -284,14 +317,14 @@ export const Products = () => {
               <button
                 onClick={() => setDeletingProduct(null)}
                 disabled={loading}
-                className="px-4 py-2 bg-neutral-200 hover:bg-neutral-300 text-neutral-900 rounded-lg font-medium transition disabled:opacity-50"
+                className="px-4 py-2 bg-muted hover:bg-muted/80 text-foreground rounded-lg font-medium transition disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmDelete}
                 disabled={loading}
-                className="px-4 py-2 bg-error-600 hover:bg-error-700 text-white rounded-lg font-medium transition disabled:opacity-50"
+                className="px-4 py-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-lg font-medium transition disabled:opacity-50"
               >
                 {loading ? "Deleting..." : "Delete"}
               </button>

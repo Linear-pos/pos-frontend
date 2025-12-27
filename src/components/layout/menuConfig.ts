@@ -7,7 +7,6 @@ import {
   Table,
 } from "lucide-react";
 import type { SidebarProps } from "./Sidebar";
-import { colors } from "@/constants/colors";
 
 export const MenuConfig: SidebarProps = {
   brandLogo: "/logo.png",
@@ -59,13 +58,3 @@ export const MenuConfig: SidebarProps = {
 
   footerGroups: [],
 };
-
-// Brand colors for consistent theming
-export const brandColors = {
-  primary: colors.primary[600],
-  primaryLight: colors.primary[500],
-  primaryDark: colors.primary[700],
-  success: colors.success[600],
-  warning: colors.warning[600],
-  error: colors.error[600],
-} as const;

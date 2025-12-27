@@ -86,15 +86,15 @@ export const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-600 to-primary-700 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-lg shadow-xl p-8">
+        <div className="bg-card rounded-lg shadow-xl border p-8">
           {/* Logo/Title */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-neutral-800 mb-2">
+            <h1 className="text-3xl font-bold text-foreground mb-2">
               POS System
             </h1>
-            <p className="text-neutral-600">Sign in to your account</p>
+            <p className="text-muted-foreground">Sign in to your account</p>
           </div>
 
           {/* Error Alert */}
@@ -122,11 +122,13 @@ export const LoginPage = () => {
                 value={formData.email}
                 onChange={handleChange}
                 disabled={isLoading}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 transition ${
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary transition ${
                   validationErrors.email
-                    ? "border-error-500 focus:ring-error-500"
-                    : "border-neutral-300"
-                } ${isLoading ? "bg-neutral-100 cursor-not-allowed" : "bg-white"}`}
+                    ? "border-error focus:ring-error"
+                    : "border-input"
+                } ${
+                  isLoading ? "bg-muted cursor-not-allowed" : "bg-background"
+                }`}
                 placeholder="Enter your email"
               />
               {validationErrors.email && (
@@ -156,7 +158,9 @@ export const LoginPage = () => {
                   validationErrors.password
                     ? "border-error-500 focus:ring-error-500"
                     : "border-neutral-300"
-                } ${isLoading ? "bg-neutral-100 cursor-not-allowed" : "bg-white"}`}
+                } ${
+                  isLoading ? "bg-neutral-100 cursor-not-allowed" : "bg-white"
+                }`}
                 placeholder="Enter your password"
               />
               {validationErrors.password && (
@@ -204,13 +208,13 @@ export const LoginPage = () => {
 
           {/* Demo Credentials Info */}
           <div className="mt-6 p-4 bg-info-50 rounded-lg border border-info-200">
-            <p className="text-xs text-neutral-600 mb-2 font-semibold">
+            <p className="text-xs text-muted-foreground mb-2 font-semibold">
               Demo Credentials:
             </p>
-            <p className="text-xs text-neutral-600">
+            <p className="text-xs text-muted-foreground">
               <span className="font-medium">Email:</span> admin@pos.test
             </p>
-            <p className="text-xs text-neutral-600">
+            <p className="text-xs text-muted-foreground">
               <span className="font-medium">Password:</span> password
             </p>
           </div>

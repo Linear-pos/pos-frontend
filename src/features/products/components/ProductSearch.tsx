@@ -34,11 +34,11 @@ export const ProductSearch = ({
   isScanning,
 }: ProductSearchProps) => {
   return (
-    <div className="bg-white rounded-lg shadow p-4 mb-6 space-y-4">
+    <div className="bg-card text-card-foreground rounded-lg shadow p-4 mb-6 space-y-4">
       {/* Search Bar */}
       <div className="flex gap-3">
         <div className="flex-1">
-          <label className="block text-sm font-medium text-neutral-700 mb-2">
+          <label className="block text-sm font-medium text-foreground mb-2">
             Search Products
           </label>
           <div className="relative">
@@ -50,14 +50,14 @@ export const ProductSearch = ({
               disabled={isScanning}
               className={`w-full px-4 py-2 border rounded-lg ${
                 isScanning
-                  ? "bg-info-50 border-primary-300 text-primary-900"
-                  : "border-neutral-300 bg-white"
-              } focus:outline-none focus:ring-2 focus:ring-primary-500`}
+                  ? "bg-primary/10 border-primary text-primary"
+                  : "border-input bg-background"
+              } focus:outline-none focus:ring-2 focus:ring-primary`}
             />
-            <span className="absolute right-3 top-10 text-neutral-400">🔍</span>
+            <span className="absolute right-3 top-10 text-muted-foreground">🔍</span>
           </div>
           {isScanning && (
-            <p className="mt-1 text-sm text-primary-600">
+            <p className="mt-1 text-sm text-primary">
               📱 Barcode scanner active...
             </p>
           )}
@@ -68,13 +68,13 @@ export const ProductSearch = ({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Category Filter */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-2">
+          <label className="block text-sm font-medium text-foreground mb-2">
             Category
           </label>
           <select
             value={selectedCategory || ""}
             onChange={(e) => onCategoryChange(e.target.value || null)}
-            className="w-full px-4 py-2 border border-neutral-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="w-full px-4 py-2 border border-input rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <option value="">All Categories</option>
             {categories.map((cat) => (
@@ -87,13 +87,13 @@ export const ProductSearch = ({
 
         {/* Sort By */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-2">
+          <label className="block text-sm font-medium text-foreground mb-2">
             Sort By
           </label>
           <select
             value={sortBy}
             onChange={(e) => onSortByChange(e.target.value as SortBy)}
-            className="w-full px-4 py-2 border border-neutral-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="w-full px-4 py-2 border border-input rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <option value="name">Name</option>
             <option value="sku">SKU</option>
@@ -105,7 +105,7 @@ export const ProductSearch = ({
 
         {/* Sort Order */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-2">
+          <label className="block text-sm font-medium text-foreground mb-2">
             Order
           </label>
           <select
@@ -113,7 +113,7 @@ export const ProductSearch = ({
             onChange={(e) =>
               onSortOrderChange(e.target.value as "asc" | "desc")
             }
-            className="w-full px-4 py-2 border border-neutral-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="w-full px-4 py-2 border border-input rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <option value="asc">Ascending (↑)</option>
             <option value="desc">Descending (↓)</option>
@@ -127,9 +127,9 @@ export const ProductSearch = ({
               type="checkbox"
               checked={lowStockOnly}
               onChange={(e) => onLowStockChange(e.target.checked)}
-              className="w-4 h-4 border-neutral-300 rounded text-primary-600 focus:ring-2 focus:ring-primary-500"
+              className="w-4 h-4 border-input rounded text-primary focus:ring-2 focus:ring-primary"
             />
-            <span className="text-sm font-medium text-neutral-700">
+            <span className="text-sm font-medium text-foreground">
               Low Stock Only
             </span>
           </label>
@@ -139,9 +139,9 @@ export const ProductSearch = ({
               type="checkbox"
               checked={showInactive}
               onChange={(e) => onShowInactiveChange(e.target.checked)}
-              className="w-4 h-4 border-neutral-300 rounded text-primary-600 focus:ring-2 focus:ring-primary-500"
+              className="w-4 h-4 border-input rounded text-primary focus:ring-2 focus:ring-primary"
             />
-            <span className="text-sm font-medium text-neutral-700">
+            <span className="text-sm font-medium text-foreground">
               Show Inactive
             </span>
           </label>
@@ -151,46 +151,46 @@ export const ProductSearch = ({
       {/* Active Filters Badge */}
       {(searchQuery || selectedCategory || lowStockOnly || showInactive) && (
         <div className="flex items-center flex-wrap gap-2 pt-2 border-t">
-          <span className="text-sm text-neutral-600">Active filters:</span>
+          <span className="text-sm text-muted-foreground">Active filters:</span>
           {searchQuery && (
-            <span className="inline-flex items-center gap-2 bg-info-100 text-primary-700 px-3 py-1 rounded-full text-sm">
+            <span className="inline-flex items-center gap-2 bg-primary/10 text-primary px-3 py-1 rounded-full text-sm">
               {searchQuery}
               <button
                 onClick={() => onSearchChange("")}
-                className="text-primary-600 hover:text-primary-700 font-bold"
+                className="text-primary hover:text-primary/80 font-bold"
               >
                 ✕
               </button>
             </span>
           )}
           {selectedCategory && (
-            <span className="inline-flex items-center gap-2 bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm">
+            <span className="inline-flex items-center gap-2 bg-info-100 text-info-800 dark:bg-info-900/20 dark:text-info-300 px-3 py-1 rounded-full text-sm">
               {selectedCategory}
               <button
                 onClick={() => onCategoryChange(null)}
-                className="text-purple-600 hover:text-purple-800 font-bold"
+                className="text-info-600 hover:text-info-800 dark:text-info-400 dark:hover:text-info-300 font-bold"
               >
                 ✕
               </button>
             </span>
           )}
           {lowStockOnly && (
-            <span className="inline-flex items-center gap-2 bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm">
+            <span className="inline-flex items-center gap-2 bg-warning-100 text-warning-800 dark:bg-warning-900/20 dark:text-warning-300 px-3 py-1 rounded-full text-sm">
               Low Stock
               <button
                 onClick={() => onLowStockChange(false)}
-                className="text-orange-600 hover:text-orange-800 font-bold"
+                className="text-warning-600 hover:text-warning-800 dark:text-warning-400 dark:hover:text-warning-300 font-bold"
               >
                 ✕
               </button>
             </span>
           )}
           {showInactive && (
-            <span className="inline-flex items-center gap-2 bg-neutral-100 text-neutral-800 px-3 py-1 rounded-full text-sm">
+            <span className="inline-flex items-center gap-2 bg-muted text-muted-foreground px-3 py-1 rounded-full text-sm">
               Showing Inactive
               <button
                 onClick={() => onShowInactiveChange(false)}
-                className="text-neutral-600 hover:text-neutral-800 font-bold"
+                className="text-muted-foreground hover:text-foreground font-bold"
               >
                 ✕
               </button>

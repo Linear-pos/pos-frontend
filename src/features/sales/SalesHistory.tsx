@@ -4,7 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { salesAPI } from "../sales/api";
 import type { Sale } from "@/types/sale";
 import Receipt from "@/components/receipts/Receipt";
@@ -16,7 +22,7 @@ const SalesHistory = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   const [showReceipt, setShowReceipt] = useState(false);
-  
+
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<string>("all");
@@ -37,26 +43,34 @@ const SalesHistory = () => {
       };
 
       // Add date range filter
-      if (dateRange !== 'all') {
+      if (dateRange !== "all") {
         const now = new Date();
         let startDate: Date;
-        
+
         switch (dateRange) {
-          case 'today':
-            startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          case "today":
+            startDate = new Date(
+              now.getFullYear(),
+              now.getMonth(),
+              now.getDate()
+            );
             break;
-          case 'week':
+          case "week":
             startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
             break;
-          case 'month':
+          case "month":
             startDate = new Date(now.getFullYear(), now.getMonth(), 1);
             break;
           default:
-            startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            startDate = new Date(
+              now.getFullYear(),
+              now.getMonth(),
+              now.getDate()
+            );
         }
-        
-        params.start_date = startDate.toISOString().split('T')[0];
-        params.end_date = now.toISOString().split('T')[0];
+
+        params.start_date = startDate.toISOString().split("T")[0];
+        params.end_date = now.toISOString().split("T")[0];
       }
 
       const response = await salesAPI.getSales(params);
@@ -64,7 +78,7 @@ const SalesHistory = () => {
       setTotalPages(response.last_page);
       setTotalCount(response.total);
     } catch (err: any) {
-      setError(err.message || 'Failed to fetch sales');
+      setError(err.message || "Failed to fetch sales");
     } finally {
       setLoading(false);
     }
@@ -75,15 +89,16 @@ const SalesHistory = () => {
   }, [currentPage, dateRange]);
 
   const filteredSales = sales.filter((sale) => {
-    const matchesSearch = !searchQuery || 
+    const matchesSearch =
+      !searchQuery ||
       sale.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       sale.reference?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      sale.items?.some(item => 
+      sale.items?.some((item) =>
         item.product?.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
 
-    const matchesPaymentMethod = paymentMethod === 'all' || 
-      sale.payment_method === paymentMethod;
+    const matchesPaymentMethod =
+      paymentMethod === "all" || sale.payment_method === paymentMethod;
 
     return matchesSearch && matchesPaymentMethod;
   });
@@ -92,23 +107,33 @@ const SalesHistory = () => {
     return filteredSales.reduce((sum, sale) => sum + sale.total, 0);
   };
 
-  const getPaymentMethodColor = (method: string): "default" | "secondary" | "destructive" | "outline" => {
-    const colors: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-      cash: 'secondary',
-      mpesa: 'default',
-      card: 'outline',
-      bank_transfer: 'secondary'
+  const getPaymentMethodColor = (
+    method: string
+  ): "default" | "secondary" | "destructive" | "outline" => {
+    const colors: Record<
+      string,
+      "default" | "secondary" | "destructive" | "outline"
+    > = {
+      cash: "secondary",
+      mpesa: "default",
+      card: "outline",
+      bank_transfer: "secondary",
     };
-    return colors[method] || 'secondary';
+    return colors[method] || "secondary";
   };
 
-  const getStatusColor = (status: string): "default" | "secondary" | "destructive" | "outline" => {
-    const colors: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-      completed: 'secondary',
-      pending: 'default',
-      cancelled: 'destructive'
+  const getStatusColor = (
+    status: string
+  ): "default" | "secondary" | "destructive" | "outline" => {
+    const colors: Record<
+      string,
+      "default" | "secondary" | "destructive" | "outline"
+    > = {
+      completed: "secondary",
+      pending: "default",
+      cancelled: "destructive",
     };
-    return colors[status] || 'secondary';
+    return colors[status] || "secondary";
   };
 
   const handleViewReceipt = (sale: Sale) => {
@@ -118,22 +143,24 @@ const SalesHistory = () => {
 
   const exportToCSV = () => {
     const csvContent = [
-      ['Date', 'Receipt #', 'Items', 'Payment Method', 'Total', 'Status'],
-      ...filteredSales.map(sale => [
-        format(new Date(sale.created_at), 'dd/MM/yyyy HH:mm'),
+      ["Date", "Receipt #", "Items", "Payment Method", "Total", "Status"],
+      ...filteredSales.map((sale) => [
+        format(new Date(sale.created_at), "dd/MM/yyyy HH:mm"),
         sale.id,
         sale.items?.length || 0,
         sale.payment_method,
         sale.total.toString(),
-        sale.status
-      ])
-    ].map(row => row.join(',')).join('\n');
+        sale.status,
+      ]),
+    ]
+      .map((row) => row.join(","))
+      .join("\n");
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const blob = new Blob([csvContent], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `sales_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.download = `sales_${format(new Date(), "yyyy-MM-dd")}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
   };
@@ -152,16 +179,20 @@ const SalesHistory = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-neutral-600">Total Sales</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Total Sales
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-primary">{totalCount}</div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-neutral-600">Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Revenue
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-success-600">
@@ -172,23 +203,36 @@ const SalesHistory = () => {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-neutral-600">Avg Sale</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Avg Sale
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-info-600">
-              KES {filteredSales.length > 0 ? (getTotalSales() / filteredSales.length).toFixed(2) : '0.00'}
+              KES{" "}
+              {filteredSales.length > 0
+                ? (getTotalSales() / filteredSales.length).toFixed(2)
+                : "0.00"}
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-neutral-600">Items Sold</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Items Sold
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-warning-600">
-              {filteredSales.reduce((sum, sale) => 
-                sum + (sale.items?.reduce((itemSum, item) => itemSum + item.quantity, 0) || 0), 0
+              {filteredSales.reduce(
+                (sum, sale) =>
+                  sum +
+                  (sale.items?.reduce(
+                    (itemSum, item) => itemSum + item.quantity,
+                    0
+                  ) || 0),
+                0
               )}
             </div>
           </CardContent>
@@ -267,25 +311,41 @@ const SalesHistory = () => {
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left p-4 font-medium text-neutral-700">Date</th>
-                    <th className="text-left p-4 font-medium text-neutral-700">Receipt #</th>
-                    <th className="text-left p-4 font-medium text-neutral-700">Items</th>
-                    <th className="text-left p-4 font-medium text-neutral-700">Payment</th>
-                    <th className="text-right p-4 font-medium text-neutral-700">Total</th>
-                    <th className="text-center p-4 font-medium text-neutral-700">Status</th>
-                    <th className="text-center p-4 font-medium text-neutral-700">Actions</th>
+                    <th className="text-left p-4 font-medium text-neutral-700">
+                      Date
+                    </th>
+                    <th className="text-left p-4 font-medium text-neutral-700">
+                      Receipt #
+                    </th>
+                    <th className="text-left p-4 font-medium text-neutral-700">
+                      Items
+                    </th>
+                    <th className="text-left p-4 font-medium text-neutral-700">
+                      Payment
+                    </th>
+                    <th className="text-right p-4 font-medium text-neutral-700">
+                      Total
+                    </th>
+                    <th className="text-center p-4 font-medium text-neutral-700">
+                      Status
+                    </th>
+                    <th className="text-center p-4 font-medium text-neutral-700">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredSales.map((sale) => (
                     <tr key={sale.id} className="border-b hover:bg-neutral-50">
                       <td className="p-4 text-sm">
-                        {format(new Date(sale.created_at), 'dd/MM/yyyy HH:mm')}
+                        {format(new Date(sale.created_at), "dd/MM/yyyy HH:mm")}
                       </td>
                       <td className="p-4 font-mono text-sm">
                         {sale.id}
                         {sale.reference && (
-                          <div className="text-xs text-neutral-500">{sale.reference}</div>
+                          <div className="text-xs text-neutral-500">
+                            {sale.reference}
+                          </div>
                         )}
                       </td>
                       <td className="p-4 text-sm">
@@ -293,12 +353,15 @@ const SalesHistory = () => {
                         {sale.items && sale.items.length > 0 && (
                           <div className="text-xs text-neutral-500">
                             {sale.items[0].product?.name}
-                            {sale.items.length > 1 && ` +${sale.items.length - 1} more`}
+                            {sale.items.length > 1 &&
+                              ` +${sale.items.length - 1} more`}
                           </div>
                         )}
                       </td>
                       <td className="p-4">
-                        <Badge variant={getPaymentMethodColor(sale.payment_method)}>
+                        <Badge
+                          variant={getPaymentMethodColor(sale.payment_method)}
+                        >
                           {sale.payment_method?.toUpperCase()}
                         </Badge>
                       </td>
@@ -334,18 +397,20 @@ const SalesHistory = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
             disabled={currentPage === 1}
           >
             Previous
           </Button>
-          <span className="text-sm text-neutral-600">
+          <span className="text-sm text-muted-foreground">
             Page {currentPage} of {totalPages}
           </span>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+            onClick={() =>
+              setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+            }
             disabled={currentPage === totalPages}
           >
             Next

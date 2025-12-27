@@ -20,6 +20,7 @@ export const PosPage = () => {
   } = useCartStore();
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [orderId] = useState(() => Math.floor(Date.now() / 10000));
 
   const addToCart = (product: Product) => {
     addItem(product);
@@ -81,7 +82,7 @@ export const PosPage = () => {
             </span>
           </div>
           <p className="text-xs text-muted-foreground mt-1 uppercase tracking-wider font-semibold">
-            Order ID: #POS-{Math.floor(Date.now() / 10000)}
+            Order ID: #POS-{orderId}
           </p>
         </div>
 

@@ -1,7 +1,17 @@
 import { useState } from "react";
-import { Printer, Download, Share2, Receipt as ReceiptIcon } from "lucide-react";
+import {
+  Printer,
+  Download,
+  Share2,
+  Receipt as ReceiptIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import type { Sale } from "@/types/sale";
 import { useAuthStore } from "@/stores/auth.store";
 import { format } from "date-fns";
@@ -20,8 +30,8 @@ export const Receipt = ({ isOpen, onClose, sale }: ReceiptProps) => {
 
   const handlePrint = () => {
     setIsPrinting(true);
-    const printWindow = window.open('', '_blank');
-    
+    const printWindow = window.open("", "_blank");
+
     if (printWindow) {
       const receiptContent = `
         <!DOCTYPE html>
@@ -106,31 +116,48 @@ export const Receipt = ({ isOpen, onClose, sale }: ReceiptProps) => {
             </div>
             <div class="item">
               <span>Date:</span>
-              <span>${format(new Date(sale.created_at), 'dd/MM/yyyy HH:mm')}</span>
+              <span>${format(
+                new Date(sale.created_at),
+                "dd/MM/yyyy HH:mm"
+              )}</span>
             </div>
             <div class="item">
               <span>Cashier:</span>
-              <span>${user?.name || 'N/A'}</span>
+              <span>${user?.name || "N/A"}</span>
             </div>
             <div class="item">
               <span>Payment:</span>
-              <span>${sale.payment_method?.toUpperCase() || 'N/A'}</span>
+              <span>${sale.payment_method?.toUpperCase() || "N/A"}</span>
             </div>
-            ${sale.reference ? `
+            ${
+              sale.reference
+                ? `
             <div class="item">
               <span>Reference:</span>
               <span>${sale.reference}</span>
-            </div>` : ''}
+            </div>`
+                : ""
+            }
           </div>
           
           <div class="items">
-            ${sale.items?.map(item => `
+            ${
+              sale.items
+                ?.map(
+                  (item) => `
               <div class="item">
-                <span class="item-name">${item.product?.name || 'Product'}</span>
+                <span class="item-name">${
+                  item.product?.name || "Product"
+                }</span>
                 <span class="item-qty">${item.quantity}</span>
-                <span class="item-price">${(item.price * item.quantity).toFixed(2)}</span>
+                <span class="item-price">${(item.price * item.quantity).toFixed(
+                  2
+                )}</span>
               </div>
-            `).join('') || ''}
+            `
+                )
+                .join("") || ""
+            }
           </div>
           
           <div class="total">
@@ -156,10 +183,10 @@ export const Receipt = ({ isOpen, onClose, sale }: ReceiptProps) => {
         </body>
         </html>
       `;
-      
+
       printWindow.document.write(receiptContent);
       printWindow.document.close();
-      
+
       printWindow.onload = () => {
         printWindow.focus();
         printWindow.print();
@@ -180,12 +207,17 @@ export const Receipt = ({ isOpen, onClose, sale }: ReceiptProps) => {
   const handleShare = async () => {
     const receiptText = `
 RECEIPT #${sale.id}
-Date: ${format(new Date(sale.created_at), 'dd/MM/yyyy HH:mm')}
+Date: ${format(new Date(sale.created_at), "dd/MM/yyyy HH:mm")}
 Payment: ${sale.payment_method?.toUpperCase()}
 
-${sale.items?.map(item => 
-  `${item.product?.name} (${item.quantity}x) = KES ${(item.price * item.quantity).toFixed(2)}`
-).join('\n')}
+${sale.items
+  ?.map(
+    (item) =>
+      `${item.product?.name} (${item.quantity}x) = KES ${(
+        item.price * item.quantity
+      ).toFixed(2)}`
+  )
+  .join("\n")}
 
 Subtotal: KES ${sale.subtotal.toFixed(2)}
 Tax: KES ${sale.tax.toFixed(2)}
@@ -200,13 +232,13 @@ Thank you for your business!
           title: `Receipt #${sale.id}`,
           text: receiptText,
         });
-      } catch (error) {
-        console.log('Share cancelled or failed');
+      } catch {
+        console.log("Share cancelled or failed");
       }
     } else {
       // Fallback - copy to clipboard
       navigator.clipboard.writeText(receiptText).then(() => {
-        alert('Receipt copied to clipboard');
+        alert("Receipt copied to clipboard");
       });
     }
   };
@@ -225,8 +257,12 @@ Thank you for your business!
           {/* Receipt Header */}
           <div className="text-center mb-4">
             <div className="font-bold text-lg">SALES RECEIPT</div>
-            <div className="text-xs text-neutral-600">Point of Sale System</div>
-            <div className="text-xs text-neutral-600">Tel: +254 XXX XXX XXX</div>
+            <div className="text-xs text-muted-foreground">
+              Point of Sale System
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Tel: +254 XXX XXX XXX
+            </div>
           </div>
 
           {/* Receipt Info */}
@@ -237,15 +273,17 @@ Thank you for your business!
             </div>
             <div className="flex justify-between">
               <span>Date:</span>
-              <span>{format(new Date(sale.created_at), 'dd/MM/yyyy HH:mm')}</span>
+              <span>
+                {format(new Date(sale.created_at), "dd/MM/yyyy HH:mm")}
+              </span>
             </div>
             <div className="flex justify-between">
               <span>Cashier:</span>
-              <span>{user?.name || 'N/A'}</span>
+              <span>{user?.name || "N/A"}</span>
             </div>
             <div className="flex justify-between">
               <span>Payment:</span>
-              <span>{sale.payment_method?.toUpperCase() || 'N/A'}</span>
+              <span>{sale.payment_method?.toUpperCase() || "N/A"}</span>
             </div>
             {sale.reference && (
               <div className="flex justify-between">
@@ -259,7 +297,9 @@ Thank you for your business!
           <div className="border-t border-b border-dashed py-2 mb-2">
             {sale.items?.map((item, index) => (
               <div key={index} className="flex justify-between text-xs mb-1">
-                <span className="flex-1">{item.product?.name || 'Product'}</span>
+                <span className="flex-1">
+                  {item.product?.name || "Product"}
+                </span>
                 <span className="w-8 text-center">{item.quantity}</span>
                 <span className="w-16 text-right">
                   KES {(item.price * item.quantity).toFixed(2)}
@@ -285,10 +325,12 @@ Thank you for your business!
           </div>
 
           {/* Footer */}
-          <div className="text-center text-xs text-neutral-600">
+          <div className="text-center text-xs text-muted-foreground">
             <div>Thank you for your business!</div>
             <div>Please come again</div>
-            <div className="italic mt-1">** Goods once sold are not returnable **</div>
+            <div className="italic mt-1">
+              ** Goods once sold are not returnable **
+            </div>
           </div>
         </div>
 
@@ -313,7 +355,7 @@ Thank you for your business!
               </>
             )}
           </Button>
-          
+
           <Button
             variant="outline"
             size="sm"
@@ -323,7 +365,7 @@ Thank you for your business!
             <Download className="h-3 w-3 mr-2" />
             PDF
           </Button>
-          
+
           <Button
             variant="outline"
             size="sm"

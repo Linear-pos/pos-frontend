@@ -19,7 +19,7 @@ export const Cart = ({
       >
         <div className="py-12">
           <svg
-            className="w-16 h-16 text-neutral-300 mx-auto mb-4"
+            className="w-16 h-16 text-muted-foreground mx-auto mb-4"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -31,8 +31,8 @@ export const Cart = ({
               d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
             />
           </svg>
-          <p className="text-neutral-500">Your cart is empty</p>
-          <p className="text-neutral-400 text-sm mt-2">
+          <p className="text-muted-foreground">Your cart is empty</p>
+          <p className="text-muted-foreground text-sm mt-2 opacity-75">
             Add products to get started
           </p>
         </div>
@@ -42,18 +42,18 @@ export const Cart = ({
 
   return (
     <div className={`overflow-auto ${className}`}>
-      <ul className="divide-y divide-neutral-200">
+      <ul className="divide-y divide-border">
         {items.map((item) => (
           <li
             key={item.product_id}
-            className="p-4 hover:bg-neutral-50 transition-colors"
+            className="p-4 hover:bg-muted transition-colors"
           >
             <div className="flex justify-between items-start mb-2">
               <div className="flex-1">
                 <h4 className="text-primary font-semibold text-sm">
                   {item.product.name}
                 </h4>
-                <p className="text-neutral-500 text-xs mt-1">
+                <p className="text-muted-foreground text-xs mt-1">
                   {item.product.category}
                 </p>
               </div>
@@ -62,30 +62,30 @@ export const Cart = ({
               </span>
             </div>
 
-            <div className="flex justify-between items-center text-xs text-neutral-600">
+            <div className="flex justify-between items-center text-xs text-muted-foreground">
               <span>KES {Number(item.price).toFixed(2)} each</span>
               <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1 bg-neutral-100 rounded-lg p-1">
+                <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
                   <button
                     onClick={() =>
                       onUpdateQuantity(item.product_id, item.quantity - 1)
                     }
-                    className="p-1 hover:bg-neutral-200 rounded transition"
+                    className="p-1 hover:bg-muted/80 rounded transition"
                     aria-label="Decrease quantity"
                   >
-                    <Minus className="h-3 w-3 text-neutral-600" />
+                    <Minus className="h-3 w-3 text-foreground" />
                   </button>
-                  <span className="w-5 text-center font-semibold text-neutral-700">
+                  <span className="w-5 text-center font-semibold text-foreground">
                     {item.quantity}
                   </span>
                   <button
                     onClick={() =>
                       onUpdateQuantity(item.product_id, item.quantity + 1)
                     }
-                    className="p-1 hover:bg-neutral-200 rounded transition"
+                    className="p-1 hover:bg-muted/80 rounded transition"
                     aria-label="Increase quantity"
                   >
-                    <Plus className="h-3 w-3 text-neutral-600" />
+                    <Plus className="h-3 w-3 text-foreground" />
                   </button>
                 </div>
                 <button

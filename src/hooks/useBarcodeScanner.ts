@@ -98,7 +98,7 @@ export const useBarcodeScanner = (
     start,
     stop,
     reset,
-    currentBuffer: barcodeBufferRef.current,
+    getCurrentBuffer: () => barcodeBufferRef.current,
   };
 };
 

@@ -208,13 +208,13 @@ export const CheckoutBar = ({
       {/* Order Summary */}
       <div className="space-y-2 mb-4 text-sm">
         <div className="flex justify-between">
-          <span className="text-neutral-600">
+          <span className="text-muted-foreground">
             Subtotal ({itemCount} items):
           </span>
           <span className="font-medium">KES {subtotal.toFixed(2)}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-neutral-600">Tax (16%):</span>
+          <span className="text-muted-foreground">Tax (16%):</span>
           <span className="font-medium">KES {tax.toFixed(2)}</span>
         </div>
         <div className="flex justify-between items-center pt-2 border-t">
