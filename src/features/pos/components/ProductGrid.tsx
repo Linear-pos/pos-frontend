@@ -149,7 +149,7 @@ export const ProductGrid = ({
                 <p
                    className={`text-xs font-medium ${
                      product.stock_quantity > 0
-                       ? "text-success-foreground"
+                       ? "text-blue-600"
                        : "text-destructive-foreground"
                    }`}
                 >

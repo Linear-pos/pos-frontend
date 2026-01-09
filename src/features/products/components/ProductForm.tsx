@@ -1,6 +1,19 @@
 import { useState, useEffect } from "react";
 import type { Product } from "../../../types/product";
 
+type FormDataState = {
+  name: string;
+  sku: string;
+  price: number;
+  cost: number;
+  description: string;
+  category: string;
+  stock_quantity: number;
+  reorder_level: number;
+  unit: 'pcs' | 'ml' | 'g' | 'l' | 'm';
+  is_active: boolean;
+};
+
 interface ProductFormProps {
   product?: Product | null;
   onSubmit: (data: Partial<Product>) => Promise<void>;
@@ -14,7 +27,7 @@ export const ProductForm = ({
   onClose,
   loading,
 }: ProductFormProps) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormDataState>({
     name: "",
     sku: "",
     price: 0,
@@ -30,7 +43,7 @@ export const ProductForm = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+     
     if (product) {
       setFormData({
         name: product.name,
@@ -138,7 +151,7 @@ export const ProductForm = ({
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
           {/* Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Product Name *
             </label>
             <input
@@ -147,11 +160,11 @@ export const ProductForm = ({
               value={formData.name}
               onChange={handleChange}
               disabled={loading}
-              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 text-gray-900 placeholder-gray-400 ${
+              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 text-foreground placeholder-muted-foreground ${
                 errors.name
                   ? "border-red-500 focus:ring-red-500"
-                  : "border-gray-300 focus:ring-blue-500"
-              } disabled:opacity-50 disabled:bg-gray-50`}
+                  : "border-input focus:ring-ring"
+              } disabled:opacity-50 disabled:bg-muted`}
               placeholder="e.g., Laptop Dell XPS 13"
             />
             {errors.name && (
@@ -162,7 +175,7 @@ export const ProductForm = ({
           {/* SKU and Price */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 SKU (Barcode) *
               </label>
               <input
@@ -171,11 +184,11 @@ export const ProductForm = ({
                 value={formData.sku}
                 onChange={handleChange}
                 disabled={loading || !!product}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 text-gray-900 placeholder-gray-400 ${
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 text-foreground placeholder-muted-foreground ${
                   errors.sku
                     ? "border-red-500 focus:ring-red-500"
-                    : "border-gray-300 focus:ring-blue-500"
-                } disabled:opacity-50 disabled:bg-gray-100 disabled:text-gray-500`}
+                    : "border-input focus:ring-ring"
+                } disabled:opacity-50 disabled:bg-muted disabled:text-muted-foreground`}
                 placeholder="e.g., SKU-001"
               />
               {errors.sku && (
@@ -184,7 +197,7 @@ export const ProductForm = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 Selling Price (KES) *
               </label>
               <input
@@ -195,11 +208,11 @@ export const ProductForm = ({
                 disabled={loading}
                 step="0.01"
                 min="0"
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 text-gray-900 placeholder-gray-400 ${
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 text-foreground placeholder-muted-foreground ${
                   errors.price
                     ? "border-red-500 focus:ring-red-500"
-                    : "border-gray-300 focus:ring-blue-500"
-                } disabled:opacity-50 disabled:bg-gray-50`}
+                    : "border-input focus:ring-ring"
+                } disabled:opacity-50 disabled:bg-muted`}
                 placeholder="0.00"
               />
               {errors.price && (
@@ -211,7 +224,7 @@ export const ProductForm = ({
           {/* Cost and Unit */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 Cost Price (KES)
               </label>
               <input
@@ -222,13 +235,13 @@ export const ProductForm = ({
                 disabled={loading}
                 step="0.01"
                 min="0"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-400 disabled:opacity-50 disabled:bg-gray-50"
+                className="w-full px-4 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-foreground placeholder-muted-foreground disabled:opacity-50 disabled:bg-muted"
                 placeholder="0.00"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 Unit
               </label>
               <select
@@ -236,7 +249,7 @@ export const ProductForm = ({
                 value={formData.unit}
                 onChange={handleChange}
                 disabled={loading}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:bg-gray-50"
+                className="w-full px-4 py-2 border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:bg-muted"
               >
                 <option value="pcs">Pieces (pcs)</option>
                 <option value="kg">Kilograms (kg)</option>
@@ -252,7 +265,7 @@ export const ProductForm = ({
 
           {/* Category */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Category
             </label>
             <input
@@ -261,14 +274,14 @@ export const ProductForm = ({
               value={formData.category}
               onChange={handleChange}
               disabled={loading}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-400 disabled:opacity-50 disabled:bg-gray-50"
+              className="w-full px-4 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-foreground placeholder-muted-foreground disabled:opacity-50 disabled:bg-muted"
               placeholder="e.g., Electronics"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Description
             </label>
             <textarea
@@ -277,7 +290,7 @@ export const ProductForm = ({
               onChange={handleChange}
               disabled={loading}
               rows={3}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-400 disabled:opacity-50 disabled:bg-gray-50"
+              className="w-full px-4 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-foreground placeholder-muted-foreground disabled:opacity-50 disabled:bg-muted"
               placeholder="Product description..."
             />
           </div>
@@ -285,7 +298,7 @@ export const ProductForm = ({
           {/* Stock and Reorder */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 Current Stock
               </label>
               <input
@@ -295,11 +308,11 @@ export const ProductForm = ({
                 onChange={handleChange}
                 disabled={loading}
                 min="0"
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 text-gray-900 placeholder-gray-400 ${
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 text-foreground placeholder-muted-foreground ${
                   errors.stock_quantity
                     ? "border-red-500 focus:ring-red-500"
-                    : "border-gray-300 focus:ring-blue-500"
-                } disabled:opacity-50 disabled:bg-gray-50`}
+                    : "border-input focus:ring-ring"
+                } disabled:opacity-50 disabled:bg-muted`}
                 placeholder="0"
               />
               {errors.stock_quantity && (
@@ -310,7 +323,7 @@ export const ProductForm = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 Reorder Level
               </label>
               <input
@@ -320,11 +333,11 @@ export const ProductForm = ({
                 onChange={handleChange}
                 disabled={loading}
                 min="0"
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 text-gray-900 placeholder-gray-400 ${
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 text-foreground placeholder-muted-foreground ${
                   errors.reorder_level
                     ? "border-red-500 focus:ring-red-500"
-                    : "border-gray-300 focus:ring-blue-500"
-                } disabled:opacity-50 disabled:bg-gray-50`}
+                    : "border-input focus:ring-ring"
+                } disabled:opacity-50 disabled:bg-muted`}
                 placeholder="10"
               />
               {errors.reorder_level && (
@@ -344,19 +357,19 @@ export const ProductForm = ({
               checked={formData.is_active}
               onChange={handleChange}
               disabled={loading}
-              className="w-4 h-4 border-gray-300 rounded text-blue-600 focus:ring-2 focus:ring-blue-500 disabled:opacity-50 cursor-pointer"
+              className="w-4 h-4 border-input rounded text-primary focus:ring-2 focus:ring-ring disabled:opacity-50 cursor-pointer"
             />
             <label
               htmlFor="is_active"
-              className="text-sm font-medium text-gray-700 cursor-pointer"
+              className="text-sm font-medium text-foreground cursor-pointer"
             >
               Active Product
             </label>
           </div>
 
           {/* Info Box */}
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-900">
+          <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
+            <p className="text-sm text-primary-foreground">
               <strong>Profit Margin:</strong>{" "}
               {formData.cost > 0
                 ? (
@@ -373,14 +386,14 @@ export const ProductForm = ({
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="px-6 py-2 border border-gray-300 hover:bg-gray-50 text-gray-900 rounded-lg font-medium transition disabled:opacity-50"
+              className="px-6 py-2 border border-input hover:bg-muted text-foreground rounded-lg font-medium transition disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition disabled:opacity-50"
+              className="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium transition disabled:opacity-50"
             >
               {loading
                 ? "Saving..."

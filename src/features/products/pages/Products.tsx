@@ -6,6 +6,7 @@ import { ProductForm } from "../components/ProductForm";
 import { ProductSearch } from "../components/ProductSearch";
 import { useBarcodeScanner } from "../../../hooks/useBarcodeScanner";
 import { useAuth } from "../../../hooks/useAuth";
+import { toast } from "sonner";
 
 type SortBy = "name" | "sku" | "price" | "stock_quantity" | "created_at";
 
@@ -37,9 +38,11 @@ export const Products = () => {
   // Barcode scanner
   const {
     isListening,
-    start: startScanning,
-    stop: stopScanning,
-  } = useBarcodeScanner(handleBarcodeScanned, handleScanError);
+  } = useBarcodeScanner({
+    onScan: handleBarcodeScanned,
+    onError: handleScanError,
+    validate: (code) => /^[0-9]{8,14}$/.test(code),
+  });
 
   // Fetch products
   const fetchProducts = useCallback(async () => {
@@ -95,10 +98,11 @@ export const Products = () => {
   function handleBarcodeScanned(barcode: string) {
     // Search for product by barcode (SKU for now)
     setSearchQuery(barcode);
+    toast.success(`Scanning barcode: ${barcode}`);
   }
 
   function handleScanError(error: Error) {
-    setError(`Barcode scan error: ${error.message}`);
+    toast.error(`Barcode scan error: ${error.message}`);
   }
 
   async function handleCreateProduct() {
@@ -169,20 +173,14 @@ export const Products = () => {
               </p>
             </div>
 
-            {canEdit && (
-              <div className="flex gap-3">
-                <button
-                  onClick={isListening ? stopScanning : startScanning}
-                   className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 ${
-                     isListening
-                       ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-lg shadow-destructive/20"
-                       : "bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
-                   }`}
-                >
-                  <span className="flex items-center gap-2">
-                    {isListening ? "⊚ Stop Scanning" : "📱 Start Scanner"}
-                  </span>
-                </button>
+            <div className="flex items-center gap-3">
+              {isListening && (
+                <div className="flex items-center gap-2 text-green-600">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-sm">Scanner Active</span>
+                </div>
+              )}
+              {canEdit && (
                 <button
                   onClick={handleCreateProduct}
                   className="px-4 py-2 bg-success-600 hover:bg-success-700 text-white rounded-lg font-medium transition-all duration-200 transform hover:scale-105 shadow-lg shadow-success-600/20"
@@ -192,8 +190,8 @@ export const Products = () => {
                     Add Product
                   </span>
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           {/* Stats */}

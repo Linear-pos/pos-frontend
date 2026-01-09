@@ -53,13 +53,21 @@ export const Receipt = ({ isOpen, onClose, sale }: ReceiptProps) => {
             .header h1 {
               margin: 0;
               font-size: 18px;
+              font-weight: bold;
             }
             .header p {
               margin: 5px 0;
-              font-size: 10px;
+              font-size: 12px;
+              color: #666;
             }
             .info {
               margin: 10px 0;
+            }
+            .info .item span:first-child {
+              color: #666;
+            }
+            .info .item span:last-child {
+              font-weight: 500;
             }
             .items {
               margin: 20px 0;
@@ -67,35 +75,51 @@ export const Receipt = ({ isOpen, onClose, sale }: ReceiptProps) => {
             .item {
               display: flex;
               justify-content: space-between;
-              margin: 5px 0;
+              margin: 8px 0;
+              font-size: 12px;
             }
             .item-name {
               flex: 1;
+              font-weight: 500;
             }
             .item-qty {
               width: 30px;
               text-align: center;
+              color: #666;
             }
             .item-price {
               width: 50px;
               text-align: right;
+              font-weight: 500;
             }
             .total {
               border-top: 1px dashed #000;
               border-bottom: 1px dashed #000;
-            padding: 2.5rem 0;
-            margin: 2.5rem 0;
+              padding: 20px 0;
+              margin: 20px 0;
           }
           .total-row {
             display: flex;
             justify-content: space-between;
-            margin: 1.25rem 0;
+            margin: 8px 0;
+            font-size: 12px;
+          }
+          .total-row span:first-child {
+            color: #666;
+          }
+          .total-row span:last-child {
+            font-weight: 500;
+          }
+          .total-row:last-child {
+            font-size: 14px;
+            font-weight: bold;
           }
           .footer {
             text-align: center;
-              margin-top: 1.25rem;
-              font-size: 0.625rem;
-            }
+            margin-top: 20px;
+            font-size: 12px;
+            color: #666;
+          }
             @media print {
               body { padding: 0; }
               .no-print { display: none; }
@@ -110,9 +134,17 @@ export const Receipt = ({ isOpen, onClose, sale }: ReceiptProps) => {
           </div>
           
           <div class="info">
-            <div class="item">
-              <span>Receipt #:</span>
-              <span>${sale.id}</span>
+            <div class="total-row">
+              <span>Subtotal:</span>
+              <span>KES ${sale.subtotal.toFixed(2)}</span>
+            </div>
+            <div class="total-row">
+              <span>VAT(16%):</span>
+              <span>KES ${sale.tax.toFixed(2)}</span>
+            </div>
+            <div class="total-row">
+              <span>TOTAL:</span>
+              <span>KES ${sale.total.toFixed(2)}</span>
             </div>
             <div class="item">
               <span>Date:</span>
@@ -166,7 +198,7 @@ export const Receipt = ({ isOpen, onClose, sale }: ReceiptProps) => {
               <span>KES ${sale.subtotal.toFixed(2)}</span>
             </div>
             <div class="total-row">
-              <span>Tax (16%):</span>
+              <span>VAT (16%):</span>
               <span>KES ${sale.tax.toFixed(2)}</span>
             </div>
             <div class="total-row font-bold">
@@ -253,55 +285,59 @@ Thank you for your business!
           </DialogTitle>
         </DialogHeader>
 
-        <div className="bg-white border rounded p-4 font-mono text-sm">
+        <div className="bg-white border rounded p-4 font-mono text-sm text-black">
           {/* Receipt Header */}
           <div className="text-center mb-4">
-            <div className="font-bold text-lg">SALES RECEIPT</div>
-            <div className="text-xs text-muted-foreground">
+            <div className="font-bold text-base">SALES RECEIPT</div>
+            <div className="text-sm text-foreground/80">
               Point of Sale System
             </div>
-            <div className="text-xs text-muted-foreground">
+            <div className="text-sm text-foreground/80">
               Tel: +254 XXX XXX XXX
             </div>
           </div>
 
           {/* Receipt Info */}
-          <div className="space-y-1 mb-4 text-xs">
+          <div className="space-y-2 mb-4 text-sm">
             <div className="flex justify-between">
-              <span>Receipt #:</span>
-              <span>{sale.id}</span>
+              <span className="text-muted-foreground">Receipt #:</span>
+              <span className="font-medium">{sale.id}</span>
             </div>
             <div className="flex justify-between">
-              <span>Date:</span>
-              <span>
+              <span className="text-muted-foreground">Date:</span>
+              <span className="font-medium">
                 {format(new Date(sale.created_at), "dd/MM/yyyy HH:mm")}
               </span>
             </div>
             <div className="flex justify-between">
-              <span>Cashier:</span>
-              <span>{user?.name || "N/A"}</span>
+              <span className="text-muted-foreground">Cashier:</span>
+              <span className="font-medium">{user?.name || "N/A"}</span>
             </div>
             <div className="flex justify-between">
-              <span>Payment:</span>
-              <span>{sale.payment_method?.toUpperCase() || "N/A"}</span>
+              <span className="text-muted-foreground">Payment:</span>
+              <span className="font-medium">
+                {sale.payment_method?.toUpperCase() || "N/A"}
+              </span>
             </div>
             {sale.reference && (
               <div className="flex justify-between">
-                <span>Reference:</span>
-                <span>{sale.reference}</span>
+                <span className="text-muted-foreground">Reference:</span>
+                <span className="font-medium">{sale.reference}</span>
               </div>
             )}
           </div>
 
           {/* Items */}
-          <div className="border-t border-b border-dashed py-2 mb-2">
+          <div className="border-t border-b border-dashed py-3 mb-3">
             {sale.items?.map((item, index) => (
-              <div key={index} className="flex justify-between text-xs mb-1">
-                <span className="flex-1">
+              <div key={index} className="flex justify-between text-sm mb-2">
+                <span className="flex-1 font-medium">
                   {item.product?.name || "Product"}
                 </span>
-                <span className="w-8 text-center">{item.quantity}</span>
-                <span className="w-16 text-right">
+                <span className="w-8 text-center text-muted-foreground">
+                  {item.quantity}
+                </span>
+                <span className="w-16 text-right font-medium">
                   KES {(item.price * item.quantity).toFixed(2)}
                 </span>
               </div>
@@ -309,25 +345,26 @@ Thank you for your business!
           </div>
 
           {/* Totals */}
-          <div className="space-y-1 text-xs mb-4">
+          <div className="space-y-2 text-sm mb-4">
             <div className="flex justify-between">
-              <span>Subtotal:</span>
-              <span>KES {sale.subtotal.toFixed(2)}</span>
+              <span className="text-muted-foreground">Subtotal:</span>
+              <span className="font-medium">
+                KES {sale.subtotal.toFixed(2)}
+              </span>
             </div>
             <div className="flex justify-between">
-              <span>Tax (16%):</span>
-              <span>KES {sale.tax.toFixed(2)}</span>
+              <span className="text-muted-foreground">VAT (16%):</span>
+              <span className="font-medium">KES {sale.tax.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between font-bold border-t pt-1">
+            <div className="flex justify-between font-bold text-base border-t pt-2">
               <span>TOTAL:</span>
               <span>KES {sale.total.toFixed(2)}</span>
             </div>
           </div>
 
           {/* Footer */}
-          <div className="text-center text-xs text-muted-foreground">
-            <div>Thank you for your business!</div>
-            <div>Please come again</div>
+          <div className="text-center text-sm text-muted-foreground">
+            <div>Thank you for shopping with us!</div>
             <div className="italic mt-1">
               ** Goods once sold are not returnable **
             </div>

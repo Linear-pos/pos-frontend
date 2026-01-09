@@ -5,6 +5,7 @@ import {
   Home,
   ShoppingBag,
   Table,
+  Scan,
 } from "lucide-react";
 import type { SidebarProps } from "./Sidebar";
 
@@ -21,6 +22,11 @@ export const MenuConfig: SidebarProps = {
           title: "POS",
           url: "/",
           icon: Home,
+        },
+        {
+          title: "Scanner",
+          url: "/scanner",
+          icon: Scan,
         },
       ],
     },

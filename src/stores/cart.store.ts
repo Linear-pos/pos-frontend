@@ -11,8 +11,8 @@ interface CartState {
   
   // Actions
   addItem: (product: Product, quantity?: number) => void;
-  removeItem: (productId: number) => void;
-  updateQuantity: (productId: number, quantity: number) => void;
+  removeItem: (productId: string) => void;
+  updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
   getSaleSummary: () => SaleSummary;
   calculateTotals: () => void;
@@ -31,7 +31,7 @@ export const useCartStore = create<CartState>()(
         console.log('Adding product to cart:', product);
         set((state) => {
           const existingItem = state.items.find(item => item.product_id === product.id);
-          const itemPrice = Number(product.price) || 0;
+          const itemPrice = product.price || 0;
           
           console.log('Product details:', {
             id: product.id,
@@ -71,14 +71,14 @@ export const useCartStore = create<CartState>()(
         get().calculateTotals();
       },
 
-      removeItem: (productId: number) => {
+      removeItem: (productId: string) => {
         set((state) => ({
           items: state.items.filter(item => item.product_id !== productId)
         }));
         get().calculateTotals();
       },
 
-      updateQuantity: (productId: number, quantity: number) => {
+      updateQuantity: (productId: string, quantity: number) => {
         if (quantity <= 0) {
           get().removeItem(productId);
           return;
@@ -88,13 +88,20 @@ export const useCartStore = create<CartState>()(
           items: state.items.map(item =>
             item.product_id === productId
               ? {
-                  product_id: item.product_id,
-                  product: item.product,
-                  quantity,
-                  price: Number(item.price) || 0,
-                  total: quantity * (Number(item.price) || 0)
-                }
-              : item
+                    product_id: item.product_id,
+                    product: item.product,
+                    quantity,
+                    price: Number(item.price) || 0,
+                    total: quantity * (Number(item.price) || 0)
+                  }
+              : {
+                    // Always include product_id even when not updating
+                    product_id: item.product_id,
+                    product: item.product,
+                    quantity,
+                    price: Number(item.price) || 0,
+                    total: quantity * (Number(item.price) || 0)
+                  }
           )
         }));
         get().calculateTotals();

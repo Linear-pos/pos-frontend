@@ -15,9 +15,6 @@ interface SalesQueryParams {
 }
 
 export const salesAPI = {
-  /**
-   * Get all sales with pagination and optional filters
-   */
   getSales: async (params?: SalesQueryParams): Promise<SalesListResponse> => {
     const response = await axiosInstance.get<SalesListResponse>('/sales', {
       params: {
@@ -31,27 +28,28 @@ export const salesAPI = {
     return response.data;
   },
 
-  /**
-   * Get a single sale by ID with all items
-   */
   getSale: async (id: string): Promise<Sale> => {
     const response = await axiosInstance.get<Sale>(`/sales/${id}`);
-    return response.data;
+    return salesAPI.formatSale(response.data); // Apply formatting automatically
   },
 
-  /**
-   * Create a new sale with items
-   * Automatically calculates subtotal and total
-   * Handles inventory decrement and audit trail
-   */
   createSale: async (payload: CreateSalePayload): Promise<Sale> => {
-    const response = await axiosInstance.post<SaleResponse>('/sales', payload);
-    return response.data.data || response.data as any;
+    // Ensure product_id is sent as a string (UUID) and quantities are numeric
+    const cleanPayload = {
+      ...payload,
+      items: payload.items.map(item => ({
+        ...item,
+        product_id: String(item.product_id), // Force string for UUID safety
+        quantity: Number(item.quantity),
+        price: Number(item.price),
+      }))
+    };
+    
+    const response = await axiosInstance.post<SaleResponse>('/sales', cleanPayload);
+    const saleData = response.data.data || (response.data as any);
+    return salesAPI.formatSale(saleData);
   },
 
-  /**
-   * Get sales for a specific date range
-   */
   getSalesByDateRange: async (startDate: string, endDate: string, page = 1): Promise<SalesListResponse> => {
     return salesAPI.getSales({
       page,
@@ -61,46 +59,36 @@ export const salesAPI = {
     });
   },
 
-  /**
-   * Get total sales for a period
-   */
   getTotalSales: async (startDate: string, endDate: string): Promise<number> => {
     const response = await salesAPI.getSalesByDateRange(startDate, endDate, 1);
-    const allSales = await Promise.all(
-      Array.from({ length: response.last_page }, (_, i) => 
-        salesAPI.getSalesByDateRange(startDate, endDate, i + 1)
-      )
-    );
     
-    return allSales.reduce((sum: number, page) => 
-      sum + page.data.reduce((total: number, sale) => total + sale.total, 0), 0
+    // Efficiently sum totals from all pages
+    const pagePromises = [];
+    for (let i = 2; i <= response.last_page; i++) {
+      pagePromises.push(salesAPI.getSalesByDateRange(startDate, endDate, i));
+    }
+    
+    const otherPages = await Promise.all(pagePromises);
+    const allPages = [response, ...otherPages];
+    
+    return allPages.reduce((sum, page) => 
+      sum + page.data.reduce((pageSum, sale) => pageSum + Number(sale.total), 0), 0
     );
   },
 
-  /**
-   * Get sales count for a period
-   */
-  getSalesCount: async (startDate: string, endDate: string): Promise<number> => {
-    const response = await salesAPI.getSalesByDateRange(startDate, endDate, 1);
-    return response.total;
-  },
-
-  /**
-   * Calculate tax for a subtotal
-   */
   calculateTax: (subtotal: number, taxRate: number = 0.16): number => {
     return Math.round((subtotal * taxRate) * 100) / 100;
   },
 
   /**
-   * Format sale for display
+   * Format for display: Prevents 'toFixed is not a function' errors
    */
   formatSale: (sale: Sale): Sale => {
     return {
       ...sale,
-      subtotal: Number(sale.subtotal),
-      tax: Number(sale.tax),
-      total: Number(sale.total),
+      subtotal: Number(sale.subtotal || 0),
+      tax: Number(sale.tax || 0),
+      total: Number(sale.total || 0),
     };
   },
 };

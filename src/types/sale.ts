@@ -5,7 +5,7 @@ export type { Product } from './product';
 export interface SaleItem {
   id?: string;
   sale_id: string;
-  product_id: number;
+  product_id: string;
   quantity: number;
   price: number;
   total: number;
@@ -43,7 +43,7 @@ export interface CreateSalePayload {
   notes?: string;
   tax?: number;
   items: Array<{
-    product_id: number;
+    product_id: string;
     quantity: number;
     price?: number; // Uses product price if not provided
   }>;
@@ -66,7 +66,7 @@ export interface SaleResponse {
  * Cart item for building a sale before submission
  */
 export interface CartItem {
-  product_id: number;
+  product_id: string;
   product: Product;
   quantity: number;
   price: number;

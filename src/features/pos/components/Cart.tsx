@@ -8,8 +8,8 @@ export const Cart = ({
   className = "",
 }: {
   items: CartItem[];
-  onRemoveItem: (productId: number) => void;
-  onUpdateQuantity: (productId: number, quantity: number) => void;
+  onRemoveItem: (productId: string) => void;
+  onUpdateQuantity: (productId: string, quantity: number) => void;
   className?: string;
 }) => {
   if (items.length === 0) {
@@ -32,7 +32,7 @@ export const Cart = ({
             />
           </svg>
           <p className="text-muted-foreground">Your cart is empty</p>
-          <p className="text-muted-foreground text-sm mt-2 opacity-75">
+          <p className="text-muted-foreground/75 text-sm mt-2">
             Add products to get started
           </p>
         </div>
@@ -57,7 +57,7 @@ export const Cart = ({
                   {item.product.category}
                 </p>
               </div>
-              <span className="text-secondary font-bold text-sm ml-2">
+              <span className="text-muted-foreground font-bold text-sm ml-2">
                 KES {Number(item.total).toFixed(2)}
               </span>
             </div>

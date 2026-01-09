@@ -69,12 +69,12 @@ export const CheckoutBar = ({
         reference: referenceNumber || undefined,
         tax,
         items: items.map((item) => ({
-          product_id: Number(item.product_id),
-          quantity: Number(item.quantity),
+          product_id: item.product_id,
+          quantity: item.quantity,
           price: Number(item.price),
         })),
       };
-
+      console.log("Checkout payload (cash):", payload);
       const sale = await salesAPI.createSale(payload);
       setSuccessMessage(`Order #${sale.id} completed successfully!`);
       setCompletedSale(sale);
@@ -85,9 +85,7 @@ export const CheckoutBar = ({
       }, 1000);
     } catch (err: any) {
       const errorMessage =
-        err?.response?.data?.message ||
-        err?.message ||
-        "Failed to complete order";
+        err?.response?.data?.message || err?.message || "Failed to ";
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -106,12 +104,12 @@ export const CheckoutBar = ({
         reference: referenceNumber || undefined,
         tax,
         items: items.map((item) => ({
-          product_id: Number(item.product_id),
+          product_id: String(item.product_id),
           quantity: Number(item.quantity),
           price: Number(item.price),
         })),
       };
-
+      console.log("Checkout payload (non-cash):", payload);
       const sale = await salesAPI.createSale(payload);
       setCreatedSale(sale);
       setShowPaymentModal(true);
@@ -214,19 +212,19 @@ export const CheckoutBar = ({
           <span className="font-medium">KES {subtotal.toFixed(2)}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-muted-foreground">Tax (16%):</span>
+          <span className="text-muted-foreground">VAT (16%):</span>
           <span className="font-medium">KES {tax.toFixed(2)}</span>
         </div>
         <div className="flex justify-between items-center pt-2 border-t">
           <span className="text-primary font-semibold">Total:</span>
-          <span className="text-secondary text-xl font-bold">
+          <span className="text-muted-foreground text-xl font-bold">
             KES {total.toFixed(2)}
           </span>
         </div>
       </div>
 
       <Button
-        className="w-full bg-success-600 hover:bg-success-700 disabled:bg-neutral-400 disabled:cursor-not-allowed"
+        className="w-full "
         onClick={handleCheckout}
         disabled={total <= 0 || isLoading || itemCount === 0}
       >

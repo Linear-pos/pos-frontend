@@ -41,7 +41,7 @@ export const productsAPI = {
   /**
    * Get a single product by ID
    */
-  getProduct: async (id: number): Promise<Product> => {
+  getProduct: async (id: string): Promise<Product> => {
     const response = await axiosInstance.get<Product>(`/products/${id}`);
     return response.data;
   },
@@ -57,7 +57,7 @@ export const productsAPI = {
   /**
    * Update an existing product
    */
-  updateProduct: async (id: number, payload: UpdateProductPayload): Promise<Product> => {
+  updateProduct: async (id: string, payload: UpdateProductPayload): Promise<Product> => {
     const response = await axiosInstance.put<ProductResponse>(`/products/${id}`, payload);
     return response.data.data || response.data as any;
   },
@@ -65,14 +65,14 @@ export const productsAPI = {
   /**
    * Delete a product (soft delete)
    */
-  deleteProduct: async (id: number): Promise<void> => {
+  deleteProduct: async (id: string): Promise<void> => {
     await axiosInstance.delete(`/products/${id}`);
   },
 
   /**
    * Bulk update products (if backend supports)
    */
-  bulkUpdate: async (updates: Array<{ id: number; data: UpdateProductPayload }>): Promise<void> => {
+  bulkUpdate: async (updates: Array<{ id: string; data: UpdateProductPayload }>): Promise<void> => {
     await Promise.all(
       updates.map(({ id, data }) => productsAPI.updateProduct(id, data))
     );

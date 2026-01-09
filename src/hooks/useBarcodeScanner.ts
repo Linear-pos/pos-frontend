@@ -1,68 +1,140 @@
 import { useEffect, useRef, useState } from 'react';
+import { barcodeApi } from '../services/barcode.api';
+import type { BarcodeLookupResponse } from '../types/product';
 
-export const useBarcodeScanner = (
-  onScan: (barcode: string) => void,
-  onError?: (error: Error) => void,
-) => {
+type UseBarcodeScannerOptions = {
+  onScan: (barcode: string, product?: BarcodeLookupResponse['data']) => void;
+  onError?: (error: Error) => void;
+  validate?: (barcode: string) => boolean;
+  lookupProduct?: boolean; // Whether to automatically look up product
+  debounceMs?: number; // Debounce for product lookup
+};
+
+export const useBarcodeScanner = ({
+  onScan,
+  onError,
+  validate,
+  lookupProduct = false,
+  debounceMs = 500,
+}: UseBarcodeScannerOptions) => {
   const [isListening, setIsListening] = useState(false);
-  const barcodeBufferRef = useRef<string>('');
-  const lastScanTimeRef = useRef<number>(0);
+  const [isLookingUp, setIsLookingUp] = useState(false);
+
+  const bufferRef = useRef('');
+  const lastScanTimeRef = useRef(0);
+  const lastKeyTimeRef = useRef(0);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lookupTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Minimum time between barcode scans to avoid double scans
-  const MIN_SCAN_INTERVAL = 500;
-
-  // Typical barcode scanner sends all characters rapidly, then ENTER (code 13)
-  const BARCODE_TERMINATOR = 'Enter';
+  // ---- Configuration (tuned for real scanners) ----
+  const MIN_SCAN_INTERVAL = 500; // ms
+  const MAX_KEY_INTERVAL = 50; // ms between chars
+  const SCAN_TIMEOUT = 3000; // ms
+  const MIN_BARCODE_LENGTH = 6;
+  const TERMINATORS = ['Enter', 'Tab', 'NumpadEnter'];
 
   useEffect(() => {
     if (!isListening) return;
 
-    const handleKeyDown = (event: KeyboardEvent) => {
-      const now = Date.now();
-
-      // Check if enough time has passed since last complete scan
-      if (now - lastScanTimeRef.current < MIN_SCAN_INTERVAL) {
-        return;
-      }
-
-      // Clear timeout if it exists
+    const clearTimeoutRef = () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
       }
+    };
 
-      // Check if this is the terminator key (Enter)
-      if (event.key === BARCODE_TERMINATOR) {
-        event.preventDefault();
+    const resetBuffer = () => {
+      bufferRef.current = '';
+      clearTimeoutRef();
+    };
 
-        const barcode = barcodeBufferRef.current.trim();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement;
 
-        // Only process if we have a barcode
-        if (barcode.length > 0) {
-          lastScanTimeRef.current = now;
-          onScan(barcode);
-        }
-
-        // Reset buffer
-        barcodeBufferRef.current = '';
+      // Ignore typing inside inputs/editables
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+      ) {
         return;
       }
 
-      // Add character to buffer (printable ASCII characters)
-      if (event.key.length === 1 && !event.ctrlKey && !event.altKey && !event.metaKey) {
-        event.preventDefault();
-        barcodeBufferRef.current += event.key;
+      const now = Date.now();
 
-        // Set timeout to clear buffer if no terminator key is pressed within 5 seconds
+      // Prevent double scans
+      if (now - lastScanTimeRef.current < MIN_SCAN_INTERVAL) return;
+
+      // Detect manual typing (too slow)
+      if (
+        lastKeyTimeRef.current &&
+        now - lastKeyTimeRef.current > MAX_KEY_INTERVAL &&
+        bufferRef.current.length > 0
+      ) {
+        resetBuffer();
+      }
+
+      lastKeyTimeRef.current = now;
+      clearTimeoutRef();
+
+      // Terminator received → process scan
+      if (TERMINATORS.includes(event.key)) {
+        event.preventDefault();
+
+        const barcode = bufferRef.current.trim();
+        resetBuffer();
+
+        if (barcode.length < MIN_BARCODE_LENGTH) return;
+
+        if (validate && !validate(barcode)) {
+          onError?.(new Error('Invalid barcode format'));
+          return;
+        }
+
+        lastScanTimeRef.current = now;
+
+        // Auto lookup product if enabled
+        if (lookupProduct) {
+          setIsLookingUp(true);
+          barcodeApi.findByBarcode(barcode)
+            .then((response) => {
+              onScan(barcode, response.data);
+            })
+            .catch((error) => {
+              // Still call onScan with barcode, but include error info
+              onScan(barcode, undefined);
+              if (onError) {
+                onError(error instanceof Error ? error : new Error('Product lookup failed'));
+              }
+            })
+            .finally(() => {
+              setIsLookingUp(false);
+            });
+        } else {
+          onScan(barcode);
+        }
+        return;
+      }
+
+      // Accept printable characters only
+      if (
+        event.key.length === 1 &&
+        !event.ctrlKey &&
+        !event.altKey &&
+        !event.metaKey
+      ) {
+        event.preventDefault();
+        bufferRef.current += event.key;
+
+        // Timeout for incomplete scans
         timeoutRef.current = setTimeout(() => {
-          if (barcodeBufferRef.current.length > 0) {
-            const error = new Error(
-              `Barcode scan timeout. Partial scan: ${barcodeBufferRef.current}`,
+          if (bufferRef.current.length >= MIN_BARCODE_LENGTH) {
+            onError?.(
+              new Error(`Barcode scan timeout: ${bufferRef.current}`)
             );
-            onError?.(error);
-            barcodeBufferRef.current = '';
           }
-        }, 5000);
+          resetBuffer();
+        }, SCAN_TIMEOUT);
       }
     };
 
@@ -70,35 +142,30 @@ export const useBarcodeScanner = (
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
+      clearTimeoutRef();
     };
-  }, [isListening, onScan, onError]);
+  }, [isListening, onScan, onError, validate]);
 
-  const start = () => {
-    setIsListening(true);
-  };
+  const start = () => setIsListening(true);
 
   const stop = () => {
     setIsListening(false);
-    barcodeBufferRef.current = '';
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
+    bufferRef.current = '';
   };
 
   const reset = () => {
-    barcodeBufferRef.current = '';
+    bufferRef.current = '';
     lastScanTimeRef.current = 0;
+    lastKeyTimeRef.current = 0;
   };
 
   return {
     isListening,
+    isLookingUp,
     start,
     stop,
     reset,
-    getCurrentBuffer: () => barcodeBufferRef.current,
+    getCurrentBuffer: () => bufferRef.current,
   };
 };
 

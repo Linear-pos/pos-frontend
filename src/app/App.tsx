@@ -6,12 +6,19 @@ import { ThemeProvider } from "./providers/ThemeProvider";
 // import { SocketProvider } from "./providers/SocketProvider";
 // import { Layout } from "@/components/layout/Layout";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { Toaster } from "sonner";
 
 export function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider>
         <RouterProvider router={router} />
+        <Toaster 
+          position="top-right"
+          expand={false}
+          richColors
+          closeButton
+        />
       </ThemeProvider>
     </ErrorBoundary>
   );

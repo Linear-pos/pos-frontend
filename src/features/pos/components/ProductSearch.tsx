@@ -29,7 +29,7 @@ export const ProductSearch = ({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyPress={handleKeyPress}
-        className="w-full pl-10 py-2 rounded-lg border-border focus:border-primary focus:ring-primary placeholder:text-muted-foreground/70"
+        className="w-full pl-10 py-2 rounded-lg border-border focus:border-primary focus:ring-primary placeholder:text-muted-foreground"
       />
     </div>
   );

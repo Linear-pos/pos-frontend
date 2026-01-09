@@ -1,7 +1,7 @@
 export type UserRole = 'SYSTEM_OWNER' | 'BRANCH_MANAGER' | 'CASHIER';
 
 export interface Role {
-  id: number;
+  id: string;
   name: UserRole;
   description?: string;
 }
@@ -11,7 +11,7 @@ export interface User {
   email: string;
   name: string;
   role?: Role | UserRole; // Can be role object or string
-  role_id?: number;
+  role_id?: string;
   tenant_id?: string;
   branch_id?: string | null;
   avatar?: string;

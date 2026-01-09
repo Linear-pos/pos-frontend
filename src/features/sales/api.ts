@@ -28,7 +28,10 @@ export const salesAPI = {
         ...(params?.end_date && { end_date: params.end_date }),
       },
     });
-    return response.data;
+    return {
+      ...response.data,
+      data: response.data.data.map(sale => salesAPI.formatSale(sale))
+    };
   },
 
   /**
@@ -36,7 +39,7 @@ export const salesAPI = {
    */
   getSale: async (id: string): Promise<Sale> => {
     const response = await axiosInstance.get<Sale>(`/sales/${id}`);
-    return response.data;
+    return salesAPI.formatSale(response.data);
   },
 
   /**
@@ -46,7 +49,8 @@ export const salesAPI = {
    */
   createSale: async (payload: CreateSalePayload): Promise<Sale> => {
     const response = await axiosInstance.post<SaleResponse>('/sales', payload);
-    return response.data.data || response.data as any;
+    const sale = response.data.data || response.data as any;
+    return salesAPI.formatSale(sale);
   },
 
   /**
