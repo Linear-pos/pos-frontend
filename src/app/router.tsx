@@ -11,8 +11,6 @@ const PosPage = lazy(() => import("../features/pos/PosPage").then(module => ({ d
 const LoginPage = lazy(() => import("../features/auth/LoginPage").then(module => ({ default: module.LoginPage })));
 const Products = lazy(() => import("../features/products/pages/Products"));
 const SalesHistory = lazy(() => import("../features/sales/SalesHistory"));
-const BarcodeScannerPage = lazy(() => import("../features/barcode/BarcodeScannerPage"));
-const ProductBarcodesPage = lazy(() => import("../features/barcode/ProductBarcodesPage"));
 
 // Loading component
 const LoadingFallback = () => (
@@ -79,7 +77,6 @@ export const router = createBrowserRouter([
             <RoleGuard allowedRoles={["SYSTEM_OWNER", "BRANCH_MANAGER"]}>
               <RouteErrorBoundary routeName="Product Barcodes">
                 <Suspense fallback={<LoadingFallback />}>
-                  <ProductBarcodesPage />
                 </Suspense>
               </RouteErrorBoundary>
             </RoleGuard>
@@ -107,7 +104,6 @@ export const router = createBrowserRouter([
             <RoleGuard allowedRoles={["SYSTEM_OWNER", "BRANCH_MANAGER", "CASHIER"]}>
               <RouteErrorBoundary routeName="Barcode Scanner">
                 <Suspense fallback={<LoadingFallback />}>
-                  <BarcodeScannerPage />
                 </Suspense>
               </RouteErrorBoundary>
             </RoleGuard>

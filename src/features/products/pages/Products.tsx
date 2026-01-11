@@ -4,9 +4,7 @@ import type { Product } from "../../../types/product";
 import { ProductTable } from "../components/ProductTable";
 import { ProductForm } from "../components/ProductForm";
 import { ProductSearch } from "../components/ProductSearch";
-import { useBarcodeScanner } from "../../../hooks/useBarcodeScanner";
 import { useAuth } from "../../../hooks/useAuth";
-import { toast } from "sonner";
 
 type SortBy = "name" | "sku" | "price" | "stock_quantity" | "created_at";
 
@@ -35,14 +33,7 @@ export const Products = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
 
-  // Barcode scanner
-  const {
-    isListening,
-  } = useBarcodeScanner({
-    onScan: handleBarcodeScanned,
-    onError: handleScanError,
-    validate: (code) => /^[0-9]{8,14}$/.test(code),
-  });
+ 
 
   // Fetch products
   const fetchProducts = useCallback(async () => {
@@ -94,21 +85,6 @@ export const Products = () => {
     fetchProducts();
   }, [fetchProducts]);
 
-  // Handlers
-  function handleBarcodeScanned(barcode: string) {
-    // Search for product by barcode (SKU for now)
-    setSearchQuery(barcode);
-    toast.success(`Scanning barcode: ${barcode}`);
-  }
-
-  function handleScanError(error: Error) {
-    toast.error(`Barcode scan error: ${error.message}`);
-  }
-
-  async function handleCreateProduct() {
-    setEditingProduct(null);
-    setShowForm(true);
-  }
 
   async function handleEditProduct(product: Product) {
     setEditingProduct(product);
@@ -173,25 +149,7 @@ export const Products = () => {
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
-              {isListening && (
-                <div className="flex items-center gap-2 text-green-600">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-sm">Scanner Active</span>
-                </div>
-              )}
-              {canEdit && (
-                <button
-                  onClick={handleCreateProduct}
-                  className="px-4 py-2 bg-success-600 hover:bg-success-700 text-white rounded-lg font-medium transition-all duration-200 transform hover:scale-105 shadow-lg shadow-success-600/20"
-                >
-                  <span className="flex items-center gap-2">
-                    <span className="text-lg">+</span>
-                    Add Product
-                  </span>
-                </button>
-              )}
-            </div>
+           
           </div>
 
           {/* Stats */}
@@ -271,7 +229,7 @@ export const Products = () => {
           onSortByChange={setSortBy}
           sortOrder={sortOrder}
           onSortOrderChange={setSortOrder}
-          isScanning={isListening}
+          isScanning={false}
         />
 
         {/* Products Table */}

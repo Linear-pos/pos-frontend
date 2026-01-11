@@ -2,12 +2,10 @@ import { useState } from "react";
 import { useCartStore } from "@/stores/cart.store";
 import type { Product } from "@/types/product";
 import { productsAPI } from "@/features/products/api/products.api";
-import { barcodeApi } from "@/services/barcode.api";
 import { ProductSearch } from "./components/ProductSearch";
 import { ProductGrid } from "./components/ProductGrid";
 import { Cart } from "./components/Cart";
 import { CheckoutBar } from "./components/CheckoutBar";
-import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { toast } from "sonner";
 import type { BarcodeLookupResponse } from "@/types/product";
 
@@ -79,16 +77,8 @@ export const PosPage = () => {
     }
   };
 
-  const handleScanError = (error: Error) => {
-    toast.error(`Barcode scanner error: ${error.message}`);
-  };
 
-  const { isListening } = useBarcodeScanner({
-    onScan: handleBarcodeScanned,
-    onError: handleScanError,
-    validate: (code) => /^[0-9A-Z]{6,20}$/.test(code), // More flexible validation
-    lookupProduct: true, // Enable automatic product lookup via barcode API
-  });
+ 
 
   const addToCart = (product: Product) => {
     addItem(product);
@@ -114,12 +104,7 @@ export const PosPage = () => {
             <p className="text-muted-foreground font-medium">
               Manage items and fulfill customer orders
             </p>
-            {isListening && (
-              <div className="flex items-center gap-2 text-green-600 mt-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-sm">Scanner Active</span>
-              </div>
-            )}
+           
           </div>
           <div className="text-right hidden lg:block">
             <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
