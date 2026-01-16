@@ -3,7 +3,7 @@ import { AuthProvider } from "./providers/AuthProvider";
 import { QueryProvider } from "./providers/QueryProvider";
 import { ThemeProvider } from "./providers/ThemeProvider";
 import { SocketProvider } from "./providers/SocketProvider";
-import Layout from "@/components/layout/Layout";
+// Layout removed from here, moved to Router
 
 export function RootLayout() {
   return (
@@ -11,9 +11,8 @@ export function RootLayout() {
       <QueryProvider>
         <AuthProvider>
           <SocketProvider>
-            <Layout>
-              <Outlet />
-            </Layout>
+            {/* Layout is handled by the Router now */}
+            <Outlet />
           </SocketProvider>
         </AuthProvider>
       </QueryProvider>

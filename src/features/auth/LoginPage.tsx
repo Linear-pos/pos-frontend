@@ -72,8 +72,16 @@ export const LoginPage = () => {
       const response = await authAPI.login(formData);
       setAuth(response);
 
-      // Navigate to POS page
-      navigate("/pos");
+      // Determine redirect path based on role
+      const userRole = typeof response.user.role === 'string'
+        ? response.user.role
+        : response.user.role?.name;
+
+      if (['SYSTEM_OWNER', 'BRANCH_MANAGER'].includes(userRole as string)) {
+        navigate("/dashboard");
+      } else {
+        navigate("/pos");
+      }
     } catch (err: any) {
       const errorMessage =
         err.response?.data?.message ||
@@ -122,13 +130,11 @@ export const LoginPage = () => {
                 value={formData.email}
                 onChange={handleChange}
                 disabled={isLoading}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary transition ${
-                  validationErrors.email
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary transition ${validationErrors.email
                     ? "border-error focus:ring-error"
                     : "border-input"
-                } ${
-                  isLoading ? "bg-muted cursor-not-allowed" : "bg-background"
-                }`}
+                  } ${isLoading ? "bg-muted cursor-not-allowed" : "bg-background"
+                  }`}
                 placeholder="Enter your email"
               />
               {validationErrors.email && (
@@ -154,13 +160,11 @@ export const LoginPage = () => {
                 value={formData.password}
                 onChange={handleChange}
                 disabled={isLoading}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 transition ${
-                  validationErrors.password
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 transition ${validationErrors.password
                     ? "border-error-500 focus:ring-error-500"
                     : "border-neutral-300"
-                } ${
-                  isLoading ? "bg-neutral-100 cursor-not-allowed" : "bg-white"
-                }`}
+                  } ${isLoading ? "bg-neutral-100 cursor-not-allowed" : "bg-white"
+                  }`}
                 placeholder="Enter your password"
               />
               {validationErrors.password && (

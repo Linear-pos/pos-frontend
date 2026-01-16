@@ -1,61 +1,27 @@
-import { useState, useEffect } from "react";
 import type { Product } from "@/types/product";
-import { productsAPI } from "../../products/api/products.api";
 
 interface ProductGridProps {
+  products: Product[];
   onAddToCart: (product: Product) => void;
-  searchQuery: string;
+  isLoading?: boolean;
+  error?: string | null;
   className?: string;
 }
 
+
+
 export const ProductGrid = ({
+  products,
   onAddToCart,
-  searchQuery,
+  isLoading = false,
+  error = null,
   className = "",
 }: ProductGridProps) => {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Fetch products from API
-        const response = await productsAPI.getProducts({
-          page: 1,
-          per_page: 50,
-          is_active: true,
-        });
-
-        setProducts(response.data);
-      } catch (err: any) {
-        const errorMessage =
-          err.response?.data?.message ||
-          err.message ||
-          "Failed to fetch products";
-        setError(errorMessage);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProducts();
-  }, []);
+  // Removed internal state and fetching logic
 
   // Filter products based on search query
-  const filteredProducts = products.filter(
-    (product) =>
-      !searchQuery ||
-      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.sku?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.category?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
   // Loading state
-  if (loading) {
+  if (isLoading) {
     return (
       <div className={`flex items-center justify-center h-full ${className}`}>
         <div className="text-center">
@@ -70,7 +36,7 @@ export const ProductGrid = ({
   if (error) {
     return (
       <div className={`flex items-center justify-center h-full ${className}`}>
-          <div className="text-center p-6 bg-destructive/10 border border-destructive/20 rounded-lg">
+        <div className="text-center p-6 bg-destructive/10 border border-destructive/20 rounded-lg">
           <p className="text-destructive-foreground font-semibold mb-2">
             Failed to load products
           </p>
@@ -93,7 +59,7 @@ export const ProductGrid = ({
     <div
       className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 ${className}`}
     >
-      {filteredProducts.map((product) => (
+      {products.map((product) => (
         <div
           key={product.id}
           className="bg-card text-card-foreground rounded-lg border border-border shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer overflow-hidden hover:border-primary"
@@ -145,13 +111,12 @@ export const ProductGrid = ({
 
             {/* Stock Info */}
             {product.stock_quantity !== undefined && (
-                <div className="mt-2 pt-2 border-t border-border">
+              <div className="mt-2 pt-2 border-t border-border">
                 <p
-                   className={`text-xs font-medium ${
-                     product.stock_quantity > 0
-                       ? "text-blue-600"
-                       : "text-destructive-foreground"
-                   }`}
+                  className={`text-xs font-medium ${product.stock_quantity > 0
+                    ? "text-blue-600"
+                    : "text-destructive-foreground"
+                    }`}
                 >
                   {product.stock_quantity > 0
                     ? `${product.stock_quantity} in stock`

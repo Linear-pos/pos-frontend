@@ -1,9 +1,8 @@
 import { axiosInstance } from '../../services/api';
-import type { 
-  Sale, 
-  CreateSalePayload, 
+import type {
+  Sale,
+  CreateSalePayload,
   SalesListResponse,
-  SaleResponse 
 } from '../../types/sale';
 
 interface SalesQueryParams {
@@ -14,23 +13,50 @@ interface SalesQueryParams {
   end_date?: string;
 }
 
+interface BackendListResponse<T> {
+  success: boolean;
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+  message: string;
+}
+
+interface BackendSingleResponse<T> {
+  success: boolean;
+  data: T;
+  message: string;
+}
+
 export const salesAPI = {
   getSales: async (params?: SalesQueryParams): Promise<SalesListResponse> => {
-    const response = await axiosInstance.get<SalesListResponse>('/sales', {
+    const response = await axiosInstance.get<BackendListResponse<Sale>>('/sales', {
       params: {
         page: params?.page || 1,
-        per_page: params?.per_page || 15,
+        limit: params?.per_page || 15, // Backend expects limit
         ...(params?.branch_id && { branch_id: params.branch_id }),
         ...(params?.start_date && { start_date: params.start_date }),
         ...(params?.end_date && { end_date: params.end_date }),
       },
     });
-    return response.data;
+
+    const { data, pagination } = response.data;
+
+    return {
+      data: data,
+      current_page: pagination.page,
+      last_page: pagination.pages,
+      per_page: pagination.limit,
+      total: pagination.total
+    };
   },
 
   getSale: async (id: string): Promise<Sale> => {
-    const response = await axiosInstance.get<Sale>(`/sales/${id}`);
-    return salesAPI.formatSale(response.data); // Apply formatting automatically
+    const response = await axiosInstance.get<BackendSingleResponse<Sale>>(`/ sales / ${id} `);
+    return salesAPI.formatSale(response.data.data); // Apply formatting automatically
   },
 
   createSale: async (payload: CreateSalePayload): Promise<Sale> => {
@@ -44,9 +70,10 @@ export const salesAPI = {
         price: Number(item.price),
       }))
     };
-    
-    const response = await axiosInstance.post<SaleResponse>('/sales', cleanPayload);
-    const saleData = response.data.data || (response.data as any);
+
+    // Backend returns { success: true, data: { ... } }
+    const response = await axiosInstance.post<BackendSingleResponse<Sale>>('/sales', cleanPayload);
+    const saleData = response.data.data;
     return salesAPI.formatSale(saleData);
   },
 
@@ -61,17 +88,17 @@ export const salesAPI = {
 
   getTotalSales: async (startDate: string, endDate: string): Promise<number> => {
     const response = await salesAPI.getSalesByDateRange(startDate, endDate, 1);
-    
+
     // Efficiently sum totals from all pages
     const pagePromises = [];
     for (let i = 2; i <= response.last_page; i++) {
       pagePromises.push(salesAPI.getSalesByDateRange(startDate, endDate, i));
     }
-    
+
     const otherPages = await Promise.all(pagePromises);
     const allPages = [response, ...otherPages];
-    
-    return allPages.reduce((sum, page) => 
+
+    return allPages.reduce((sum, page) =>
       sum + page.data.reduce((pageSum, sale) => pageSum + Number(sale.total), 0), 0
     );
   },

@@ -1,7 +1,5 @@
 import {
-  Check,
   Clipboard,
-  CreditCard,
   Home,
   ShoppingBag,
   Table,
@@ -34,30 +32,30 @@ export const MenuConfig: SidebarProps = {
       label: "Management",
       items: [
         {
+          title: "Overview",
+          url: "/dashboard/overview",
+          icon: Home,
+        },
+        {
           title: "Sales",
-          url: "/sales",
+          url: "/dashboard/sales",
           icon: ShoppingBag,
         },
         {
           title: "Products",
-          url: "/products",
+          url: "/dashboard/products",
           icon: Table,
         },
         {
-          title: "Payments",
-          url: "/payments",
-          icon: CreditCard,
-        },
-        {
-          title: "Shifts",
-          url: "/shifts",
-          icon: Check,
+          title: "Inventory",
+          url: "/dashboard/inventory",
+          icon: Table, // Using Table icon for now, or Package if available
         },
         {
           title: "Reports",
-          url: "/reports",
+          url: "/dashboard/reports",
           icon: Clipboard,
-        },
+        }
       ],
     },
   ],

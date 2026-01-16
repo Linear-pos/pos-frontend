@@ -1,206 +1,88 @@
 import { useState } from "react";
-import { AlertCircle, CheckCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { salesAPI } from "../../sales/api";
-import PaymentModal from "@/components/payments/PaymentModal";
+import { useCartStore } from "@/stores/cart.store";
+import { salesAPI } from "@/features/sales/api";
+import type { Sale } from "@/types/sale";
 import Receipt from "@/components/receipts/Receipt";
-import type { Sale } from "../../../types/sale";
+import PaymentModal from "@/components/payments/PaymentModal";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, CheckCircle, AlertCircle } from "lucide-react";
 
-interface CheckoutBarProps {
-  subtotal: number;
-  tax: number;
-  total: number;
-  itemCount: number;
-  items: any[];
-  onCheckout: () => void;
-  className?: string;
-}
+export const CheckoutBar = () => {
+  const { items, clearCart, total, itemCount } = useCartStore();
 
-export const CheckoutBar = ({
-  subtotal,
-  tax,
-  total,
-  itemCount,
-  items,
-  onCheckout,
-  className = "",
-}: CheckoutBarProps) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] =
-    useState<string>("cash");
-  const [referenceNumber, setReferenceNumber] = useState<string>("");
+  // Calculate totals
+  const subtotal = total / 1.16;
+  const tax = total - subtotal;
+
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [createdSale, setCreatedSale] = useState<Sale | null>(null);
   const [showReceipt, setShowReceipt] = useState(false);
   const [completedSale, setCompletedSale] = useState<Sale | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleCheckout = async () => {
+  const handleCheckout = () => {
     if (itemCount === 0) return;
-
-    // For non-cash payments, we need to handle payment flow
-    if (selectedPaymentMethod !== "cash") {
-      await handleNonCashPayment();
-    } else {
-      await handleCashPayment();
-    }
+    setError(null);
+    setShowPaymentModal(true);
   };
 
-  const handleCashPayment = async () => {
-    if (itemCount === 0) return;
-
-    setIsLoading(true);
-    setError(null);
-    setSuccessMessage(null);
-
+  const handleProcessPayment = async (method: string, data?: any): Promise<Sale> => {
     try {
+      const itemsPayload = items.map((item) => ({
+        product_id: item.product_id,
+        quantity: item.quantity,
+        price: Number(item.price),
+      }));
+
       const payload = {
-        payment_method: "cash",
-        status: "completed" as const,
-        reference: referenceNumber || undefined,
+        payment_method: method,
+        status: method === 'cash' ? 'completed' : 'pending',
+        items: itemsPayload,
         tax,
-        items: items.map((item) => ({
-          product_id: item.product_id,
-          quantity: item.quantity,
-          price: Number(item.price),
-        })),
+        reference: data?.reference,
       };
-      console.log("Checkout payload (cash):", payload);
-      const sale = await salesAPI.createSale(payload);
-      setSuccessMessage(`Order #${sale.id} completed successfully!`);
-      setCompletedSale(sale);
 
-      // Show receipt after a short delay
-      setTimeout(() => {
-        setShowReceipt(true);
-      }, 1000);
+      const sale = await salesAPI.createSale(payload as any);
+      return sale;
     } catch (err: any) {
-      const errorMessage =
-        err?.response?.data?.message || err?.message || "Failed to ";
-      setError(errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleNonCashPayment = async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      // Create sale with pending status
-      const payload = {
-        payment_method: selectedPaymentMethod,
-        status: "pending" as const,
-        reference: referenceNumber || undefined,
-        tax,
-        items: items.map((item) => ({
-          product_id: String(item.product_id),
-          quantity: Number(item.quantity),
-          price: Number(item.price),
-        })),
-      };
-      console.log("Checkout payload (non-cash):", payload);
-      const sale = await salesAPI.createSale(payload);
-      setCreatedSale(sale);
-      setShowPaymentModal(true);
-    } catch (err: any) {
-      const errorMessage =
-        err?.response?.data?.message ||
-        err?.message ||
-        "Failed to create order";
-      setError(errorMessage);
-    } finally {
-      setIsLoading(false);
+      console.error("Payment processing error:", err);
+      throw new Error(err.response?.data?.message || "Payment processing failed");
     }
   };
 
   const handlePaymentComplete = (sale: Sale) => {
-    setSuccessMessage(`Order #${sale.id} payment completed successfully!`);
+    setSuccessMessage(`Order #${sale.id} completed!`);
     setCompletedSale(sale);
     setShowPaymentModal(false);
-    setCreatedSale(null);
 
-    // Show receipt after a short delay
+    // Auto Show Receipt
     setTimeout(() => {
       setShowReceipt(true);
-    }, 1000);
+    }, 500);
   };
 
   const handleReceiptClose = () => {
     setShowReceipt(false);
     setCompletedSale(null);
     setSuccessMessage(null);
-    setReferenceNumber("");
-    onCheckout();
+    clearCart();
   };
 
   return (
-    <div className={`${className}`}>
-      {/* Error Message */}
+    <div className="bg-white border-t p-4 shadow-up">
       {error && (
-        <div className="mb-3 p-3 bg-error-50 border border-error-200 rounded flex items-center gap-2">
-          <AlertCircle className="h-4 w-4 text-error-600 flex-shrink-0 mt-0.5" />
-          <span className="text-error-600 text-sm">{error}</span>
-        </div>
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
 
-      {/* Success Message */}
       {successMessage && (
-        <div className="mb-3 p-3 bg-success-50 border border-success-200 rounded flex items-center gap-2">
-          <CheckCircle className="h-4 w-4 text-success-600 flex-shrink-0 mt-0.5" />
-          <span className="text-success-600 text-sm">{successMessage}</span>
-        </div>
-      )}
-
-      {/* Payment Method Selection */}
-      <div className="mb-4">
-        <label className="text-sm font-medium text-primary mb-2 block">
-          Payment Method
-        </label>
-        <Select
-          value={selectedPaymentMethod}
-          onValueChange={setSelectedPaymentMethod}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select payment method" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="cash">Cash</SelectItem>
-            <SelectItem value="mpesa">M-Pesa</SelectItem>
-            <SelectItem value="card">Card</SelectItem>
-            <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Reference Number for M-Pesa/Card */}
-      {(selectedPaymentMethod === "mpesa" ||
-        selectedPaymentMethod === "card") && (
-        <div className="mb-4">
-          <label className="text-sm font-medium text-primary mb-2 block">
-            {selectedPaymentMethod === "mpesa" ? "M-Pesa" : "Card"} Reference
-          </label>
-          <Input
-            type="text"
-            placeholder={
-              selectedPaymentMethod === "mpesa"
-                ? "M-Pesa transaction ID"
-                : "Card last 4 digits"
-            }
-            value={referenceNumber}
-            onChange={(e) => setReferenceNumber(e.target.value)}
-          />
-        </div>
+        <Alert className="mb-4 bg-green-50 text-green-700 border-green-200">
+          <CheckCircle className="h-4 w-4 text-green-600" />
+          <AlertDescription>{successMessage}</AlertDescription>
+        </Alert>
       )}
 
       {/* Order Summary */}
@@ -224,43 +106,28 @@ export const CheckoutBar = ({
       </div>
 
       <Button
-        className="w-full "
+        className="w-full h-12 text-lg"
         onClick={handleCheckout}
-        disabled={total <= 0 || isLoading || itemCount === 0}
+        disabled={total <= 0 || itemCount === 0}
       >
-        {isLoading ? (
-          <>
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            Processing...
-          </>
-        ) : selectedPaymentMethod === "cash" ? (
-          "Complete Order"
-        ) : (
-          "Proceed to Payment"
-        )}
+        Pay KES {total.toFixed(2)}
       </Button>
 
-      {/* Payment Modal for non-cash payments */}
-      {createdSale && (
-        <PaymentModal
-          isOpen={showPaymentModal}
-          onClose={() => {
-            setShowPaymentModal(false);
-            setCreatedSale(null);
-          }}
-          sale={createdSale}
-          onPaymentComplete={handlePaymentComplete}
-        />
-      )}
+      {/* Payment Modal */}
+      <PaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        total={total}
+        onProcessPayment={handleProcessPayment}
+        onPaymentComplete={handlePaymentComplete}
+      />
 
       {/* Receipt Modal */}
-      {completedSale && (
-        <Receipt
-          isOpen={showReceipt}
-          onClose={handleReceiptClose}
-          sale={completedSale}
-        />
-      )}
+      <Receipt
+        open={showReceipt}
+        onClose={handleReceiptClose}
+        sale={completedSale}
+      />
     </div>
   );
 };

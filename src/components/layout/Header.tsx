@@ -137,6 +137,11 @@ const Header = ({
               </div>
             )}
 
+            {/* Open POS Button */}
+            <Button variant="outline" size="sm" className="hidden sm:flex" asChild>
+              <a href="/pos">Open POS</a>
+            </Button>
+
             {/* Notification Bell and Theme Toggle - Aligned together */}
             <div className="flex items-center gap-1">
               {/* Notification Bell */}

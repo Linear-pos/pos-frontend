@@ -1,10 +1,9 @@
 import { axiosInstance } from '../../../services/api';
-import type { 
-  Product, 
-  CreateProductPayload, 
-  UpdateProductPayload, 
+import type {
+  Product,
+  CreateProductPayload,
+  UpdateProductPayload,
   ProductsListResponse,
-  ProductResponse 
 } from '../../../types/product';
 
 interface ProductsQueryParams {
@@ -18,15 +17,33 @@ interface ProductsQueryParams {
   sort_order?: 'asc' | 'desc';
 }
 
+interface BackendListResponse<T> {
+  success: boolean;
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+  message: string;
+}
+
+interface BackendSingleResponse<T> {
+  success: boolean;
+  data: T;
+  message: string;
+}
+
 export const productsAPI = {
   /**
    * Get all products with pagination, search, filters, and sorting
    */
   getProducts: async (params?: ProductsQueryParams): Promise<ProductsListResponse> => {
-    const response = await axiosInstance.get<ProductsListResponse>('/products', {
+    const response = await axiosInstance.get<BackendListResponse<Product>>('/products', {
       params: {
         page: params?.page || 1,
-        per_page: params?.per_page || 20,
+        limit: params?.per_page || 20, // Backend uses 'limit', Frontend types use 'per_page'
         ...(params?.search && { search: params.search }),
         ...(params?.category && { category: params.category }),
         ...(params?.is_active !== undefined && { is_active: params.is_active }),
@@ -35,31 +52,41 @@ export const productsAPI = {
         ...(params?.sort_order && { sort_order: params.sort_order }),
       },
     });
-    return response.data;
+
+    // Map Backend pagination to Frontend (Laravel-style) expectation
+    const { data, pagination } = response.data;
+
+    return {
+      data: data,
+      current_page: pagination.page,
+      last_page: pagination.pages,
+      per_page: pagination.limit,
+      total: pagination.total
+    };
   },
 
   /**
    * Get a single product by ID
    */
   getProduct: async (id: string): Promise<Product> => {
-    const response = await axiosInstance.get<Product>(`/products/${id}`);
-    return response.data;
+    const response = await axiosInstance.get<BackendSingleResponse<Product>>(`/products/${id}`);
+    return response.data.data;
   },
 
   /**
    * Create a new product
    */
   createProduct: async (payload: CreateProductPayload): Promise<Product> => {
-    const response = await axiosInstance.post<ProductResponse>('/products', payload);
-    return response.data.data || response.data as any;
+    const response = await axiosInstance.post<BackendSingleResponse<Product>>('/products', payload);
+    return response.data.data;
   },
 
   /**
    * Update an existing product
    */
   updateProduct: async (id: string, payload: UpdateProductPayload): Promise<Product> => {
-    const response = await axiosInstance.put<ProductResponse>(`/products/${id}`, payload);
-    return response.data.data || response.data as any;
+    const response = await axiosInstance.put<BackendSingleResponse<Product>>(`/products/${id}`, payload);
+    return response.data.data;
   },
 
   /**
@@ -89,11 +116,11 @@ export const productsAPI = {
    * Get products that need reordering
    */
   getProductsNeedingReorder: async (): Promise<Product[]> => {
-    const response = await axiosInstance.get<ProductsListResponse>('/products', {
-      params: { per_page: 1000 }, // Get all with high limit
-    });
-    
-    return response.data.data.filter(p => productsAPI.needsReorder(p));
+    // This logic performs a full fetch, which is inefficient but matches original logic.
+    // Ideally backend should support ?low_stock=true, which it does now!
+    // Optimized implementation:
+    const response = await productsAPI.getProducts({ low_stock: true, per_page: 100 });
+    return response.data;
   },
 };
 

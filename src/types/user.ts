@@ -14,6 +14,7 @@ export interface User {
   role_id?: string;
   tenant_id?: string;
   branch_id?: string | null;
+  is_active?: boolean;
   avatar?: string;
   created_at?: string;
   updated_at?: string;
