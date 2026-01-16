@@ -11,7 +11,10 @@ import PagePlaceholder from "@/components/common/PagePlaceholder";
 const POSTerminal = lazy(() => import("../features/pos/pages/POSTerminal").then(module => ({ default: module.POSTerminal }))); // Updated path
 const LoginPage = lazy(() => import("../features/auth/LoginPage").then(module => ({ default: module.LoginPage })));
 const Products = lazy(() => import("../features/products/pages/Products"));
+const InventoryPage = lazy(() => import("../features/products/pages/InventoryPage"));
 const SalesHistory = lazy(() => import("../features/sales/SalesHistory"));
+const DashboardOverview = lazy(() => import("../features/dashboard/pages/DashboardOverview"));
+const AnalyticsPage = lazy(() => import("../features/dashboard/pages/AnalyticsPage"));
 
 // Loading component
 const LoadingFallback = () => (
@@ -80,7 +83,13 @@ export const router = createBrowserRouter([
               },
               {
                 path: "overview",
-                element: <PagePlaceholder pageName="Dashboard Overview" />,
+                element: (
+                  <RouteErrorBoundary routeName="Overview">
+                    <Suspense fallback={<LoadingFallback />}>
+                      <DashboardOverview />
+                    </Suspense>
+                  </RouteErrorBoundary>
+                ),
               },
               {
                 path: "products",
@@ -107,8 +116,24 @@ export const router = createBrowserRouter([
                 ),
               },
               {
+                path: "analytics",
+                element: (
+                  <RouteErrorBoundary routeName="Analytics">
+                    <Suspense fallback={<LoadingFallback />}>
+                      <AnalyticsPage />
+                    </Suspense>
+                  </RouteErrorBoundary>
+                ),
+              },
+              {
                 path: "inventory",
-                element: <PagePlaceholder pageName="Inventory Management" />,
+                element: (
+                  <RouteErrorBoundary routeName="Inventory">
+                    <Suspense fallback={<LoadingFallback />}>
+                      <InventoryPage />
+                    </Suspense>
+                  </RouteErrorBoundary>
+                ),
               },
               {
                 path: "reports",

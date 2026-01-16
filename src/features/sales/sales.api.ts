@@ -55,7 +55,7 @@ export const salesAPI = {
   },
 
   getSale: async (id: string): Promise<Sale> => {
-    const response = await axiosInstance.get<BackendSingleResponse<Sale>>(`/ sales / ${id} `);
+    const response = await axiosInstance.get<BackendSingleResponse<Sale>>(`/sales/${id}`);
     return salesAPI.formatSale(response.data.data); // Apply formatting automatically
   },
 

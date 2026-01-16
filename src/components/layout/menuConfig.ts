@@ -3,7 +3,7 @@ import {
   Home,
   ShoppingBag,
   Table,
-  Scan,
+  LineChart,
 } from "lucide-react";
 import type { SidebarProps } from "./Sidebar";
 
@@ -17,29 +17,19 @@ export const MenuConfig: SidebarProps = {
       label: "Main",
       items: [
         {
-          title: "POS",
-          url: "/",
-          icon: Home,
-        },
-        {
-          title: "Scanner",
-          url: "/scanner",
-          icon: Scan,
-        },
-      ],
-    },
-    {
-      label: "Management",
-      items: [
-        {
           title: "Overview",
-          url: "/dashboard/overview",
+          url: "/",
           icon: Home,
         },
         {
           title: "Sales",
           url: "/dashboard/sales",
           icon: ShoppingBag,
+        },
+        {
+          title: "Analytics",
+          url: "/dashboard/analytics",
+          icon: LineChart,
         },
         {
           title: "Products",
