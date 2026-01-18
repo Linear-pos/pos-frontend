@@ -10,7 +10,7 @@ type SortBy = "name" | "sku" | "price" | "stock_quantity" | "created_at";
 
 export const Products = () => {
   const { hasRole } = useAuth();
-  const canEdit = hasRole(["SYSTEM_OWNER", "BRANCH_MANAGER"]);
+  const canEdit = hasRole(["SYSTEM_ADMIN", "BRANCH_MANAGER"]);
 
   // State
   const [products, setProducts] = useState<Product[]>([]);
@@ -33,7 +33,7 @@ export const Products = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
 
- 
+
 
   // Fetch products
   const fetchProducts = useCallback(async () => {
@@ -139,6 +139,8 @@ export const Products = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8 animate-fade-in">
+
+
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div>
               <h1 className="text-3xl font-bold text-foreground tracking-tight">
@@ -149,7 +151,18 @@ export const Products = () => {
               </p>
             </div>
 
-           
+            {canEdit && (
+              <button
+                onClick={() => {
+                  setEditingProduct(null);
+                  setShowForm(true);
+                }}
+                className="px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-semibold shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2"
+              >
+                <span className="text-xl">+</span>
+                Add Product
+              </button>
+            )}
           </div>
 
           {/* Stats */}
@@ -245,50 +258,54 @@ export const Products = () => {
       </div>
 
       {/* Product Form Modal */}
-      {showForm && (
-        <ProductForm
-          product={editingProduct}
-          onSubmit={handleFormSubmit}
-          onClose={() => {
-            setShowForm(false);
-            setEditingProduct(null);
-          }}
-          loading={loading}
-        />
-      )}
+      {
+        showForm && (
+          <ProductForm
+            product={editingProduct}
+            onSubmit={handleFormSubmit}
+            onClose={() => {
+              setShowForm(false);
+              setEditingProduct(null);
+            }}
+            loading={loading}
+          />
+        )
+      }
 
       {/* Delete Confirmation Modal */}
-      {deletingProduct && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-card text-card-foreground rounded-lg shadow-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-bold text-foreground mb-2">
-              Delete Product?
-            </h3>
-            <p className="text-muted-foreground mb-4">
-              Are you sure you want to delete{" "}
-              <strong>{deletingProduct.name}</strong>? This action cannot be
-              undone.
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setDeletingProduct(null)}
-                disabled={loading}
-                className="px-4 py-2 bg-muted hover:bg-muted/80 text-foreground rounded-lg font-medium transition disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmDelete}
-                disabled={loading}
-                className="px-4 py-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-lg font-medium transition disabled:opacity-50"
-              >
-                {loading ? "Deleting..." : "Delete"}
-              </button>
+      {
+        deletingProduct && (
+          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-card text-card-foreground rounded-lg shadow-xl max-w-md w-full p-6">
+              <h3 className="text-lg font-bold text-foreground mb-2">
+                Delete Product?
+              </h3>
+              <p className="text-muted-foreground mb-4">
+                Are you sure you want to delete{" "}
+                <strong>{deletingProduct.name}</strong>? This action cannot be
+                undone.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setDeletingProduct(null)}
+                  disabled={loading}
+                  className="px-4 py-2 bg-muted hover:bg-muted/80 text-foreground rounded-lg font-medium transition disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={loading}
+                  className="px-4 py-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-lg font-medium transition disabled:opacity-50"
+                >
+                  {loading ? "Deleting..." : "Delete"}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 };
 

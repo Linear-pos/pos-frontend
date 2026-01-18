@@ -12,14 +12,10 @@ import type { BarcodeLookupResponse } from "@/types/product";
 export const PosPage = () => {
   const {
     items,
-    subtotal,
-    tax,
-    total,
     itemCount,
     addItem,
     removeItem,
     updateQuantity,
-    clearCart,
   } = useCartStore();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -41,7 +37,7 @@ export const PosPage = () => {
   const handleBarcodeScanned = async (barcode: string, product?: BarcodeLookupResponse['data']) => {
     try {
       let foundProduct: Product | null = null;
-      
+
       // Use barcode lookup API result if available
       if (product) {
         foundProduct = {
@@ -58,27 +54,27 @@ export const PosPage = () => {
         // Fallback to product search
         foundProduct = await findProductByBarcode(barcode);
       }
-      
+
       if (!foundProduct) {
         toast.error(`Product with barcode "${barcode}" not found`);
         return;
       }
-      
+
       if (foundProduct.stock_quantity <= 0) {
         toast.error(`Product "${foundProduct.name}" is out of stock`);
         return;
       }
-      
+
       addItem(foundProduct);
       toast.success(`Added "${foundProduct.name}" to cart`);
-      
+
     } catch {
       toast.error('Failed to process barcode');
     }
   };
 
 
- 
+
 
   const addToCart = (product: Product) => {
     addItem(product);
@@ -93,7 +89,7 @@ export const PosPage = () => {
   return (
     // Changed bg-neutral-50 to your theme's background variable
     <div className="flex h-screen bg-background text-foreground transition-colors duration-300">
-      
+
       {/* Left Side - Product Selection Area */}
       <main className="w-3/4 p-8 flex flex-col space-y-6 overflow-hidden">
         <header className="flex justify-between items-end">
@@ -104,7 +100,7 @@ export const PosPage = () => {
             <p className="text-muted-foreground font-medium">
               Manage items and fulfill customer orders
             </p>
-           
+
           </div>
           <div className="text-right hidden lg:block">
             <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
@@ -125,8 +121,8 @@ export const PosPage = () => {
         {/* Product Grid with better scroll area styling */}
         <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
           <ProductGrid
+            products={[]}
             onAddToCart={addToCart}
-            searchQuery={searchQuery}
           />
         </div>
       </main>
@@ -157,14 +153,7 @@ export const PosPage = () => {
 
         {/* Checkout Summary - Using secondary/accent for visibility */}
         <footer className="border-t border-border p-6 bg-muted/30 backdrop-blur-sm">
-          <CheckoutBar
-            subtotal={subtotal}
-            tax={tax}
-            total={total}
-            itemCount={itemCount}
-            items={items}
-            onCheckout={clearCart}
-          />
+          <CheckoutBar />
         </footer>
       </aside>
     </div>

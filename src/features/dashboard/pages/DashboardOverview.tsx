@@ -125,7 +125,7 @@ export const DashboardOverview = () => {
                                 <div key={sale.id} className="flex items-center">
                                     <div className="ml-4 space-y-1">
                                         <p className="text-sm font-medium leading-none">
-                                            {sale.created_at ? format(new Date(sale.created_at), "MMM dd, HH:mm") : "N/A"}
+                                            {sale.created_at || "N/A"}
                                         </p>
                                         <p className="text-sm text-muted-foreground">
                                             Ref: {sale.reference || sale.id.slice(0, 8)} | Method: {sale.payment_method}

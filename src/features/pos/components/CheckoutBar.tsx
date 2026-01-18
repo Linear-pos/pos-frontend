@@ -6,7 +6,7 @@ import type { Sale } from "@/types/sale";
 import Receipt from "@/components/receipts/Receipt";
 import PaymentModal from "@/components/payments/PaymentModal";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { CheckCircle, AlertCircle } from "lucide-react";
 
 export const CheckoutBar = () => {
   const { items, clearCart, total, itemCount } = useCartStore();

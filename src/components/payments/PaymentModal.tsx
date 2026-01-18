@@ -55,12 +55,6 @@ export const PaymentModal = ({
 
   // M-Pesa State
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [mpesaRequestID, setMpesaRequestID] = useState<string | null>(null);
-
-  // Card State
-  const [cardNumber, setCardNumber] = useState("");
-  const [expiryDate, setExpiryDate] = useState("");
-  const [cvv, setCvv] = useState("");
 
   // Common State
   const [isProcessing, setIsProcessing] = useState(false);
@@ -127,7 +121,6 @@ export const PaymentModal = ({
       });
 
       if (result.success && result.checkoutRequestID) {
-        setMpesaRequestID(result.checkoutRequestID);
         // Start polling (simplified for brevity, reuse existing polling logic)
         pollPaymentStatus(result.checkoutRequestID, currentSale);
       } else {

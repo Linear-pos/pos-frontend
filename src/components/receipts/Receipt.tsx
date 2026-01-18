@@ -16,10 +16,9 @@ const Receipt = ({ open, onClose, sale }: ReceiptProps) => {
   const componentRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = useReactToPrint({
-    content: () => componentRef.current,
+    contentRef: componentRef,
     documentTitle: `Receipt-${sale?.id}`,
     onAfterPrint: () => console.log("Printed"),
-    removeAfterPrint: true
   });
 
   if (!sale) return null;

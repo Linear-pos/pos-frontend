@@ -77,7 +77,13 @@ export const LoginPage = () => {
         ? response.user.role
         : response.user.role?.name;
 
-      if (['SYSTEM_OWNER', 'BRANCH_MANAGER'].includes(userRole as string)) {
+      console.log('[LoginPage] Login Success:', {
+        role: userRole,
+        user: response.user,
+        target: ['SYSTEM_ADMIN', 'BRANCH_MANAGER'].includes(userRole as string) ? '/dashboard' : '/pos'
+      });
+
+      if (['SYSTEM_ADMIN', 'BRANCH_MANAGER'].includes(userRole as string)) {
         navigate("/dashboard");
       } else {
         navigate("/pos");
@@ -131,8 +137,8 @@ export const LoginPage = () => {
                 onChange={handleChange}
                 disabled={isLoading}
                 className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary transition ${validationErrors.email
-                    ? "border-error focus:ring-error"
-                    : "border-input"
+                  ? "border-error focus:ring-error"
+                  : "border-input"
                   } ${isLoading ? "bg-muted cursor-not-allowed" : "bg-background"
                   }`}
                 placeholder="Enter your email"
@@ -161,8 +167,8 @@ export const LoginPage = () => {
                 onChange={handleChange}
                 disabled={isLoading}
                 className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 transition ${validationErrors.password
-                    ? "border-error-500 focus:ring-error-500"
-                    : "border-neutral-300"
+                  ? "border-error-500 focus:ring-error-500"
+                  : "border-neutral-300"
                   } ${isLoading ? "bg-neutral-100 cursor-not-allowed" : "bg-white"
                   }`}
                 placeholder="Enter your password"
@@ -178,7 +184,7 @@ export const LoginPage = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 disabled:cursor-not-allowed text-white font-semibold py-2 px-4 rounded-lg transition duration-200"
+              className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 disabled:cursor-not-allowed font-semibold py-2 px-4 rounded-lg transition duration-200"
             >
               {isLoading ? (
                 <div className="flex items-center justify-center">
@@ -210,18 +216,7 @@ export const LoginPage = () => {
             </button>
           </form>
 
-          {/* Demo Credentials Info */}
-          <div className="mt-6 p-4 bg-info-50 rounded-lg border border-info-200">
-            <p className="text-xs text-muted-foreground mb-2 font-semibold">
-              Demo Credentials:
-            </p>
-            <p className="text-xs text-muted-foreground">
-              <span className="font-medium">Email:</span> admin@pos.test
-            </p>
-            <p className="text-xs text-muted-foreground">
-              <span className="font-medium">Password:</span> password
-            </p>
-          </div>
+
         </div>
       </div>
     </div>

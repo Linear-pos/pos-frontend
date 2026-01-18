@@ -71,7 +71,7 @@ export const router = createBrowserRouter([
       // For now, Managers access these. Cashiers redirected to POS by ProtectedLayout Bouncer if they try.
       // Dashboard / Admin Routes (Manager Only)
       {
-        element: <ProtectedLayout requiredRole={['SYSTEM_OWNER', 'BRANCH_MANAGER']} />,
+        element: <ProtectedLayout requiredRole={['SYSTEM_ADMIN', 'BRANCH_MANAGER']} />,
         children: [
           {
             path: "dashboard",

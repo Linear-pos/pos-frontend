@@ -26,6 +26,13 @@ export const ProtectedLayout = ({ requiredRole }: ProtectedLayoutProps) => {
         ? user.role as UserRole
         : user?.role?.name as UserRole;
 
+    console.log('[ProtectedLayout] Check:', {
+        path: location.pathname,
+        userRole,
+        requiredRole,
+        userIsAuthenticated: isAuthenticated
+    });
+
     // Global "Bouncer" Logic
 
     // 1. If Cashier tries to access Dashboard -> Redirect to POS

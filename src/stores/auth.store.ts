@@ -8,7 +8,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  
+
   setAuth: (payload: AuthResponse) => void;
   setUser: (user: User | null) => void;
   setToken: (token: string | null) => void;
@@ -30,15 +30,30 @@ export const useAuthStore = create<AuthState>()(
       error: null,
 
       setAuth: (payload: AuthResponse) => {
+        console.log('[AuthStore.setAuth] ENTRY - Raw payload:', JSON.stringify(payload, null, 2));
+
         // Handle both 'token' and 'access_token' field names from backend
         const token = payload.token || (payload as any).access_token;
-        
+
+        console.log('[AuthStore.setAuth] Before normalization - role:', payload.user.role, 'type:', typeof payload.user.role);
+
+        // Normalize role name (Client Migration: SYSTEM_ADMIN -> SYSTEM_ADMIN)
+        if (payload.user.role === 'SYSTEM_ADMIN' as any) {
+          console.log('[AuthStore.setAuth] Normalizing SYSTEM_ADMIN -> SYSTEM_ADMIN');
+          payload.user.role = 'SYSTEM_ADMIN';
+        }
+
+        console.log('[AuthStore.setAuth] After normalization - role:', payload.user.role);
+        console.log('[AuthStore.setAuth] Full user object:', JSON.stringify(payload.user, null, 2));
+
         set({
           user: payload.user,
           token,
           isAuthenticated: true,
           error: null,
         });
+
+        console.log('[AuthStore.setAuth] EXIT - State updated');
       },
 
       setUser: (user: User | null) => {
@@ -73,14 +88,14 @@ export const useAuthStore = create<AuthState>()(
       hasRole: (roles: string | string[]) => {
         const { user } = get();
         if (!user) return false;
-        
+
         const roleArray = Array.isArray(roles) ? roles : [roles];
-        
+
         // Handle case where role is an object with a name property
-        const userRole = typeof user.role === 'string' 
-          ? user.role 
+        const userRole = typeof user.role === 'string'
+          ? user.role
           : user.role?.name;
-        
+
         if (!userRole) return false;
         return roleArray.includes(userRole);
       },
@@ -88,19 +103,19 @@ export const useAuthStore = create<AuthState>()(
       hasPermission: (permission: string) => {
         const { user } = get();
         if (!user) return false;
-        
+
         // Get user role name
-        const userRole = typeof user.role === 'string' 
-          ? user.role 
+        const userRole = typeof user.role === 'string'
+          ? user.role
           : user.role?.name;
-        
+
         // Map roles to permissions
         const rolePermissions: Record<string, string[]> = {
-          SYSTEM_OWNER: ['read', 'create', 'update', 'delete', 'manage_users'],
+          SYSTEM_ADMIN: ['read', 'create', 'update', 'delete', 'manage_users'],
           BRANCH_MANAGER: ['read', 'create', 'update', 'delete'],
           CASHIER: ['read', 'create'],
         };
-        
+
         const permissions = rolePermissions[userRole!] || [];
         return permissions.includes(permission);
       },

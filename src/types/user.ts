@@ -1,4 +1,4 @@
-export type UserRole = 'SYSTEM_OWNER' | 'BRANCH_MANAGER' | 'CASHIER';
+export type UserRole = 'SYSTEM_ADMIN' | 'BRANCH_MANAGER' | 'CASHIER';
 
 export interface Role {
   id: string;

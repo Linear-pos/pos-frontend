@@ -1,9 +1,9 @@
 import { axiosInstance } from '../../services/api';
-import type { 
-  Sale, 
-  CreateSalePayload, 
+import type {
+  Sale,
+  CreateSalePayload,
   SalesListResponse,
-  SaleResponse 
+  SaleResponse
 } from '../../types/sale';
 
 interface SalesQueryParams {
@@ -19,7 +19,7 @@ export const salesAPI = {
    * Get all sales with pagination and optional filters
    */
   getSales: async (params?: SalesQueryParams): Promise<SalesListResponse> => {
-    const response = await axiosInstance.get<SalesListResponse>('/sales', {
+    const response = await axiosInstance.get('/sales', {
       params: {
         page: params?.page || 1,
         per_page: params?.per_page || 15,
@@ -28,9 +28,16 @@ export const salesAPI = {
         ...(params?.end_date && { end_date: params.end_date }),
       },
     });
+
+    // Backend returns {success, data: [...], pagination}
+    const { data, pagination } = response.data;
+
     return {
-      ...response.data,
-      data: response.data.data.map(sale => salesAPI.formatSale(sale))
+      data: data.map((sale: Sale) => salesAPI.formatSale(sale)),
+      current_page: pagination.page,
+      last_page: pagination.pages,
+      per_page: pagination.limit,
+      total: pagination.total
     };
   },
 
@@ -71,12 +78,12 @@ export const salesAPI = {
   getTotalSales: async (startDate: string, endDate: string): Promise<number> => {
     const response = await salesAPI.getSalesByDateRange(startDate, endDate, 1);
     const allSales = await Promise.all(
-      Array.from({ length: response.last_page }, (_, i) => 
+      Array.from({ length: response.last_page }, (_, i) =>
         salesAPI.getSalesByDateRange(startDate, endDate, i + 1)
       )
     );
-    
-    return allSales.reduce((sum: number, page) => 
+
+    return allSales.reduce((sum: number, page) =>
       sum + page.data.reduce((total: number, sale) => total + sale.total, 0), 0
     );
   },
@@ -97,14 +104,25 @@ export const salesAPI = {
   },
 
   /**
-   * Format sale for display
+   * Format sale for display - maps backend camelCase to frontend snake_case
    */
-  formatSale: (sale: Sale): Sale => {
+  formatSale: (sale: any): Sale => {
     return {
-      ...sale,
+      id: sale.id,
+      user_id: sale.userId || sale.user_id,
+      branch_id: sale.branchId || sale.branch_id,
       subtotal: Number(sale.subtotal),
       tax: Number(sale.tax),
       total: Number(sale.total),
+      payment_method: sale.paymentMethod || sale.payment_method,
+      status: sale.status,
+      reference: sale.reference,
+      notes: sale.notes,
+      created_at: sale.createdAt || sale.created_at,
+      updated_at: sale.updatedAt || sale.updated_at || sale.createdAt || sale.created_at,
+      items: sale.items,
+      user: sale.user,
+      branch: sale.branch
     };
   },
 };

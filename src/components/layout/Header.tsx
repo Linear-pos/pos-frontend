@@ -2,25 +2,9 @@ import { useState } from "react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Search,
-  Sun,
-  Moon,
-  User,
-  LogOut,
-  Settings,
-  X,
-  //   Bell,
-} from "lucide-react";
+import { Search, Sun, Moon, X } from "lucide-react";
 import { useTheme } from "@/app/providers/ThemeProvider";
+import { ProfileDropdown } from "@/components/common/ProfileDropdown";
 
 interface BreadcrumbItem {
   label: string;
@@ -29,38 +13,19 @@ interface BreadcrumbItem {
 
 interface HeaderProps {
   title: string;
-  // subtitle?: string;
   breadcrumbs?: BreadcrumbItem[];
   showSearch?: boolean;
-  showUserMenu?: boolean;
-  showViewSwitch?: boolean;
   showNotifications?: boolean;
-  userInfo?: {
-    name: string;
-    email: string;
-    avatar?: string;
-    initials: string;
-  };
   onSearch?: (query: string) => void;
   onNotificationClick?: () => void;
-  onProfileClick?: () => void;
-  onSettingsClick?: () => void;
-  onSwitchUserView?: () => void;
-  onLogoutClick?: () => void;
 }
 
 const Header = ({
   title,
-  // subtitle,
   showSearch = false,
-  showUserMenu = false,
   showNotifications,
-  userInfo,
   onSearch,
   onNotificationClick,
-  onProfileClick,
-  onSettingsClick,
-  onLogoutClick,
 }: HeaderProps) => {
   const [searchActive, setSearchActive] = useState(false);
   const [query, setQuery] = useState("");
@@ -137,12 +102,7 @@ const Header = ({
               </div>
             )}
 
-            {/* Open POS Button */}
-            <Button variant="outline" size="sm" className="hidden sm:flex" asChild>
-              <a href="/pos">Open POS</a>
-            </Button>
-
-            {/* Notification Bell and Theme Toggle - Aligned together */}
+            {/* Theme Toggle and Profile Dropdown */}
             <div className="flex items-center gap-1">
               {/* Notification Bell */}
               {showNotifications && (
@@ -152,8 +112,6 @@ const Header = ({
                   className="h-9 w-9 relative"
                   onClick={onNotificationClick}
                 >
-                  {/* <NotificationBell  */}
-
                   <span className="sr-only">Notifications</span>
                 </Button>
               )}
@@ -171,48 +129,10 @@ const Header = ({
                 <Sun className="h-4 w-4 dark:hidden" />
                 <Moon className="h-4 w-4 hidden dark:inline" />
               </Button>
-            </div>
 
-            {/* User Menu */}
-            {showUserMenu && userInfo && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm">
-                    <User className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" forceMount>
-                  <DropdownMenuLabel className="font-normal">
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">
-                        {userInfo.name}
-                      </p>
-                      <p className="text-xs leading-none text-muted-foreground">
-                        {userInfo.email}
-                      </p>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={onProfileClick}>
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Profile</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={onSettingsClick}>
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Settings</span>
-                  </DropdownMenuItem>
-                  {/* <DropdownMenuItem onClick={onSwitchUserView}>
-                    <ArrowRightLeft className="mr-2 h-4 w-4" />
-                    <span>Switch View</span>
-                  </DropdownMenuItem> */}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={onLogoutClick}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Log out</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+              {/* Profile Dropdown */}
+              <ProfileDropdown variant="ghost" size="sm" showAvatar={true} />
+            </div>
           </div>
         </div>
       </header>

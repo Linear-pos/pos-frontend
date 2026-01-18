@@ -14,14 +14,10 @@ export const POSTerminal = () => {
     // Cart Store
     const {
         items,
-        subtotal,
-        tax,
-        total,
         itemCount,
         addItem,
         removeItem,
         updateQuantity,
-        clearCart,
     } = useCartStore();
 
     // Local State
@@ -149,14 +145,7 @@ export const POSTerminal = () => {
 
                 {/* Checkout */}
                 <div className="p-4 border-t border-border bg-background">
-                    <CheckoutBar
-                        subtotal={subtotal}
-                        tax={tax}
-                        total={total}
-                        itemCount={itemCount}
-                        items={items}
-                        onCheckout={clearCart}
-                    />
+                    <CheckoutBar />
                 </div>
             </aside>
 

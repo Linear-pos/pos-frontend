@@ -20,6 +20,29 @@ export const ProductTable = ({
   onEdit,
   onDelete,
 }: ProductTableProps) => {
+  // Helper function to format stock display based on unit type
+  const formatStock = (product: Product) => {
+    const { stock_quantity, unit, unit_size } = product;
+
+    // Default to 'pcs' if no unit specified
+    const displayUnit = unit || "pcs";
+
+    // Countable units - just show quantity + unit
+    const countableUnits = ['pcs', 'pieces', 'boxes', 'bottles', 'cans', 'packets', 'units'];
+    if (countableUnits.includes(displayUnit.toLowerCase())) {
+      return `${stock_quantity} ${displayUnit}`;
+    }
+
+    // Volume/weight units - show with context if unit_size exists
+    if (unit_size && unit_size > 0) {
+      // e.g., "10 x 30ml" or "5 x 500g"
+      return `${stock_quantity} × ${unit_size}${displayUnit}`;
+    }
+
+    // Fallback - show quantity with unit
+    return `${stock_quantity} ${displayUnit}`;
+  };
+
   if (loading && products.length === 0) {
     return (
       <div className="bg-card text-card-foreground rounded-lg shadow p-8 text-center">
@@ -93,7 +116,7 @@ export const ProductTable = ({
                         )}
                       </p>
                       {product.description && (
-                         <p className="text-sm text-muted-foreground truncate">
+                        <p className="text-sm text-muted-foreground truncate">
                           {product.description}
                         </p>
                       )}
@@ -102,21 +125,21 @@ export const ProductTable = ({
 
                   {/* SKU */}
                   <td className="px-6 py-4">
-                     <code className="bg-muted px-2 py-1 rounded text-sm text-muted-foreground">
+                    <code className="bg-muted px-2 py-1 rounded text-sm text-muted-foreground">
                       {product.sku}
                     </code>
                   </td>
 
                   {/* Category */}
                   <td className="px-6 py-4">
-                     <span className="inline-block bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
+                    <span className="inline-block bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
                       {product.category || "Uncategorized"}
                     </span>
                   </td>
 
                   {/* Price */}
                   <td className="px-6 py-4 text-right">
-                     <p className="font-semibold text-foreground">
+                    <p className="font-semibold text-foreground">
                       {new Intl.NumberFormat("en-KE", {
                         style: "currency",
                         currency: "KES",
@@ -129,25 +152,24 @@ export const ProductTable = ({
                     )} */}
                   </td>
 
-                  {/* Stock */}
+                  {/* Stock - Updated with smart formatting */}
                   <td className="px-6 py-4 text-right">
                     <div className="flex flex-col items-end gap-1">
                       <p
-                        className={`font-semibold ${
-                          isLowStock
+                        className={`font-semibold ${isLowStock
                             ? "text-error-600"
                             : needsReorder
-                            ? "text-warning-600"
-                            : "text-success-600"
-                        }`}
+                              ? "text-warning-600"
+                              : "text-success-600"
+                          }`}
                       >
-                        {product.stock_quantity} {product.unit || "pcs"}
+                        {formatStock(product)}
                       </p>
-                       <p className="text-xs text-muted-foreground">
-                         Reorder at: {product.reorder_level}
-                       </p>
+                      <p className="text-xs text-muted-foreground">
+                        Reorder at: {product.reorder_level}
+                      </p>
                       {needsReorder && (
-                         <span className="inline-block bg-warning-100 text-warning-800 dark:bg-warning-900/20 dark:text-warning-300 px-2 py-0.5 rounded text-xs font-medium">
+                        <span className="inline-block bg-warning-100 text-warning-800 dark:bg-warning-900/20 dark:text-warning-300 px-2 py-0.5 rounded text-xs font-medium">
                           ⚠️ Low Stock
                         </span>
                       )}
@@ -157,11 +179,10 @@ export const ProductTable = ({
                   {/* Status */}
                   <td className="px-6 py-4 text-center">
                     <span
-                      className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                         product.is_active
-                           ? "bg-success-100 text-success-700 dark:bg-success-900/20 dark:text-success-300"
-                           : "bg-muted text-muted-foreground"
-                      }`}
+                      className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${product.is_active
+                          ? "bg-success-100 text-success-700 dark:bg-success-900/20 dark:text-success-300"
+                          : "bg-muted text-muted-foreground"
+                        }`}
                     >
                       {product.is_active ? "Active" : "Inactive"}
                     </span>

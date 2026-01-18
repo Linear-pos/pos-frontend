@@ -11,6 +11,7 @@ type FormDataState = {
   stock_quantity: number;
   reorder_level: number;
   unit: 'pcs' | 'ml' | 'g' | 'l' | 'm';
+  unit_size?: number;
   is_active: boolean;
 };
 
@@ -37,13 +38,17 @@ export const ProductForm = ({
     stock_quantity: 0,
     reorder_level: 10,
     unit: "pcs",
+    unit_size: undefined,
     is_active: true,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Determine if unit_size field should be shown
+  const showUnitSize = ['ml', 'g', 'l', 'm'].includes(formData.unit);
+
   useEffect(() => {
-     
+
     if (product) {
       setFormData({
         name: product.name,
@@ -55,6 +60,7 @@ export const ProductForm = ({
         stock_quantity: product.stock_quantity,
         reorder_level: product.reorder_level,
         unit: product.unit || "pcs",
+        unit_size: product.unit_size,
         is_active: product.is_active,
       });
     }
@@ -75,12 +81,24 @@ export const ProductForm = ({
       newErrors.price = "Price must be greater than 0";
     }
 
+    if (formData.cost < 0) {
+      newErrors.cost = "Cost cannot be negative";
+    }
+
+    if (formData.cost > formData.price) {
+      newErrors.cost = "Cost cannot exceed selling price";
+    }
+
     if (formData.stock_quantity < 0) {
       newErrors.stock_quantity = "Stock quantity cannot be negative";
     }
 
     if (formData.reorder_level < 0) {
       newErrors.reorder_level = "Reorder level cannot be negative";
+    }
+
+    if (showUnitSize && formData.unit_size && formData.unit_size <= 0) {
+      newErrors.unit_size = "Unit size must be greater than 0";
     }
 
     setErrors(newErrors);
@@ -92,18 +110,20 @@ export const ProductForm = ({
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >
   ) => {
-    const { name, value, type } = e.target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
+    const { name, value, type } = e.target;
+    let processedValue: any = value;
+
+    if (type === "checkbox") {
+      processedValue = (e.target as HTMLInputElement).checked;
+    } else if (name === "price" || name === "cost" || name === "unit_size") {
+      processedValue = parseFloat(value) || (name === "unit_size" ? undefined : 0);
+    } else if (name === "stock_quantity" || name === "reorder_level") {
+      processedValue = parseInt(value) || 0;
+    }
 
     setFormData((prev) => ({
       ...prev,
-      [name]:
-        type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
-      [name]:
-        name === "price" || name === "cost" ? parseFloat(value) || 0 : value,
-      [name]:
-        name === "stock_quantity" || name === "reorder_level"
-          ? parseInt(value) || 0
-          : value,
+      [name]: processedValue,
     }));
 
     // Clear error for this field
@@ -160,11 +180,10 @@ export const ProductForm = ({
               value={formData.name}
               onChange={handleChange}
               disabled={loading}
-              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 text-foreground placeholder-muted-foreground ${
-                errors.name
-                  ? "border-red-500 focus:ring-red-500"
-                  : "border-input focus:ring-ring"
-              } disabled:opacity-50 disabled:bg-muted`}
+              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 text-foreground placeholder-muted-foreground ${errors.name
+                ? "border-red-500 focus:ring-red-500"
+                : "border-input focus:ring-ring"
+                } disabled:opacity-50 disabled:bg-muted`}
               placeholder="e.g., Laptop Dell XPS 13"
             />
             {errors.name && (
@@ -184,11 +203,10 @@ export const ProductForm = ({
                 value={formData.sku}
                 onChange={handleChange}
                 disabled={loading || !!product}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 text-foreground placeholder-muted-foreground ${
-                  errors.sku
-                    ? "border-red-500 focus:ring-red-500"
-                    : "border-input focus:ring-ring"
-                } disabled:opacity-50 disabled:bg-muted disabled:text-muted-foreground`}
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 text-foreground placeholder-muted-foreground ${errors.sku
+                  ? "border-red-500 focus:ring-red-500"
+                  : "border-input focus:ring-ring"
+                  } disabled:opacity-50 disabled:bg-muted disabled:text-muted-foreground`}
                 placeholder="e.g., SKU-001"
               />
               {errors.sku && (
@@ -208,11 +226,10 @@ export const ProductForm = ({
                 disabled={loading}
                 step="0.01"
                 min="0"
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 text-foreground placeholder-muted-foreground ${
-                  errors.price
-                    ? "border-red-500 focus:ring-red-500"
-                    : "border-input focus:ring-ring"
-                } disabled:opacity-50 disabled:bg-muted`}
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 text-foreground placeholder-muted-foreground ${errors.price
+                  ? "border-red-500 focus:ring-red-500"
+                  : "border-input focus:ring-ring"
+                  } disabled:opacity-50 disabled:bg-muted`}
                 placeholder="0.00"
               />
               {errors.price && (
@@ -235,9 +252,15 @@ export const ProductForm = ({
                 disabled={loading}
                 step="0.01"
                 min="0"
-                className="w-full px-4 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-foreground placeholder-muted-foreground disabled:opacity-50 disabled:bg-muted"
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 text-foreground placeholder-muted-foreground ${errors.cost
+                    ? "border-red-500 focus:ring-red-500"
+                    : "border-input focus:ring-ring"
+                  } disabled:opacity-50 disabled:bg-muted`}
                 placeholder="0.00"
               />
+              {errors.cost && (
+                <p className="mt-1 text-sm text-red-600">{errors.cost}</p>
+              )}
             </div>
 
             <div>
@@ -262,6 +285,32 @@ export const ProductForm = ({
               </select>
             </div>
           </div>
+
+          {/* Conditional Unit Size Field */}
+          {showUnitSize && (
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Unit Size ({formData.unit}) <span className="text-muted-foreground text-xs">e.g., 500 for 500ml bottle</span>
+              </label>
+              <input
+                type="number"
+                name="unit_size"
+                value={formData.unit_size || ""}
+                onChange={handleChange}
+                disabled={loading}
+                step="0.01"
+                min="0"
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 text-foreground placeholder-muted-foreground ${errors.unit_size
+                    ? "border-red-500 focus:ring-red-500"
+                    : "border-input focus:ring-ring"
+                  } disabled:opacity-50 disabled:bg-muted`}
+                placeholder={`Size in ${formData.unit}`}
+              />
+              {errors.unit_size && (
+                <p className="mt-1 text-sm text-red-600">{errors.unit_size}</p>
+              )}
+            </div>
+          )}
 
           {/* Category */}
           <div>
@@ -308,11 +357,10 @@ export const ProductForm = ({
                 onChange={handleChange}
                 disabled={loading}
                 min="0"
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 text-foreground placeholder-muted-foreground ${
-                  errors.stock_quantity
-                    ? "border-red-500 focus:ring-red-500"
-                    : "border-input focus:ring-ring"
-                } disabled:opacity-50 disabled:bg-muted`}
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 text-foreground placeholder-muted-foreground ${errors.stock_quantity
+                  ? "border-red-500 focus:ring-red-500"
+                  : "border-input focus:ring-ring"
+                  } disabled:opacity-50 disabled:bg-muted`}
                 placeholder="0"
               />
               {errors.stock_quantity && (
@@ -333,11 +381,10 @@ export const ProductForm = ({
                 onChange={handleChange}
                 disabled={loading}
                 min="0"
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 text-foreground placeholder-muted-foreground ${
-                  errors.reorder_level
-                    ? "border-red-500 focus:ring-red-500"
-                    : "border-input focus:ring-ring"
-                } disabled:opacity-50 disabled:bg-muted`}
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 text-foreground placeholder-muted-foreground ${errors.reorder_level
+                  ? "border-red-500 focus:ring-red-500"
+                  : "border-input focus:ring-ring"
+                  } disabled:opacity-50 disabled:bg-muted`}
                 placeholder="10"
               />
               {errors.reorder_level && (
@@ -373,9 +420,9 @@ export const ProductForm = ({
               <strong>Profit Margin:</strong>{" "}
               {formData.cost > 0
                 ? (
-                    ((formData.price - formData.cost) / formData.price) *
-                    100
-                  ).toFixed(1) + "%"
+                  ((formData.price - formData.cost) / formData.price) *
+                  100
+                ).toFixed(1) + "%"
                 : "N/A"}
             </p>
           </div>
@@ -398,8 +445,8 @@ export const ProductForm = ({
               {loading
                 ? "Saving..."
                 : product
-                ? "Update Product"
-                : "Create Product"}
+                  ? "Update Product"
+                  : "Create Product"}
             </button>
           </div>
         </form>

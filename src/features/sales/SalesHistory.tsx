@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { salesAPI } from "../sales/api";
+import { salesAPI } from "./api";
 import type { Sale } from "@/types/sale";
 import Receipt from "@/components/receipts/Receipt";
 import { format } from "date-fns";
@@ -26,7 +26,7 @@ const SalesHistory = () => {
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<string>("all");
-  const [dateRange, setDateRange] = useState<string>("today");
+  const [dateRange, setDateRange] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
@@ -421,7 +421,7 @@ const SalesHistory = () => {
       {/* Receipt Modal */}
       {selectedSale && (
         <Receipt
-          isOpen={showReceipt}
+          open={showReceipt}
           onClose={() => {
             setShowReceipt(false);
             setSelectedSale(null);
