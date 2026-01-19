@@ -13,11 +13,13 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { Link } from "react-router-dom"
+import { useAuthStore } from "@/stores/auth.store"
 
 export interface MenuItem {
   title: string
   url: string
   icon: React.ComponentType<{ className?: string }>
+  roles?: string[] // Optional: restrict to specific roles
 }
 
 export interface MenuGroup {
@@ -34,13 +36,36 @@ export interface SidebarProps {
   footerGroups?: MenuGroup[]
 }
 
-const AppSidebar = ({ 
+const AppSidebar = ({
   brandLogo,
-  brandName, 
-  brandUrl, 
-  menuGroups, 
-  footerGroups 
+  brandName,
+  brandUrl,
+  menuGroups,
+  footerGroups
 }: SidebarProps) => {
+  const user = useAuthStore((state) => state.user);
+  const userRole = typeof user?.role === 'string' ? user.role : user?.role?.name;
+
+  // Filter menu items based on user role
+  const filterMenuItems = (items: MenuItem[]) => {
+    return items.filter(item => {
+      // If no roles specified, show to everyone
+      if (!item.roles || item.roles.length === 0) return true;
+      // Otherwise, check if user's role is in the allowed roles
+      return item.roles.includes(userRole || '');
+    });
+  };
+
+  const filteredMenuGroups = menuGroups.map(group => ({
+    ...group,
+    items: filterMenuItems(group.items)
+  }));
+
+  const filteredFooterGroups = footerGroups?.map(group => ({
+    ...group,
+    items: filterMenuItems(group.items)
+  }));
+
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
@@ -58,12 +83,12 @@ const AppSidebar = ({
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      
+
       <SidebarContent className="space-y-0">
-        {menuGroups.map((group, index) => (
-          <SidebarGroup 
-            key={index} 
-            className="-mb-6"  
+        {filteredMenuGroups.map((group, index) => (
+          <SidebarGroup
+            key={index}
+            className="-mb-6"
           >
             <SidebarGroupLabel className="font-bold text-l leading-tight mb-0.5">
               {group.label}
@@ -72,13 +97,13 @@ const AppSidebar = ({
             <SidebarGroupContent className="space-y-0">
               <SidebarMenu className="space-y-0">
                 {group.items.map((item) => (
-                  <SidebarMenuItem 
-                    key={item.title} 
+                  <SidebarMenuItem
+                    key={item.title}
                     className="-mb-1"
                   >
-                    <SidebarMenuButton 
-                      asChild 
-                      tooltip={item.title} 
+                    <SidebarMenuButton
+                      asChild
+                      tooltip={item.title}
                       className="h-8 px-2 text-sm"
                     >
                       <Link to={item.url} className="flex items-center gap-2">
@@ -95,9 +120,9 @@ const AppSidebar = ({
       </SidebarContent>
 
       {/* Footer groups - also compact */}
-      {footerGroups && footerGroups.length > 0 && (
+      {filteredFooterGroups && filteredFooterGroups.length > 0 && (
         <SidebarFooter className="mt-1 space-y-0">
-          {footerGroups.map((group, index) => (
+          {filteredFooterGroups.map((group, index) => (
             <SidebarGroup key={index} className="mb-0">
               <SidebarGroupLabel className="font-bold  text-l leading-tight mb-0.5">
                 {group.label}
@@ -106,9 +131,9 @@ const AppSidebar = ({
                 <SidebarMenu className="space-y-0">
                   {group.items.map((item) => (
                     <SidebarMenuItem key={item.title} className="py-0">
-                      <SidebarMenuButton 
-                        asChild 
-                        tooltip={item.title} 
+                      <SidebarMenuButton
+                        asChild
+                        tooltip={item.title}
                         className="h-8 px-2 text-sm"
                       >
                         <Link to={item.url} className="flex items-center gap-2">

@@ -10,7 +10,7 @@ interface ErrorFallbackProps {
 function ErrorFallback({ error, resetErrorBoundary }: ErrorFallbackProps) {
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-error-50 to-error-100">
-      <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-lg border border-error-200">
+      <div className="w-full max-w-md p-8 bg-card rounded-lg shadow-lg border border-error-200">
         <div className="flex items-center gap-3 mb-4">
           <AlertCircle className="w-6 h-6 text-error-600" />
           <h1 className="text-2xl font-bold text-error-700">

@@ -71,7 +71,7 @@ export const ProductGrid = ({
               <img
                 src={product.image_url}
                 alt={product.name}
-                className="h-full w-full object-cover hover:scale-105 transition-transform duration-200"
+                className="h-full w-full object-contain hover:scale-105 transition-transform duration-200"
               />
             ) : (
               <div className="flex flex-col items-center justify-center">
@@ -98,16 +98,22 @@ export const ProductGrid = ({
             <h3 className="text-foreground font-semibold text-sm leading-tight truncate">
               {product.name}
             </h3>
+            {product.name && (
+              <p className="text-muted-foreground text-xs mt-1">
+                {product.name}
+              </p>
+            )}
             {product.category && (
               <p className="text-muted-foreground text-xs mt-1">
                 {product.category}
               </p>
             )}
-            {product.sku && (
+            {/* {product.sku && (
               <p className="text-muted-foreground text-xs mt-1">
                 SKU: {product.sku}
               </p>
-            )}
+            )} */}
+
 
             {/* Stock Info */}
             {product.stock_quantity !== undefined && (

@@ -53,8 +53,8 @@ export const reportsAPI = {
         return response.data.data;
     },
 
-    getInventorySummary: async () => {
-        const response = await axiosInstance.get<{ data: InventorySummary }>("/reports/inventory");
+    getInventorySummary: async (params?: SalesReportParams) => {
+        const response = await axiosInstance.get<{ data: InventorySummary }>("/reports/inventory", { params });
         return response.data.data;
     },
 

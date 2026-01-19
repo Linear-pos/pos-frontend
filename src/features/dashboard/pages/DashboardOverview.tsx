@@ -5,13 +5,13 @@ import {
     Package,
     AlertTriangle
 } from "lucide-react";
-import { format } from "date-fns";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { reportsAPI } from "@/features/reports/api/reports.api";
 import type { SalesReportData, TopProduct, InventorySummary } from "@/features/reports/api/reports.api";
 import { salesAPI } from "@/features/sales/sales.api";
 import type { Sale } from "@/types/sale";
+import { useBranchScope } from "@/hooks/useBranchScope";
 
 export const DashboardOverview = () => {
     const [salesData, setSalesData] = useState<SalesReportData | null>(null);
@@ -19,6 +19,9 @@ export const DashboardOverview = () => {
     const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
     const [recentSales, setRecentSales] = useState<Sale[]>([]);
     const [loading, setLoading] = useState(true);
+
+    // Get branch scope for current user
+    const { branchId } = useBranchScope();
 
     useEffect(() => {
         const fetchData = async () => {
@@ -28,11 +31,24 @@ export const DashboardOverview = () => {
                 const endDate = new Date().toISOString();
                 const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
+                // Build params with optional branchId
+                const reportParams = {
+                    startDate,
+                    endDate,
+                    ...(branchId && { branchId })
+                };
+
+                const salesParams = {
+                    page: 1,
+                    per_page: 5,
+                    ...(branchId && { branch_id: branchId })
+                };
+
                 const [sales, inventory, top, salesList] = await Promise.all([
-                    reportsAPI.getSalesReport({ startDate, endDate }),
-                    reportsAPI.getInventorySummary(),
-                    reportsAPI.getTopProducts({ startDate, endDate }),
-                    salesAPI.getSales({ page: 1, per_page: 5 })
+                    reportsAPI.getSalesReport(reportParams),
+                    reportsAPI.getInventorySummary(branchId ? { branchId } : undefined),
+                    reportsAPI.getTopProducts(reportParams),
+                    salesAPI.getSales(salesParams)
                 ]);
 
                 setSalesData(sales);
@@ -48,7 +64,7 @@ export const DashboardOverview = () => {
         };
 
         fetchData();
-    }, []);
+    }, [branchId]);
 
     if (loading) {
         return (

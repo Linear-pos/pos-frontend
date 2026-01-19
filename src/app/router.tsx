@@ -15,6 +15,11 @@ const InventoryPage = lazy(() => import("../features/products/pages/InventoryPag
 const SalesHistory = lazy(() => import("../features/sales/SalesHistory"));
 const DashboardOverview = lazy(() => import("../features/dashboard/pages/DashboardOverview"));
 const AnalyticsPage = lazy(() => import("../features/dashboard/pages/AnalyticsPage"));
+const UserManagement = lazy(() => import("../features/admin/pages/UserManagement"));
+const BranchManagement = lazy(() => import("../features/admin/pages/BranchManagement"));
+const AccountProfile = lazy(() => import("../features/admin/pages/AccountProfile"));
+const ProductCatalog = lazy(() => import("../features/admin/pages/ProductCatalog"));
+const LicensingManagement = lazy(() => import("../features/admin/pages/LicensingManagement"));
 
 // Loading component
 const LoadingFallback = () => (
@@ -136,8 +141,58 @@ export const router = createBrowserRouter([
                 ),
               },
               {
+                path: "branches",
+                element: (
+                  <RouteErrorBoundary routeName="Branch Management">
+                    <Suspense fallback={<LoadingFallback />}>
+                      <BranchManagement />
+                    </Suspense>
+                  </RouteErrorBoundary>
+                ),
+              },
+              {
+                path: "users",
+                element: (
+                  <RouteErrorBoundary routeName="User Management">
+                    <Suspense fallback={<LoadingFallback />}>
+                      <UserManagement />
+                    </Suspense>
+                  </RouteErrorBoundary>
+                ),
+              },
+              {
                 path: "reports",
                 element: <PagePlaceholder pageName="Reports" />,
+              },
+              {
+                path: "profile",
+                element: (
+                  <RouteErrorBoundary routeName="Account Profile">
+                    <Suspense fallback={<LoadingFallback />}>
+                      <AccountProfile />
+                    </Suspense>
+                  </RouteErrorBoundary>
+                ),
+              },
+              {
+                path: "products-catalog",
+                element: (
+                  <RouteErrorBoundary routeName="Product Catalog">
+                    <Suspense fallback={<LoadingFallback />}>
+                      <ProductCatalog />
+                    </Suspense>
+                  </RouteErrorBoundary>
+                ),
+              },
+              {
+                path: "licensing",
+                element: (
+                  <RouteErrorBoundary routeName="Licensing">
+                    <Suspense fallback={<LoadingFallback />}>
+                      <LicensingManagement />
+                    </Suspense>
+                  </RouteErrorBoundary>
+                ),
               },
             ],
           },

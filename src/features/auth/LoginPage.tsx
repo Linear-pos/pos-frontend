@@ -105,8 +105,11 @@ export const LoginPage = () => {
         <div className="bg-card rounded-lg shadow-xl border p-8">
           {/* Logo/Title */}
           <div className="text-center mb-8">
+            <div className="flex justify-center mb-4">
+              <img src="/Logo.png" alt="OmniPos Logo" className="h-16 w-auto" />
+            </div>
             <h1 className="text-3xl font-bold text-foreground mb-2">
-              POS System
+              OmniPos
             </h1>
             <p className="text-muted-foreground">Sign in to your account</p>
           </div>
@@ -154,7 +157,7 @@ export const LoginPage = () => {
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-neutral-700 mb-2"
+                className="block text-sm font-medium mb-2"
               >
                 Password
               </label>
@@ -169,7 +172,7 @@ export const LoginPage = () => {
                 className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 transition ${validationErrors.password
                   ? "border-error-500 focus:ring-error-500"
                   : "border-neutral-300"
-                  } ${isLoading ? "bg-neutral-100 cursor-not-allowed" : "bg-white"
+                  } ${isLoading ? "bg-muted cursor-not-allowed" : "bg-background"
                   }`}
                 placeholder="Enter your password"
               />

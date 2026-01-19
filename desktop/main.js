@@ -1,5 +1,9 @@
 import { app, BrowserWindow } from "electron";
 
+app.commandLine.appendSwitch('no-sandbox');
+app.commandLine.appendSwitch('disable-setuid-sandbox');
+
+
 const isDev = !app.isPackaged;
 
 function createWindow() {

@@ -15,6 +15,7 @@ import { salesAPI } from "./api";
 import type { Sale } from "@/types/sale";
 import Receipt from "@/components/receipts/Receipt";
 import { format } from "date-fns";
+import { useBranchScope } from "@/hooks/useBranchScope";
 
 const SalesHistory = () => {
   const [sales, setSales] = useState<Sale[]>([]);
@@ -31,6 +32,9 @@ const SalesHistory = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
 
+  // Get branch scope for current user
+  const { branchId } = useBranchScope();
+
   const fetchSales = async () => {
     setLoading(true);
     setError(null);
@@ -40,6 +44,7 @@ const SalesHistory = () => {
       const params: any = {
         page: currentPage,
         per_page: 20,
+        ...(branchId && { branch_id: branchId })
       };
 
       // Add date range filter
@@ -86,7 +91,7 @@ const SalesHistory = () => {
 
   useEffect(() => {
     fetchSales();
-  }, [currentPage, dateRange]);
+  }, [currentPage, dateRange, branchId]);
 
   const filteredSales = sales.filter((sale) => {
     const matchesSearch =

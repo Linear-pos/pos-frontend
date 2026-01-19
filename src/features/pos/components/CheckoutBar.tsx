@@ -70,7 +70,7 @@ export const CheckoutBar = () => {
   };
 
   return (
-    <div className="bg-white border-t p-4 shadow-up">
+    <div className="bg-card border-t p-4 shadow-up">
       {error && (
         <Alert variant="destructive" className="mb-4">
           <AlertCircle className="h-4 w-4" />
