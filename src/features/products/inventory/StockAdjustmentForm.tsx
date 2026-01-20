@@ -7,20 +7,22 @@ import type { Product } from "../../../types/product";
 interface StockAdjustmentFormProps {
     onSuccess: () => void;
     onClose: () => void;
-    type: "receive" | "adjustment"; // Receive is always +, Adjustment can be +/-
+    type: "receive" | "adjustment";
+    initialProduct?: Product | null;
 }
 
 export const StockAdjustmentForm = ({
     onSuccess,
     onClose,
     type,
+    initialProduct
 }: StockAdjustmentFormProps) => {
     const [products, setProducts] = useState<Product[]>([]);
-    const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+    const [selectedProduct, setSelectedProduct] = useState<Product | null>(initialProduct || null);
     const [formData, setFormData] = useState<RestockPayload>({
-        productId: "",
+        productId: initialProduct?.id || "",
         quantity: 0,
-        cost: 0,
+        cost: initialProduct?.cost || 0,
         notes: "",
     });
     const [loading, setLoading] = useState(false);
@@ -35,7 +37,16 @@ export const StockAdjustmentForm = ({
                     search: searchTerm,
                     per_page: 50
                 });
-                setProducts(response.data);
+
+                let fetchedProducts = response.data;
+                // Ensure initialProduct is in the list if we haven't searched yet (or even if we have, but it matches? No, usually only if initial load)
+                if (initialProduct && !searchTerm) {
+                    const exists = fetchedProducts.find(p => p.id === initialProduct.id);
+                    if (!exists) {
+                        fetchedProducts = [initialProduct, ...fetchedProducts];
+                    }
+                }
+                setProducts(fetchedProducts);
             } catch (err) {
                 console.error("Failed to load products", err);
             }

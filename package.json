@@ -10,7 +10,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "start": "electron .",
-    "electron": "wait-on http://localhost:5173 && electron . --no-sandbox --disable-setuid-sandbox",
+    "electron": "wait-on http://localhost:5174 && electron . --no-sandbox --disable-setuid-sandbox",
     "dev:electron": "concurrently \"pnpm dev\" \"pnpm electron\"",
     "dist": "pnpm build && electron-builder",
     "drizzle:generate": "drizzle-kit generate --config ./desktop/src/drizzle.config.ts",

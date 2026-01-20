@@ -31,8 +31,9 @@ export const inventoryAPI = {
         page?: number;
         limit?: number;
     }) => {
+        // Map 'type' to backend expected query param 'changeType' or 'type' - backend uses 'type' in query mapping?
+        // Checking routes/inventory.ts: changeType: req.query.type as any. So backend expects 'type'.
         const response = await axiosInstance.get('/inventory/logs', { params });
-        // Backend returns {success, data, pagination}, we need to return the whole wrapper
         return response.data;
     },
 
@@ -50,4 +51,10 @@ export const inventoryAPI = {
         // Backend returns {success, data: [...], pagination}, extract just the data array
         return response.data.data;
     },
+
+    // Get inventory summary stats
+    getSummary: async () => {
+        const response = await axiosInstance.get('/reports/inventory');
+        return response.data.data; // Extract data from {success, data, message} structure
+    }
 };

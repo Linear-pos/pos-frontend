@@ -91,4 +91,15 @@ export const productsAPI = {
     deleteProduct: async (id: string): Promise<void> => {
         await axiosInstance.delete(`/products/${id}`);
     },
+
+    bulkUpload: async (file: File): Promise<{ success: boolean; data: any; message: string }> => {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await axiosInstance.post('/products/bulk', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response.data;
+    },
 };

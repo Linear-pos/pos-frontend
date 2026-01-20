@@ -14,53 +14,68 @@ export const InventoryPage = () => {
     // Modal State
     const [showAdjustmentForm, setShowAdjustmentForm] = useState(false);
     const [adjustmentType, setAdjustmentType] = useState<"receive" | "adjustment">("receive");
+    const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
     // Data State
     const [movements, setMovements] = useState<InventoryLog[]>([]);
     const [lowStockProducts, setLowStockProducts] = useState<Product[]>([]);
+    const [summary, setSummary] = useState<any>(null);
+
+    // Filters
+    const [filterType, setFilterType] = useState<string>("all");
+    const [dateRange, setDateRange] = useState<{ from?: Date, to?: Date }>({});
 
     // Loading State
-    const [loadingMovements, setLoadingMovements] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     // Pagination State
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
 
-    const fetchMovements = useCallback(async () => {
+    const fetchData = useCallback(async () => {
         try {
-            setLoadingMovements(true);
-            const response = await inventoryAPI.getLogs({ page, limit: 20 });
-            setMovements(response.data);
-            setTotalPages(response.pagination.pages);
+            setLoading(true);
+            const [logsRes, lowStockRes, summaryRes] = await Promise.all([
+                inventoryAPI.getLogs({
+                    page,
+                    limit: 20,
+                    type: filterType === 'all' ? undefined : filterType,
+                    // If we had product search for logs, we'd pass it here, 
+                    // but backend supports productId, not name search on logs directly yet?
+                    // Actually, backend querySchema has productId. 
+                    // To support text search on logs, backend needs update or we first find product IDs.
+                    // For now, let's assume filtering by type is primary.
+                    startDate: dateRange.from?.toISOString(),
+                    endDate: dateRange.to?.toISOString()
+                }),
+                inventoryAPI.getLowStockProducts(),
+                inventoryAPI.getSummary()
+            ]);
+
+            setMovements(logsRes.data);
+            setTotalPages(logsRes.pagination.pages);
+            setLowStockProducts(lowStockRes);
+            setSummary(summaryRes);
         } catch (error) {
-            console.error("Failed to fetch inventory movements", error);
+            console.error("Failed to fetch inventory data", error);
         } finally {
-            setLoadingMovements(false);
+            setLoading(false);
         }
-    }, [page]);
+    }, [page, filterType, dateRange]);
 
-    const fetchLowStock = useCallback(async () => {
-        try {
-            const data = await inventoryAPI.getLowStockProducts();
-            setLowStockProducts(data);
-        } catch (error) {
-            console.error("Failed to fetch low stock products", error);
-        }
-    }, []);
-
-    // Initial load
     useEffect(() => {
-        fetchMovements();
-        fetchLowStock();
-    }, [fetchMovements, fetchLowStock]);
+        fetchData();
+    }, [fetchData]);
 
     const handleSuccess = async () => {
-        // Refresh data after successful adjustment
-        await Promise.all([fetchMovements(), fetchLowStock()]);
+        await fetchData();
     };
 
-    const openReceive = () => {
+    const openReceive = (product?: Product) => {
         setAdjustmentType("receive");
+        if (product) {
+            setSelectedProduct(product);
+        }
         setShowAdjustmentForm(true);
     };
 
@@ -77,7 +92,7 @@ export const InventoryPage = () => {
                     <p className="text-muted-foreground">Track stock levels, movements, and adjustments.</p>
                 </div>
                 <div className="flex gap-2">
-                    <Button onClick={openReceive} className="bg-green-600 hover:bg-green-700">
+                    <Button onClick={() => openReceive()} className="bg-green-600 hover:bg-green-700">
                         <Plus className="mr-2 h-4 w-4" />
                         Receive Stock
                     </Button>
@@ -89,45 +104,117 @@ export const InventoryPage = () => {
             </div>
 
             {/* Quick Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total Inventory Value</CardTitle>
+                        <span className="text-2xl text-muted-foreground">$</span>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">
+                            {new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES' }).format(summary?.totalStockValue || 0)}
+                        </div>
+                        <p className="text-xs text-muted-foreground">Based on product price</p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total Quantity</CardTitle>
+                        <span className="text-2xl text-muted-foreground">#</span>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold text-blue-600">{summary?.totalItems || 0}</div>
+                        <p className="text-xs text-muted-foreground">Items across {summary?.totalProducts || 0} products</p>
+                    </CardContent>
+                </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Low Stock Alerts</CardTitle>
                         <AlertTriangle className="h-4 w-4 text-yellow-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{lowStockProducts.length}</div>
+                        <div className="text-2xl font-bold text-yellow-600">{summary?.lowStockItems || 0}</div>
                         <p className="text-xs text-muted-foreground">Products below reorder level</p>
                     </CardContent>
                 </Card>
-                {/* Additional stats could go here */}
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Out of Stock</CardTitle>
+                        <AlertTriangle className="h-4 w-4 text-red-500" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold text-red-600">{summary?.outOfStockItems || 0}</div>
+                        <p className="text-xs text-muted-foreground">Products with 0 stock</p>
+                    </CardContent>
+                </Card>
             </div>
 
             <Tabs defaultValue="overview" className="space-y-4">
-                <TabsList>
-                    <TabsTrigger value="overview">Overview & History</TabsTrigger>
-                    <TabsTrigger value="alerts">
-                        Low Stock Alerts
-                        {lowStockProducts.length > 0 && (
-                            <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
-                                {lowStockProducts.length}
-                            </span>
-                        )}
-                    </TabsTrigger>
-                </TabsList>
+                <div className="flex justify-between items-center">
+                    <TabsList>
+                        <TabsTrigger value="overview">Overview & History</TabsTrigger>
+                        <TabsTrigger value="alerts">
+                            Low Stock Alerts
+                            {lowStockProducts.length > 0 && (
+                                <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
+                                    {lowStockProducts.length}
+                                </span>
+                            )}
+                        </TabsTrigger>
+                    </TabsList>
+                </div>
 
                 <TabsContent value="overview" className="space-y-4">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Stock Movements History</CardTitle>
-                            <CardDescription>
-                                Recent transactions including sales, restocking, and adjustments.
-                            </CardDescription>
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <CardTitle>Stock Movements History</CardTitle>
+                                    <CardDescription>
+                                        Recent transactions including sales, restocking, and adjustments.
+                                    </CardDescription>
+                                </div>
+                                {/* Filters */}
+                                <div className="flex gap-2 items-center">
+                                    <input
+                                        type="date"
+                                        className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                        placeholder="From"
+                                        onChange={(e) => {
+                                            const date = e.target.value ? new Date(e.target.value) : undefined;
+                                            setDateRange(prev => ({ ...prev, from: date }));
+                                        }}
+                                    />
+                                    <span className="text-muted-foreground">-</span>
+                                    <input
+                                        type="date"
+                                        className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                        placeholder="To"
+                                        onChange={(e) => {
+                                            const date = e.target.value ? new Date(e.target.value) : undefined;
+                                            setDateRange(prev => ({ ...prev, to: date }));
+                                        }}
+                                    />
+                                    <select
+                                        className="h-9 w-[150px] rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                        value={filterType}
+                                        onChange={(e) => {
+                                            setFilterType(e.target.value);
+                                            setPage(1);
+                                        }}
+                                    >
+                                        <option value="all">All Types</option>
+                                        <option value="sale">Sales</option>
+                                        <option value="restock">Restock</option>
+                                        <option value="adjustment">Adjustments</option>
+                                    </select>
+                                </div>
+                            </div>
                         </CardHeader>
                         <CardContent>
                             <InventoryMovementsTable
                                 logs={movements}
-                                loading={loadingMovements}
+                                loading={loading}
                                 page={page}
                                 totalPages={totalPages}
                                 onPageChange={setPage}
@@ -147,10 +234,8 @@ export const InventoryPage = () => {
                         <CardContent>
                             <LowStockAlertsTable
                                 products={lowStockProducts}
-                                onRestock={() => {
-                                    // Pre-fill form? For now just open receive
-                                    // Ideally pass the product to the form
-                                    openReceive();
+                                onRestock={(product) => {
+                                    openReceive(product);
                                 }}
                             />
                         </CardContent>
@@ -162,7 +247,11 @@ export const InventoryPage = () => {
             {showAdjustmentForm && (
                 <StockAdjustmentForm
                     type={adjustmentType}
-                    onClose={() => setShowAdjustmentForm(false)}
+                    initialProduct={selectedProduct} // Pass the selected product
+                    onClose={() => {
+                        setShowAdjustmentForm(false);
+                        setSelectedProduct(null); // Clear selection on close
+                    }}
                     onSuccess={handleSuccess}
                 />
             )}

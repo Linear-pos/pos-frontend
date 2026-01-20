@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Plus, Package } from 'lucide-react';
+import { Search, Package, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,6 +15,7 @@ import { categoriesAPI, type Category } from '../api/categories.api';
 import { ProductTable } from '../components/ProductTable';
 import { CreateProductModal } from '../components/CreateProductModal';
 import { CategoryManager } from '../components/CategoryManager';
+import { BulkUploadModal } from '../components/BulkUploadModal';
 
 export const ProductCatalog = () => {
     const [products, setProducts] = useState<Product[]>([]);
@@ -22,6 +23,7 @@ export const ProductCatalog = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
     const [showCategoryManager, setShowCategoryManager] = useState(false);
 
     // Filters
@@ -110,6 +112,10 @@ export const ProductCatalog = () => {
                     <Button onClick={() => setShowCreateModal(true)}>
                         <Package className="h-4 w-4 mr-2" />
                         Add Product
+                    </Button>
+                    <Button variant="secondary" onClick={() => setShowBulkUploadModal(true)}>
+                        <Upload className="h-4 w-4 mr-2" />
+                        Bulk Upload
                     </Button>
                 </div>
             </div>
@@ -269,6 +275,13 @@ export const ProductCatalog = () => {
                 categories={categories}
                 onClose={() => setShowCreateModal(false)}
                 onProductCreated={handleProductCreated}
+            />
+
+            {/* Bulk Upload Modal */}
+            <BulkUploadModal
+                open={showBulkUploadModal}
+                onClose={() => setShowBulkUploadModal(false)}
+                onUploadComplete={handleProductCreated}
             />
         </div>
     );
