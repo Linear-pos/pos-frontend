@@ -1,4 +1,8 @@
 import { useState, useCallback, useEffect } from "react";
+import Papa from "papaparse";
+import { Upload } from "lucide-react";
+import { toast } from "sonner";
+
 import { productsAPI } from "../api/products.api";
 import type { Product } from "../../../types/product";
 import { ProductTable } from "../components/ProductTable";
@@ -8,9 +12,37 @@ import { useAuth } from "../../../hooks/useAuth";
 
 type SortBy = "name" | "sku" | "price" | "stock_quantity" | "created_at";
 
+type ImportProductsResult = {
+  success: boolean;
+  imported?: number;
+  failed?: number;
+  error?: string;
+};
+
+type ImportProductPayload = {
+  id: string;
+  tenant_id?: string;
+  name: string;
+  sku?: string;
+  description?: string;
+  category?: string;
+  price: number;
+  cost?: number;
+  stock_quantity: number;
+  reorder_level: number;
+  unit: string;
+  unit_size?: number;
+  is_active: boolean;
+  image_url?: string;
+  created_at?: string;
+  updated_at?: string;
+  deleted_at?: string | null;
+};
+
 export const Products = () => {
-  const { hasRole } = useAuth();
+  const { hasRole, user, token } = useAuth();
   const canEdit = hasRole(["SYSTEM_ADMIN", "BRANCH_MANAGER"]);
+  const currentTenantId = user?.tenant_id;
 
   // State
   const [products, setProducts] = useState<Product[]>([]);
@@ -18,9 +50,8 @@ export const Products = () => {
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
 
-  // Search and filter state
+  // Search and filter
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [showInactive, setShowInactive] = useState(false);
@@ -33,7 +64,8 @@ export const Products = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
 
-
+  const [csvPreviewOpen, setCsvPreviewOpen] = useState(false);
+  const [csvPreviewProducts, setCsvPreviewProducts] = useState<ImportProductPayload[]>([]);
 
   // Fetch products
   const fetchProducts = useCallback(async () => {
@@ -54,7 +86,6 @@ export const Products = () => {
 
       setProducts(response.data);
       setTotalPages(response.last_page);
-      setTotal(response.total);
     } catch (err: any) {
       setError(err.message || "Failed to load products");
     } finally {
@@ -85,17 +116,17 @@ export const Products = () => {
     fetchProducts();
   }, [fetchProducts]);
 
-
-  async function handleEditProduct(product: Product) {
+  // CRUD handlers
+  const handleEditProduct = (product: Product) => {
     setEditingProduct(product);
     setShowForm(true);
-  }
+  };
 
-  async function handleDeleteProduct(product: Product) {
+  const handleDeleteProduct = (product: Product) => {
     setDeletingProduct(product);
-  }
+  };
 
-  async function confirmDelete() {
+  const confirmDelete = async () => {
     if (!deletingProduct) return;
 
     try {
@@ -108,9 +139,9 @@ export const Products = () => {
     } finally {
       setLoading(false);
     }
-  }
+  };
 
-  async function handleFormSubmit(data: any) {
+  const handleFormSubmit = async (data: any) => {
     try {
       setLoading(true);
 
@@ -128,7 +159,154 @@ export const Products = () => {
     } finally {
       setLoading(false);
     }
-  }
+  };
+
+  const handleCSVImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Reset previous state
+    setError(null);
+    setLoading(true);
+
+    try {
+      // Parse CSV
+      const results = await new Promise<
+        Papa.ParseResult<Record<string, unknown>>
+      >((resolve, reject) => {
+        Papa.parse<Record<string, unknown>>(file, {
+          header: true,
+          skipEmptyLines: true,
+          dynamicTyping: true,
+          complete: resolve,
+          error: reject,
+        });
+      });
+
+      // Map and validate products
+      const mappedProducts = results.data.map((row, index) => {
+        const r = row as Record<string, unknown>;
+
+        const name = r.name;
+        const price = r.price;
+
+        // Basic validation
+        if (name == null || name === "" || price == null || price === "") {
+          throw new Error(`Row ${index + 2}: Missing required fields (name, price)`);
+        }
+
+        const parsedPrice = Number(price);
+        if (!Number.isFinite(parsedPrice)) {
+          throw new Error(`Row ${index + 2}: Invalid price`);
+        }
+
+        const tenantId =
+          (r.tenant_id != null ? String(r.tenant_id) : undefined) ??
+          (r.tenantId != null ? String(r.tenantId) : undefined) ??
+          currentTenantId;
+
+        return {
+          id: (r.id ? String(r.id) : `temp-${Date.now()}-${index}`),
+          tenant_id: tenantId,
+          name: String(name).trim(),
+          sku: r.sku ? String(r.sku).trim() : undefined,
+          description: r.description ? String(r.description).trim() : undefined,
+          category: r.category ? String(r.category).trim() : undefined,
+          price: parsedPrice,
+          cost: r.cost != null && r.cost !== "" ? Number(r.cost) : undefined,
+          stock_quantity:
+            r.stock_quantity != null && r.stock_quantity !== ""
+              ? Number(r.stock_quantity)
+              : (r.stockQuantity != null && r.stockQuantity !== ""
+                  ? Number(r.stockQuantity)
+                  : 0),
+          reorder_level:
+            r.reorder_level != null && r.reorder_level !== ""
+              ? Number(r.reorder_level)
+              : (r.reorderLevel != null && r.reorderLevel !== ""
+                  ? Number(r.reorderLevel)
+                  : 10),
+          unit: r.unit ? String(r.unit).trim() : "pcs",
+          unit_size:
+            r.unit_size != null && r.unit_size !== ""
+              ? Number(r.unit_size)
+              : (r.unitSize != null && r.unitSize !== "" ? Number(r.unitSize) : undefined),
+          is_active:
+            r.is_active !== undefined
+              ? Boolean(r.is_active)
+              : (r.isActive !== undefined ? Boolean(r.isActive) : true),
+          image_url:
+            r.image_url ? String(r.image_url).trim() : (r.imageUrl ? String(r.imageUrl).trim() : undefined),
+          created_at: r.created_at ? String(r.created_at) : undefined,
+          updated_at: r.updated_at ? String(r.updated_at) : undefined,
+          deleted_at:
+            r.deleted_at !== undefined ? (r.deleted_at === "" ? null : String(r.deleted_at)) : undefined,
+        } as ImportProductPayload;
+      });
+
+      setCsvPreviewProducts(mappedProducts);
+      setCsvPreviewOpen(true);
+
+    } catch (err) {
+      console.error("Import error:", err);
+      const message = err instanceof Error ? err.message : String(err);
+      setError(message || "Failed to import products");
+      toast.error("Import Failed", {
+        description: message || "An error occurred during import",
+      });
+    } finally {
+      setLoading(false);
+      // Reset file input
+      e.target.value = '';
+    }
+  };
+
+  const confirmCSVImport = async () => {
+    if (!csvPreviewProducts.length) return;
+
+    setError(null);
+    setLoading(true);
+
+    try {
+      if (!window.electron?.products) {
+        throw new Error("Electron bridge is not available. Run this in the Electron app.");
+      }
+
+      const BATCH_SIZE = 20;
+      let importedCount = 0;
+
+      for (let i = 0; i < csvPreviewProducts.length; i += BATCH_SIZE) {
+        const batch = csvPreviewProducts.slice(i, i + BATCH_SIZE);
+
+        const result = (await window.electron.products.import({
+          products: batch,
+          token,
+        })) as ImportProductsResult;
+        if (!result.success) {
+          throw new Error(result.error || "Import failed");
+        }
+
+        importedCount += result.imported || 0;
+      }
+
+      setCsvPreviewOpen(false);
+      setCsvPreviewProducts([]);
+      await fetchProducts();
+
+      toast.success("Import Complete", {
+        description: `Successfully imported ${importedCount} products`,
+      });
+    } catch (err) {
+      console.error("Import error:", err);
+      const message = err instanceof Error ? err.message : String(err);
+      setError(message || "Failed to import products");
+      toast.error("Import Failed", {
+        description: message || "An error occurred during import",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const categories = [
     ...new Set(products.map((p) => p.category).filter(Boolean)),
@@ -136,98 +314,50 @@ export const Products = () => {
 
   return (
     <div className="min-h-screen bg-background p-6">
-      <div className="max-w-7xl mx-auto">
+      <div className="mx-auto">
         {/* Header */}
-        <div className="mb-8 animate-fade-in">
-
-
+        <div className="mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-foreground tracking-tight">
-                Product Management
-              </h1>
+              <h1 className="text-3xl font-bold">Product Management</h1>
               <p className="mt-1 text-muted-foreground">
                 Manage your product inventory
               </p>
             </div>
 
             {canEdit && (
-              <button
-                onClick={() => {
-                  setEditingProduct(null);
-                  setShowForm(true);
-                }}
-                className="px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-semibold shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2"
-              >
-                <span className="text-xl">+</span>
-                Add Product
-              </button>
-            )}
-          </div>
+              <div className="flex gap-3">
+                <label className="px-4 py-3 bg-secondary rounded-lg font-semibold flex items-center gap-2 cursor-pointer">
+                  <Upload className="w-4 h-4" />
+                  Import Products as CSV
+                  <input
+                    type="file"
+                    accept=".csv"
+                    className="hidden"
+                    onChange={handleCSVImport}
+                  />
+                </label>
 
-          {/* Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-card text-card-foreground p-6 rounded-lg shadow-md border border-border hover:shadow-lg transition-all duration-200 animate-slide-up">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Total Products</p>
-                  <p className="text-2xl font-bold text-foreground mt-1">{total}</p>
-                </div>
-                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <span className="text-primary text-xl">📦</span>
-                </div>
+                <button
+                  onClick={() => {
+                    setEditingProduct(null);
+                    setShowForm(true);
+                  }}
+                  className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold"
+                >
+                  + Add Product
+                </button>
               </div>
-            </div>
-            <div className="bg-card text-card-foreground p-6 rounded-lg shadow-md border border-border hover:shadow-lg transition-all duration-200 animate-slide-up" style={{ animationDelay: '50ms' }}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Categories</p>
-                  <p className="text-2xl font-bold text-foreground mt-1">
-                    {categories.length}
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-info/10 rounded-lg flex items-center justify-center">
-                  <span className="text-info text-xl">🏷️</span>
-                </div>
-              </div>
-            </div>
-            <div className="bg-card text-card-foreground p-6 rounded-lg shadow-md border border-border hover:shadow-lg transition-all duration-200 animate-slide-up" style={{ animationDelay: '100ms' }}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Low Stock</p>
-                  <p className="text-2xl font-bold text-warning-600 mt-1">
-                    {products.filter(productsAPI.needsReorder).length}
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-warning/10 rounded-lg flex items-center justify-center">
-                  <span className="text-warning text-xl">⚠️</span>
-                </div>
-              </div>
-            </div>
-            <div className="bg-card text-card-foreground p-6 rounded-lg shadow-md border border-border hover:shadow-lg transition-all duration-200 animate-slide-up" style={{ animationDelay: '150ms' }}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Inactive</p>
-                  <p className="text-2xl font-bold text-muted-foreground mt-1">
-                    {products.filter((p) => !p.is_active).length}
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
-                  <span className="text-muted-foreground text-xl">🔒</span>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         </div>
 
-        {/* Error Alert */}
         {error && (
-          <div className="mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
-            <p className="text-destructive-foreground">{error}</p>
+          <div className="mb-4 p-4 bg-destructive/10 border rounded-lg">
+            {error}
           </div>
         )}
 
-        {/* Search and Filter */}
         <ProductSearch
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
@@ -299,6 +429,81 @@ export const Products = () => {
                   className="px-4 py-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-lg font-medium transition disabled:opacity-50"
                 >
                   {loading ? "Deleting..." : "Delete"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {
+        csvPreviewOpen && (
+          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-card text-card-foreground rounded-lg shadow-xl max-w-4xl w-full p-6">
+              <h3 className="text-lg font-bold text-foreground mb-2">
+                Preview CSV Import
+              </h3>
+              <p className="text-muted-foreground mb-4">
+                {csvPreviewProducts.length} products will be imported. Please review before confirming.
+              </p>
+
+              <div className="border border-border rounded-lg overflow-auto max-h-[50vh]">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/40">
+                    <tr>
+                      <th className="text-left p-3 font-semibold">Tenant</th>
+                      <th className="text-left p-3 font-semibold">Name</th>
+                      <th className="text-left p-3 font-semibold">SKU</th>
+                      <th className="text-left p-3 font-semibold">Category</th>
+                      <th className="text-right p-3 font-semibold">Price</th>
+                      <th className="text-right p-3 font-semibold">Stock</th>
+                      <th className="text-right p-3 font-semibold">Reorder</th>
+                      <th className="text-left p-3 font-semibold">Unit</th>
+                      <th className="text-center p-3 font-semibold">Active</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {csvPreviewProducts.slice(0, 15).map((p) => (
+                      <tr key={p.id} className="border-t border-border">
+                        <td className="p-3">{p.tenant_id || "-"}</td>
+                        <td className="p-3">{p.name}</td>
+                        <td className="p-3">{p.sku || "-"}</td>
+                        <td className="p-3">{p.category || "-"}</td>
+                        <td className="p-3 text-right">{Number(p.price).toFixed(2)}</td>
+                        <td className="p-3 text-right">{p.stock_quantity}</td>
+                        <td className="p-3 text-right">{p.reorder_level}</td>
+                        <td className="p-3">{p.unit}{p.unit_size != null ? ` (${p.unit_size})` : ""}</td>
+                        <td className="p-3 text-center">{p.is_active ? "Yes" : "No"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {csvPreviewProducts.length > 15 && (
+                <p className="text-muted-foreground text-sm mt-3">
+                  Showing first 15 rows. {csvPreviewProducts.length - 15} more not shown.
+                </p>
+              )}
+
+              <div className="flex gap-3 justify-end mt-6">
+                <button
+                  onClick={() => {
+                    if (loading) return;
+                    setCsvPreviewOpen(false);
+                    setCsvPreviewProducts([]);
+                  }}
+                  disabled={loading}
+                  className="px-4 py-2 bg-muted hover:bg-muted/80 text-foreground rounded-lg font-medium transition disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmCSVImport}
+                  disabled={loading}
+                  className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium transition disabled:opacity-50"
+                >
+                  {loading ? "Importing..." : "Confirm Import"}
                 </button>
               </div>
             </div>

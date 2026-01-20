@@ -1,11 +1,12 @@
 import { axiosInstance } from '../services/api';
+import type { AxiosError } from 'axios';
 
 export interface PaymentRequest {
   sale_id: string;
   payment_method: string;
   amount: number;
   reference?: string;
-  phone_number?: string; // For M-Pesa
+  phone_number?: string;
 }
 
 export interface PaymentResponse {
@@ -26,13 +27,37 @@ export interface MpesaPaymentRequest {
   reference?: string;
 }
 
+
+
+const normalizeKenyanPhone = (input: string): string => {
+  const raw = String(input ?? "").trim();
+  const digits = raw.replace(/\D/g, "");
+
+  // Accept: 07XXXXXXXX, 7XXXXXXXX, 2547XXXXXXXX, +2547XXXXXXXX
+  if (/^07\d{8}$/.test(digits)) return `254${digits.slice(1)}`;
+  if (/^7\d{8}$/.test(digits)) return `254${digits}`;
+  if (/^2547\d{8}$/.test(digits)) return digits;
+
+  throw new Error("Invalid phone number. Use format 07XXXXXXXX, 7XXXXXXXX, or 2547XXXXXXXX");
+};
+
+const normalizeMpesaAmount = (amount: number): number => {
+  const n = Number(amount);
+  if (!Number.isFinite(n) || n <= 0) {
+    throw new Error("Invalid amount");
+  }
+
+  // Many STK push backends expect an integer amount.
+  return Math.round(n);
+};
+
 class PaymentService {
   /**
    * Process payment for a sale
    */
   async processPayment(paymentData: PaymentRequest): Promise<PaymentResponse> {
     const response = await axiosInstance.post<PaymentResponse>(
-      '/payments/process', 
+      '/payments/process',
       paymentData
     );
     return response.data;
@@ -40,6 +65,8 @@ class PaymentService {
 
   /**
    * Process M-Pesa payment (STK Push)
+   * @param mpesaData - M-Pesa payment request data
+   * @returns Promise resolving to payment result
    */
   async processMpesaPayment(mpesaData: MpesaPaymentRequest): Promise<{
     success: boolean;
@@ -47,12 +74,45 @@ class PaymentService {
     checkoutRequestID?: string;
   }> {
     try {
-      const response = await axiosInstance.post('/payments/mpesa/stk-push', mpesaData);
+      const payload = {
+        saleId: mpesaData.sale_id, // Using sale_id as the primary ID
+        amount: normalizeMpesaAmount(mpesaData.amount),
+        paymentMethod: 'mpesa',
+        phoneNumber: normalizeKenyanPhone(mpesaData.phone_number),
+        reference: mpesaData.reference || mpesaData.sale_id,
+        description: `Sale ${mpesaData.sale_id}`
+      };
+
+      const response = await axiosInstance.post('/payments/mpesa/stk-push', payload);
       return response.data;
-    } catch (error: any) {
-      throw new Error(
-        error?.response?.data?.message || 'Failed to process M-Pesa payment'
-      );
+    } catch (error: unknown) {
+      const err = error as AxiosError<unknown>;
+      const data = err?.response?.data;
+
+      const messageFromObject =
+        data && typeof data === "object" && !Array.isArray(data)
+          ? (data as { message?: unknown; error?: unknown })
+          : null;
+
+      const errorsFromObject =
+        messageFromObject && "errors" in messageFromObject
+          ? (messageFromObject as { errors?: unknown }).errors
+          : null;
+
+      const errorsText =
+        errorsFromObject && typeof errorsFromObject === "object"
+          ? JSON.stringify(errorsFromObject)
+          : null;
+
+      const message =
+        (messageFromObject?.message ? String(messageFromObject.message) : null) ||
+        (messageFromObject?.error ? String(messageFromObject.error) : null) ||
+        errorsText ||
+        (typeof data === "string" ? data : null) ||
+        err?.message ||
+        "Failed to process M-Pesa payment";
+
+      throw new Error(message);
     }
   }
 
@@ -70,10 +130,23 @@ class PaymentService {
         checkoutRequestID
       });
       return response.data;
-    } catch (error: any) {
-      throw new Error(
-        error?.response?.data?.message || 'Failed to verify M-Pesa payment'
-      );
+    } catch (error: unknown) {
+      const err = error as AxiosError<unknown>;
+      const data = err?.response?.data;
+
+      const messageFromObject =
+        data && typeof data === "object" && !Array.isArray(data)
+          ? (data as { message?: unknown; error?: unknown })
+          : null;
+
+      const message =
+        (messageFromObject?.message ? String(messageFromObject.message) : null) ||
+        (messageFromObject?.error ? String(messageFromObject.error) : null) ||
+        (typeof data === "string" ? data : null) ||
+        err?.message ||
+        "Failed to verify M-Pesa payment";
+
+      throw new Error(message);
     }
   }
 

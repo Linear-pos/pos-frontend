@@ -56,6 +56,11 @@ export const PaymentModal = ({
   // M-Pesa State
   const [phoneNumber, setPhoneNumber] = useState("");
 
+  const buildPaymentReference = () => {
+    if (sale?.reference) return sale.reference;
+    return `POS-${Date.now()}`;
+  };
+
   // Common State
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -98,13 +103,7 @@ export const PaymentModal = ({
   const handleMpesaSubmit = async () => {
     setIsProcessing(true);
     try {
-      // 1. Create Sale (Pending) if not exists
-      let currentSale = sale;
-      if (!currentSale && onProcessPayment) {
-        currentSale = await onProcessPayment("mpesa", { phoneNumber });
-      }
-
-      if (!currentSale) throw new Error("Could not create sale");
+      const reference = buildPaymentReference();
 
       // 2. Init STK Push (handled by onProcessPayment or here?)
       // If onProcessPayment handles it, good. If not, we do it here.
@@ -116,13 +115,13 @@ export const PaymentModal = ({
       const result = await paymentService.processMpesaPayment({
         phone_number: phoneNumber,
         amount: total,
-        sale_id: currentSale.id,
-        reference: currentSale.reference
+        sale_id: reference,
+        reference
       });
 
       if (result.success && result.checkoutRequestID) {
-        // Start polling (simplified for brevity, reuse existing polling logic)
-        pollPaymentStatus(result.checkoutRequestID, currentSale);
+        setSuccess("STK push sent. Waiting for confirmation...");
+        pollPaymentStatus(result.checkoutRequestID, reference);
       } else {
         throw new Error(result.message);
       }
@@ -132,7 +131,7 @@ export const PaymentModal = ({
     }
   };
 
-  const pollPaymentStatus = async (checkoutID: string, currentSale: Sale) => {
+  const pollPaymentStatus = async (checkoutID: string, reference: string) => {
     const maxAttempts = 20;
     let attempts = 0;
 
@@ -141,8 +140,22 @@ export const PaymentModal = ({
       try {
         const result = await paymentService.verifyMpesaPayment(checkoutID);
         if (result.success && result.status === "completed") {
-          setSuccess("Payment Verified!");
-          setTimeout(() => onPaymentComplete(currentSale), 1000);
+          setSuccess("Payment Verified! Completing sale...");
+
+          if (!onProcessPayment) {
+            throw new Error("Missing sale creation handler");
+          }
+
+          const completedSale = await onProcessPayment("mpesa", {
+            status: "completed",
+            reference,
+            phoneNumber,
+            checkoutRequestID: checkoutID,
+            transactionId: result.transactionId,
+            amount: total,
+          });
+
+          setTimeout(() => onPaymentComplete(completedSale), 500);
         } else if (result.status === "failed") {
           setError("Payment Failed");
           setIsProcessing(false);
@@ -153,6 +166,7 @@ export const PaymentModal = ({
           setIsProcessing(false);
         }
       } catch (error) {
+        console.log(error)
         if (attempts < maxAttempts) setTimeout(poll, 3000);
         else {
           setError("Error verifying payment");

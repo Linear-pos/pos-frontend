@@ -38,7 +38,7 @@ export interface Sale {
 export interface CreateSalePayload {
   branch_id?: string;
   payment_method: string;
-  status?: 'completed' | 'pending';
+  status?: 'completed' | 'pending' | 'cancelled';
   reference?: string;
   notes?: string;
   tax?: number;

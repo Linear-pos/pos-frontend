@@ -21,7 +21,7 @@ interface CartState {
 export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
-      items: [],
+      items: [] as CartItem[],
       subtotal: 0,
       tax: 0,
       total: 0,
@@ -49,7 +49,7 @@ export const useCartStore = create<CartState>()(
                       ...item,
                       quantity: item.quantity + quantity,
                       price: itemPrice,
-                      total: (item.quantity + quantity) * itemPrice
+                      total: Math.ceil((item.quantity + quantity) * itemPrice)
                     }
                   : item
               );
@@ -60,7 +60,7 @@ export const useCartStore = create<CartState>()(
                 product: { ...product },
                 quantity,
                 price: itemPrice,
-                total: itemPrice * quantity
+                total: Math.ceil(itemPrice * quantity)
               };
               newItems = [...state.items, newItem];
             }
@@ -92,7 +92,7 @@ export const useCartStore = create<CartState>()(
                     product: item.product,
                     quantity,
                     price: Number(item.price) || 0,
-                    total: quantity * (Number(item.price) || 0)
+                    total: Math.ceil(quantity * (Number(item.price) || 0))
                   }
               : {
                     // Always include product_id even when not updating
@@ -100,7 +100,7 @@ export const useCartStore = create<CartState>()(
                     product: item.product,
                     quantity,
                     price: Number(item.price) || 0,
-                    total: quantity * (Number(item.price) || 0)
+                    total: Math.ceil(quantity * (Number(item.price) || 0))
                   }
           )
         }));
@@ -109,7 +109,7 @@ export const useCartStore = create<CartState>()(
 
       clearCart: () => {
         set({
-          items: [],
+          items: [] as CartItem[],
           subtotal: 0,
           tax: 0,
           total: 0,
@@ -119,13 +119,14 @@ export const useCartStore = create<CartState>()(
 
       calculateTotals: () => {
         const state = get();
-        const subtotal = state.items.reduce((sum, item) => sum + (Number(item.total) || 0), 0);
-        const tax = Math.round((subtotal * 0.16) * 100) / 100; // 16% tax
-        const total = subtotal + tax;
+        const subtotalRaw = state.items.reduce((sum, item) => sum + (Number(item.total) || 0), 0);
+        const subtotal = Math.ceil(subtotalRaw);
+        const tax = Math.ceil(subtotal * 0.16); // 16% tax
+        const total = Math.ceil(subtotal + tax);
         const itemCount = state.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
 
         set({
-          subtotal: Math.round(subtotal * 100) / 100,
+          subtotal,
           tax,
           total,
           itemCount
