@@ -8,7 +8,9 @@ import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
 import PagePlaceholder from "@/components/common/PagePlaceholder";
 
 // Lazy load components
-const POSTerminal = lazy(() => import("../features/pos/pages/POSTerminal").then(module => ({ default: module.POSTerminal }))); // Updated path
+const POSTerminal = lazy(() => import("../features/pos/pages/POSTerminal").then(module => ({ default: module.POSTerminal })));
+const CheckoutPage = lazy(() => import("../features/pos/pages/CheckoutPage").then(module => ({ default: module.CheckoutPage })));
+const ReceiptPage = lazy(() => import("../features/pos/pages/ReceiptPage").then(module => ({ default: module.ReceiptPage })));
 const LoginPage = lazy(() => import("../features/auth/LoginPage").then(module => ({ default: module.LoginPage })));
 const Products = lazy(() => import("../features/products/pages/Products"));
 const InventoryPage = lazy(() => import("../features/products/pages/InventoryPage"));
@@ -61,6 +63,26 @@ export const router = createBrowserRouter([
                   <RouteErrorBoundary routeName="POS">
                     <Suspense fallback={<LoadingFallback />}>
                       <POSTerminal />
+                    </Suspense>
+                  </RouteErrorBoundary>
+                ),
+              },
+              {
+                path: "checkout",
+                element: (
+                  <RouteErrorBoundary routeName="Checkout">
+                    <Suspense fallback={<LoadingFallback />}>
+                      <CheckoutPage />
+                    </Suspense>
+                  </RouteErrorBoundary>
+                ),
+              },
+              {
+                path: "receipt/:saleId",
+                element: (
+                  <RouteErrorBoundary routeName="Receipt">
+                    <Suspense fallback={<LoadingFallback />}>
+                      <ReceiptPage />
                     </Suspense>
                   </RouteErrorBoundary>
                 ),

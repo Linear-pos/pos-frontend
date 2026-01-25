@@ -61,6 +61,15 @@ export const salesAPI = {
   },
 
   /**
+   * Update an existing sale
+   */
+  updateSale: async (id: string, payload: Partial<CreateSalePayload>): Promise<Sale> => {
+    const response = await axiosInstance.patch<SaleResponse>(`/sales/${id}`, payload);
+    const sale = response.data.data || response.data as any;
+    return salesAPI.formatSale(sale);
+  },
+
+  /**
    * Get sales for a specific date range
    */
   getSalesByDateRange: async (startDate: string, endDate: string, page = 1): Promise<SalesListResponse> => {

@@ -32,7 +32,7 @@ export interface CreateProductPayload {
   is_active?: boolean;
 }
 
-export interface UpdateProductPayload extends Partial<CreateProductPayload> {}
+export type UpdateProductPayload = Partial<CreateProductPayload>
 
 export interface ProductsListResponse {
   data: Product[];
@@ -79,7 +79,7 @@ export interface CreateBarcodePayload {
   quantity?: number;
 }
 
-export interface UpdateBarcodePayload extends Partial<CreateBarcodePayload> {}
+export type UpdateBarcodePayload = Partial<CreateBarcodePayload>
 
 export type BarcodeType = 
   | 'CODE128'

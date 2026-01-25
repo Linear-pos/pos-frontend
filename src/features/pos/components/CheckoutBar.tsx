@@ -1,72 +1,24 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/stores/cart.store";
-import { salesAPI } from "@/features/sales/api";
-import type { Sale } from "@/types/sale";
-import Receipt from "@/components/receipts/Receipt";
-import PaymentModal from "@/components/payments/PaymentModal";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle, AlertCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export const CheckoutBar = () => {
-  const { items, clearCart, total, itemCount } = useCartStore();
+  const navigate = useNavigate();
+  const { total, itemCount } = useCartStore();
 
   // Calculate totals
   const subtotal = total / 1.16;
   const tax = total - subtotal;
 
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [showReceipt, setShowReceipt] = useState(false);
-  const [completedSale, setCompletedSale] = useState<Sale | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleCheckout = () => {
     if (itemCount === 0) return;
     setError(null);
-    setShowPaymentModal(true);
-  };
-
-  const handleProcessPayment = async (method: string, data?: any): Promise<Sale> => {
-    try {
-      const itemsPayload = items.map((item) => ({
-        product_id: item.product_id,
-        quantity: item.quantity,
-        price: Number(item.price),
-      }));
-
-      const payload = {
-        payment_method: method,
-        status: method === 'cash' ? 'completed' : 'pending',
-        items: itemsPayload,
-        tax,
-        reference: data?.reference,
-      };
-
-      const sale = await salesAPI.createSale(payload as any);
-      return sale;
-    } catch (err: any) {
-      console.error("Payment processing error:", err);
-      throw new Error(err.response?.data?.message || "Payment processing failed");
-    }
-  };
-
-  const handlePaymentComplete = (sale: Sale) => {
-    setSuccessMessage(`Order #${sale.id} completed!`);
-    setCompletedSale(sale);
-    setShowPaymentModal(false);
-
-    // Auto Show Receipt
-    setTimeout(() => {
-      setShowReceipt(true);
-    }, 500);
-  };
-
-  const handleReceiptClose = () => {
-    setShowReceipt(false);
-    setCompletedSale(null);
-    setSuccessMessage(null);
-    clearCart();
+    navigate("/pos/checkout");
   };
 
   return (
@@ -75,13 +27,6 @@ export const CheckoutBar = () => {
         <Alert variant="destructive" className="mb-4">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      {successMessage && (
-        <Alert className="mb-4 bg-green-50 text-green-700 border-green-200">
-          <CheckCircle className="h-4 w-4 text-green-600" />
-          <AlertDescription>{successMessage}</AlertDescription>
         </Alert>
       )}
 
@@ -112,22 +57,6 @@ export const CheckoutBar = () => {
       >
         Pay KES {total.toFixed(2)}
       </Button>
-
-      {/* Payment Modal */}
-      <PaymentModal
-        isOpen={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
-        total={total}
-        onProcessPayment={handleProcessPayment}
-        onPaymentComplete={handlePaymentComplete}
-      />
-
-      {/* Receipt Modal */}
-      <Receipt
-        open={showReceipt}
-        onClose={handleReceiptClose}
-        sale={completedSale}
-      />
     </div>
   );
 };
