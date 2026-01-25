@@ -92,14 +92,8 @@ export const productsAPI = {
         await axiosInstance.delete(`/products/${id}`);
     },
 
-    bulkUpload: async (file: File): Promise<{ success: boolean; data: any; message: string }> => {
-        const formData = new FormData();
-        formData.append('file', file);
-        const response = await axiosInstance.post('/products/bulk', formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-        });
+    bulkUpload: async (products: any[]): Promise<{ success: boolean; data: { imported: number; failed: number } }> => {
+        const response = await axiosInstance.post('/products/bulk-upload', { products });
         return response.data;
     },
 };

@@ -33,7 +33,12 @@ export const LowStockAlertsTable = ({ products, onRestock }: LowStockAlertsTable
                                 <div className="text-xs text-muted-foreground">{product.sku}</div>
                             </td>
                             <td className="px-4 py-3 text-right text-red-600 font-bold">
-                                {product.stock_quantity} {product.unit}
+                                {product.stock_quantity}
+                                <span className="text-xs font-normal ml-1">
+                                    {['pcs', 'items', 'units', 'boxes', 'bottles', 'cans'].includes((product.unit || '').toLowerCase())
+                                        ? product.unit
+                                        : ''}
+                                </span>
                             </td>
                             <td className="px-4 py-3 text-right text-muted-foreground">
                                 {product.reorder_level}

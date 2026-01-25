@@ -79,6 +79,7 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
+    icon: path.join(__dirname, "../public/Logo.png"),
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -87,7 +88,7 @@ function createWindow() {
   });
 
   if (isDev) {
-    win.loadURL("http://localhost:5173");
+    win.loadURL("http://localhost:5174");
     win.webContents.openDevTools();
   } else {
     win.loadFile("../web/dist/index.html");
