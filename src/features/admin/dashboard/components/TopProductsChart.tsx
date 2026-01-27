@@ -24,13 +24,13 @@ export const TopProductsChart = ({ data }: TopProductsChartProps) => {
                                 tick={{ fontSize: 12 }}
                             />
                             <Tooltip
-                                cursor={{ fill: 'hsl(var(--muted))', opacity: 0.1 }}
-                                contentStyle={{ backgroundColor: "hsl(var(--card))", borderColor: "hsl(var(--border))" }}
+                                cursor={{ fill: 'var(--muted)', opacity: 0.1 }}
+                                contentStyle={{ backgroundColor: "var(--card)", borderColor: "var(--border)", color: "var(--card-foreground)" }}
                                 formatter={(value: number | undefined) => [`KES ${(value ?? 0).toLocaleString()}`, "Revenue"]}
                             />
                             <Bar
                                 dataKey="totalRevenue"
-                                fill="hsl(var(--primary))"
+                                fill="var(--chart-2)"
                                 radius={[0, 4, 4, 0]}
                                 barSize={32}
                             />

@@ -42,10 +42,10 @@ export const EditProductModal = ({ product, categories, open, onClose, onProduct
         price: (product.price || 0).toString(),
         cost: (product.cost || 0).toString(),
         unit: product.unit,
-        unit_size: product.unitSize?.toString() || '',
-        reorder_level: (product.reorderLevel || 0).toString(),
-        is_active: product.isActive,
-        imageUrl: product.imageUrl || '',
+        unit_size: product.unit_size?.toString() || '',
+        reorder_level: (product.reorder_level || 0).toString(),
+        is_active: product.is_active,
+        imageUrl: product.image_url || '',
     });
 
     useEffect(() => {
@@ -58,10 +58,10 @@ export const EditProductModal = ({ product, categories, open, onClose, onProduct
                 price: (product.price || 0).toString(),
                 cost: (product.cost || 0).toString(),
                 unit: product.unit,
-                unit_size: product.unitSize?.toString() || '',
-                reorder_level: (product.reorderLevel || 0).toString(),
-                is_active: product.isActive,
-                imageUrl: product.imageUrl || '',
+                unit_size: product.unit_size?.toString() || '',
+                reorder_level: (product.reorder_level || 0).toString(),
+                is_active: product.is_active,
+                imageUrl: product.image_url || '',
             });
             setError(null);
         }

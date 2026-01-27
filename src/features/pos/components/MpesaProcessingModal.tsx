@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, CheckCircle, XCircle, Clock, RotateCw, AlertCircle } from "lucide-react";
+import { Loader2, CheckCircle, XCircle, Clock, RotateCw, AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export type PaymentStatus = 'processing' | 'waiting' | 'success' | 'failed' | 'timeout';
@@ -9,41 +9,41 @@ const statusConfig = {
     title: 'Processing Payment',
     description: 'Initiating M-Pesa payment request...',
     icon: Loader2,
-    color: 'bg-blue-500',
-    textColor: 'text-blue-600',
-    borderColor: 'border-blue-500',
+    color: 'bg-primary',
+    textColor: 'text-primary',
+    borderColor: 'border-primary',
   },
   waiting: {
     title: 'Awaiting Payment',
     description: 'Please check your phone to complete the payment',
     icon: Clock,
-    color: 'bg-amber-500',
-    textColor: 'text-amber-600',
-    borderColor: 'border-amber-500',
+    color: 'bg-accent',
+    textColor: 'text-accent',
+    borderColor: 'border-accent',
   },
   success: {
     title: 'Payment Received',
     description: 'Your payment has been processed successfully',
     icon: CheckCircle,
-    color: 'bg-green-500',
-    textColor: 'text-green-600',
-    borderColor: 'border-green-500',
+    color: 'bg-primary',
+    textColor: 'text-primary',
+    borderColor: 'border-primary',
   },
   failed: {
     title: 'Payment Failed',
     description: 'We couldn\'t process your payment',
     icon: XCircle,
-    color: 'bg-red-500',
-    textColor: 'text-red-600',
-    borderColor: 'border-red-500',
+    color: 'bg-destructive',
+    textColor: 'text-destructive',
+    borderColor: 'border-destructive',
   },
   timeout: {
     title: 'Payment Timed Out',
     description: 'The payment request has timed out',
     icon: AlertCircle,
-    color: 'bg-orange-500',
-    textColor: 'text-orange-600',
-    borderColor: 'border-orange-500',
+    color: 'bg-accent',
+    textColor: 'text-accent',
+    borderColor: 'border-accent',
   },
 };
 
@@ -53,6 +53,7 @@ interface MpesaProcessingModalProps {
   error?: string;
   onClose: () => void;
   onRetry?: () => void;
+  onCheckStatus?: () => void;
 }
 
 export function MpesaProcessingModal({
@@ -61,6 +62,7 @@ export function MpesaProcessingModal({
   error,
   onClose,
   onRetry,
+  onCheckStatus,
 }: MpesaProcessingModalProps) {
   const config = statusConfig[status] || statusConfig.processing;
   const Icon = config.icon;
@@ -83,24 +85,24 @@ export function MpesaProcessingModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ duration: 0.2 }}
-            className="bg-white rounded-xl shadow-2xl w-full max-w-3xl h-auto overflow-hidden border border-gray-100"
+            className="bg-card text-card-foreground rounded-xl shadow-2xl w-full max-w-3xl h-auto overflow-hidden border border-border"
           >
             {/* Status Bar */}
             <div className={`h-2 ${config.color} w-full`}></div>
-            
+
             <div className="p-6">
               {/* Progress Steps */}
               <div className="relative mb-8">
                 <div className="flex justify-between mb-2">
                   {steps.map((step, index) => (
-                    <div 
+                    <div
                       key={step.id}
                       className={`flex flex-col items-center ${index < currentStep ? config.textColor : 'text-gray-400'}`}
                     >
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1
-                        ${index < currentStep 
-                          ? `${config.color} text-white` 
-                          : index === currentStep 
+                        ${index < currentStep
+                          ? `${config.color} text-white`
+                          : index === currentStep
                             ? `border-2 ${config.borderColor} ${config.textColor}`
                             : 'border-2 border-gray-300 bg-white'}`}
                       >
@@ -117,10 +119,10 @@ export function MpesaProcessingModal({
                   ))}
                 </div>
                 <div className="absolute top-4 left-0 right-0 h-1 bg-gray-100 -z-10">
-                  <motion.div 
+                  <motion.div
                     className={`h-full ${config.color}`}
                     initial={{ width: '0%' }}
-                    animate={{ 
+                    animate={{
                       width: `${(currentStep / (steps.length - 1)) * 100}%`,
                       transition: { duration: 0.5, ease: 'easeInOut' }
                     }}
@@ -133,9 +135,9 @@ export function MpesaProcessingModal({
                 <div className={`p-4 rounded-full ${config.color.replace('500', '100')} mb-4`}>
                   <Icon className={`w-10 h-10 ${config.textColor} ${['processing', 'waiting'].includes(status) ? 'animate-pulse' : ''}`} />
                 </div>
-                
+
                 <h3 className="text-xl font-semibold">{config.title}</h3>
-                
+
                 <p className="text-muted-foreground">
                   {status === 'failed' && error ? error : config.description}
                 </p>
@@ -144,7 +146,7 @@ export function MpesaProcessingModal({
                 {status === 'processing' && (
                   <div className="w-full mt-4 space-y-2">
                     <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <motion.div 
+                      <motion.div
                         className={`h-full ${config.color} w-1/2`}
                         animate={{
                           x: ['-50%', '150%'],
@@ -184,18 +186,34 @@ export function MpesaProcessingModal({
 
                 {/* Action Buttons */}
                 <div className="flex gap-3 pt-4">
+                  {status === 'waiting' && (
+                    <div className="flex flex-col items-center gap-4 w-full">
+                      <Button
+                        onClick={onCheckStatus}
+                        className="w-full h-14 text-lg font-bold shadow-lg gap-2"
+                        variant="default"
+                      >
+                        <RefreshCw className="w-5 h-5" />
+                        Check Payment Status
+                      </Button>
+                      <Button variant="ghost" onClick={onClose} className="text-muted-foreground">
+                        Cancel & Go Back
+                      </Button>
+                    </div>
+                  )}
+
                   {(status === 'failed' || status === 'timeout') && (
                     <>
-                      <Button variant="outline" onClick={onClose}>
+                      <Button variant="outline" onClick={onClose} className="h-12 px-6">
                         Close
                       </Button>
-                      <Button onClick={onRetry} className="gap-2">
+                      <Button onClick={onRetry} className="h-12 px-6 gap-2 font-bold">
                         <RotateCw className="w-4 h-4" />
                         Try Again
                       </Button>
                     </>
                   )}
-                  
+
                   {status === 'success' && (
                     <Button onClick={onClose} className="px-8">
                       Done

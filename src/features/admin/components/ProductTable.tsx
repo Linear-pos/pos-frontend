@@ -17,6 +17,9 @@ interface ProductTableProps {
     products: Product[];
     categories: Category[];
     onProductUpdated: () => void;
+    onSort?: (field: string) => void;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
 }
 
 export const ProductTable = ({ products, categories, onProductUpdated }: ProductTableProps) => {
@@ -56,7 +59,7 @@ export const ProductTable = ({ products, categories, onProductUpdated }: Product
                     </thead>
                     <tbody>
                         {products.map((product) => (
-                            <tr key={product.id} className="border-b hover:bg-neutral-50">
+                            <tr key={product.id} className="border-b hover:bg-background">
                                 <td className="p-4">
                                     <div>
                                         <div className="font-medium">{product.name}</div>
@@ -85,11 +88,11 @@ export const ProductTable = ({ products, categories, onProductUpdated }: Product
                                 </td>
                                 <td className="p-4 text-sm">
                                     {product.unit}
-                                    {product.unitSize && ` (${product.unitSize})`}
+                                    {product.unit_size && ` (${product.unit_size})`}
                                 </td>
                                 <td className="p-4 text-center">
-                                    <Badge variant={product.isActive ? 'secondary' : 'outline'}>
-                                        {product.isActive ? 'Active' : 'Inactive'}
+                                    <Badge variant={product.is_active ? 'secondary' : 'outline'}>
+                                        {product.is_active ? 'Active' : 'Inactive'}
                                     </Badge>
                                 </td>
                                 <td className="p-4 text-center">

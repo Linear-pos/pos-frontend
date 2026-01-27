@@ -13,15 +13,31 @@ export const axiosInstance: AxiosInstance = axios.create({
   withCredentials: true,
 });
 
-// Request interceptor - Add auth token to requests
+// Request interceptor - Add auth token to requests (except public endpoints)
 axiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = useAuthStore.getState().token;
-    
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    const publicEndpoints = [
+      '/terminals/verify-code',
+      '/auth/login',
+      '/auth/register',
+      '/cashiers/auth',
+      '/cashiers/auth/reset-pin'
+    ];
+
+    // Check if this is a public endpoint
+    const isPublicEndpoint = publicEndpoints.some(endpoint =>
+      config.url?.includes(endpoint)
+    );
+
+    // Only add token if not a public endpoint
+    if (!isPublicEndpoint) {
+      const token = useAuthStore.getState().token;
+
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
-    
+
     return config;
   },
   (error: AxiosError) => {
@@ -29,31 +45,34 @@ axiosInstance.interceptors.request.use(
   }
 );
 
-// Response interceptor - Handle auth errors
+// Response interceptor - Handle auth errors (but NOT for public endpoints)
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
-    // If unauthorized, clear auth and redirect to login
-    if (error.response?.status === 401) {
+    // List of public endpoints - don't auto-redirect on errors for these
+    const publicEndpoints = ['/terminals/verify-code', '/auth/login', '/auth/register', '/cashiers/auth'];
+    const isPublicEndpoint = publicEndpoints.some(endpoint =>
+      error.config?.url?.includes(endpoint)
+    );
+
+    // If unauthorized and NOT a public endpoint, clear auth and redirect to login
+    if (error.response?.status === 401 && !isPublicEndpoint) {
       const authStore = useAuthStore.getState();
       authStore.logout();
-      
+
       // Redirect to login page
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';
       }
     }
-    
-    // If forbidden, redirect to unauthorized page
-    if (error.response?.status === 403) {
+
+    // If forbidden and NOT a public endpoint, redirect to unauthorized page
+    if (error.response?.status === 403 && !isPublicEndpoint) {
       window.location.href = '/unauthorized';
     }
-    
+
     return Promise.reject(error);
   }
 );
-
-
-
 
 export default axiosInstance;

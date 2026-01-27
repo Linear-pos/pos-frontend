@@ -15,7 +15,7 @@ export const useBranchScope = () => {
 
     // Branch managers are scoped to their branch
     const isBranchScoped = userRole === 'BRANCH_MANAGER';
-    const branchId = isBranchScoped ? user?.branchId : null;
+    const branchId = isBranchScoped ? user?.branch_id : null;
 
     return {
         branchId,

@@ -184,7 +184,7 @@ export const Products = () => {
       });
 
       // Map and validate products
-      const mappedProducts = results.data.map((row, index) => {
+      const mappedProducts = results.data.map((row: Record<string, unknown>, index: number) => {
         const r = row as Record<string, unknown>;
 
         const name = r.name;
@@ -218,14 +218,14 @@ export const Products = () => {
             r.stock_quantity != null && r.stock_quantity !== ""
               ? Number(r.stock_quantity)
               : (r.stockQuantity != null && r.stockQuantity !== ""
-                  ? Number(r.stockQuantity)
-                  : 0),
+                ? Number(r.stockQuantity)
+                : 0),
           reorder_level:
             r.reorder_level != null && r.reorder_level !== ""
               ? Number(r.reorder_level)
               : (r.reorderLevel != null && r.reorderLevel !== ""
-                  ? Number(r.reorderLevel)
-                  : 10),
+                ? Number(r.reorderLevel)
+                : 10),
           unit: r.unit ? String(r.unit).trim() : "pcs",
           unit_size:
             r.unit_size != null && r.unit_size !== ""

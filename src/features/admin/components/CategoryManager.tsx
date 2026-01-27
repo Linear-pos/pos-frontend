@@ -14,7 +14,11 @@ import {
 } from '@/components/ui/dialog';
 import { categoriesAPI, type Category } from '../api/categories.api';
 
-export const CategoryManager = () => {
+interface CategoryManagerProps {
+    onClose?: () => void;
+}
+
+export const CategoryManager = ({ onClose: _onClose }: CategoryManagerProps) => {
     const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);

@@ -11,9 +11,17 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  base: "./", 
+  server: {
+    proxy: {
+      '/ws': {
+        target: 'http://localhost:3000',
+        ws: true,
+      },
+    },
+  },
+  base: "./",
   build: {
-       outDir: "dist",
+    outDir: "dist",
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -33,7 +41,7 @@ export default defineConfig({
             }
             return 'vendor';
           }
-          
+
           // Separate feature chunks
           if (id.includes('/features/pos')) {
             return 'pos-features';

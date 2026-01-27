@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Search, Plus, Filter, UserPlus } from 'lucide-react';
+import { UserPlus, Edit, Trash2, RotateCcw, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Select,
     SelectContent,
@@ -10,23 +8,40 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { usersAPI, type User, type UsersQueryParams } from '../api/users.api';
-import { UserTable } from '../components/UserTable';
 import { CreateUserModal } from '../components/CreateUserModal';
+import { EditUserModal } from '../components/EditUserModal';
+import { DataTable } from '@/components/common/DataTable';
+import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 export const UserManagement = () => {
+    // Data State
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [pagination, setPagination] = useState({
+        page: 1,
+        pages: 1,
+        total: 0,
+        limit: 20
+    });
+
+    // Modal State
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [editingUser, setEditingUser] = useState<User | null>(null);
 
     // Filters
     const [searchQuery, setSearchQuery] = useState('');
     const [roleFilter, setRoleFilter] = useState<string>('all');
     const [statusFilter, setStatusFilter] = useState<string>('active');
-    const [currentPage, setCurrentPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
-    const [totalCount, setTotalCount] = useState(0);
 
     const fetchUsers = async () => {
         setLoading(true);
@@ -34,7 +49,7 @@ export const UserManagement = () => {
 
         try {
             const params: UsersQueryParams = {
-                page: currentPage,
+                page: pagination.page,
                 limit: 20,
             };
 
@@ -52,10 +67,15 @@ export const UserManagement = () => {
 
             const response = await usersAPI.getUsers(params);
             setUsers(response.data);
-            setTotalPages(response.pagination.pages);
-            setTotalCount(response.pagination.total);
+            setPagination({
+                page: response.pagination.page,
+                pages: response.pagination.pages,
+                total: response.pagination.total,
+                limit: response.pagination.limit
+            });
         } catch (err: any) {
             setError(err.message || 'Failed to fetch users');
+            toast.error('Failed to fetch users');
         } finally {
             setLoading(false);
         }
@@ -63,90 +83,81 @@ export const UserManagement = () => {
 
     useEffect(() => {
         fetchUsers();
-    }, [currentPage, roleFilter, statusFilter]);
+    }, [pagination.page, roleFilter, statusFilter]);
 
-    const handleSearch = () => {
-        setCurrentPage(1);
-        fetchUsers();
+    // Handle search specifically (reset page)
+    useEffect(() => {
+        if (pagination.page !== 1) {
+            setPagination(prev => ({ ...prev, page: 1 }));
+        } else {
+            fetchUsers();
+        }
+    }, [searchQuery]);
+
+    const getRoleBadgeColor = (role: string) => {
+        const colors: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+            SYSTEM_ADMIN: 'destructive',
+            BRANCH_MANAGER: 'default',
+            CASHIER: 'secondary',
+        };
+        return colors[role] || 'outline';
     };
 
-    const handleUserCreated = () => {
-        setShowCreateModal(false);
-        fetchUsers();
+    const handleDeactivate = async (user: User) => {
+        if (!confirm(`Are you sure you want to deactivate ${user.name}?`)) return;
+
+        try {
+            await usersAPI.deactivateUser(user.id);
+            toast.success('User deactivated successfully');
+            fetchUsers();
+        } catch (error) {
+            console.error('Failed to deactivate user:', error);
+            toast.error('Failed to deactivate user');
+        }
     };
 
-    const handleUserUpdated = () => {
-        fetchUsers();
+    const handleResetPassword = async (user: User) => {
+        if (!confirm(`Send password reset email to ${user.email}?`)) return;
+
+        try {
+            await usersAPI.resetPassword(user.id);
+            toast.success('Password reset email sent successfully');
+        } catch (error) {
+            console.error('Failed to reset password:', error);
+            toast.error('Failed to send password reset email');
+        }
     };
 
     return (
-        <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-primary">User Management</h1>
+        <div className="space-y-6 pt-6">
+            <div className="flex justify-between items-center">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
+                    <p className="text-muted-foreground">Manage system users and access controls</p>
+                </div>
                 <Button onClick={() => setShowCreateModal(true)}>
                     <UserPlus className="h-4 w-4 mr-2" />
                     Create User
                 </Button>
             </div>
 
-            {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
-                            Total Users
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-primary">{totalCount}</div>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
-                            Active Users
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-success-600">
-                            {users.filter(u => u.isActive).length}
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
-                            Managers
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-info-600">
-                            {users.filter(u => u.role === 'BRANCH_MANAGER').length}
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
-
-            {/* Filters */}
-            <Card className="mb-6">
-                <CardContent className="pt-6">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-400" />
-                            <Input
-                                placeholder="Search by name or email..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                                className="pl-10"
-                            />
-                        </div>
-
+            <DataTable<User>
+                data={users}
+                isLoading={loading}
+                error={error ? new Error(error) : null}
+                pagination={{
+                    page: pagination.page,
+                    pages: pagination.pages,
+                    total: pagination.total
+                }}
+                onPageChange={(page) => setPagination(prev => ({ ...prev, page }))}
+                search={searchQuery}
+                onSearchChange={setSearchQuery}
+                searchPlaceholder="Search by name or email..."
+                filters={
+                    <>
                         <Select value={roleFilter} onValueChange={setRoleFilter}>
-                            <SelectTrigger>
-                                <Filter className="h-4 w-4 mr-2" />
+                            <SelectTrigger className="w-[180px]">
                                 <SelectValue placeholder="Filter by role" />
                             </SelectTrigger>
                             <SelectContent>
@@ -158,7 +169,7 @@ export const UserManagement = () => {
                         </Select>
 
                         <Select value={statusFilter} onValueChange={setStatusFilter}>
-                            <SelectTrigger>
+                            <SelectTrigger className="w-[180px]">
                                 <SelectValue placeholder="Filter by status" />
                             </SelectTrigger>
                             <SelectContent>
@@ -167,70 +178,107 @@ export const UserManagement = () => {
                                 <SelectItem value="inactive">Inactive</SelectItem>
                             </SelectContent>
                         </Select>
-
-                        <Button onClick={handleSearch} variant="outline">
-                            <Filter className="h-4 w-4 mr-2" />
-                            Apply Filters
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* Users Table */}
-            <Card>
-                <CardContent className="p-0">
-                    {loading ? (
-                        <div className="flex items-center justify-center py-12">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                        </div>
-                    ) : error ? (
-                        <div className="text-center py-12">
-                            <p className="text-error-600">{error}</p>
-                            <Button onClick={fetchUsers} className="mt-4">
-                                Try Again
+                    </>
+                }
+                columns={[
+                    {
+                        key: 'name',
+                        title: 'Name',
+                        render: (user) => <div className="font-medium">{user.name}</div>
+                    },
+                    {
+                        key: 'email',
+                        title: 'Email',
+                        render: (user) => <div className="text-sm text-muted-foreground">{user.email}</div>
+                    },
+                    {
+                        key: 'role',
+                        title: 'Role',
+                        render: (user) => (
+                            <Badge variant={getRoleBadgeColor(user.role)}>
+                                {user.role.replace('_', ' ')}
+                            </Badge>
+                        )
+                    },
+                    {
+                        key: 'branch',
+                        title: 'Branch',
+                        render: (user) => (
+                            <div className="text-sm">
+                                {user.branchName || <span className="text-muted-foreground">N/A</span>}
+                            </div>
+                        )
+                    },
+                    {
+                        key: 'status',
+                        title: 'Status',
+                        render: (user) => (
+                            <Badge variant={user.isActive ? 'secondary' : 'outline'}>
+                                {user.isActive ? 'Active' : 'Inactive'}
+                            </Badge>
+                        )
+                    },
+                    {
+                        key: 'created',
+                        title: 'Created',
+                        render: (user) => (
+                            <div className="text-sm text-muted-foreground">
+                                {format(new Date(user.createdAt), 'MMM dd, yyyy')}
+                            </div>
+                        )
+                    }
+                ]}
+                rowActions={(user) => (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Open menu</span>
+                                <MoreVertical className="h-4 w-4" />
                             </Button>
-                        </div>
-                    ) : users.length === 0 ? (
-                        <div className="text-center py-12">
-                            <p className="text-neutral-500">No users found</p>
-                        </div>
-                    ) : (
-                        <UserTable users={users} onUserUpdated={handleUserUpdated} />
-                    )}
-                </CardContent>
-            </Card>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setEditingUser(user)}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleResetPassword(user)}>
+                                <RotateCcw className="mr-2 h-4 w-4" />
+                                Reset Password
+                            </DropdownMenuItem>
+                            {user.isActive && (
+                                <DropdownMenuItem
+                                    onClick={() => handleDeactivate(user)}
+                                    className="text-destructive focus:text-destructive"
+                                >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Deactivate
+                                </DropdownMenuItem>
+                            )}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                )}
+                emptyMessage="No users found matching your criteria."
+                getItemId={(user) => user.id}
+            />
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-                <div className="flex justify-center items-center gap-2 mt-6">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                        disabled={currentPage === 1}
-                    >
-                        Previous
-                    </Button>
-                    <span className="text-sm text-muted-foreground">
-                        Page {currentPage} of {totalPages}
-                    </span>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                        disabled={currentPage === totalPages}
-                    >
-                        Next
-                    </Button>
-                </div>
-            )}
-
-            {/* Create User Modal */}
+            {/* Modals */}
             <CreateUserModal
                 open={showCreateModal}
                 onClose={() => setShowCreateModal(false)}
-                onUserCreated={handleUserCreated}
+                onUserCreated={fetchUsers}
             />
+
+            {editingUser && (
+                <EditUserModal
+                    user={editingUser}
+                    open={!!editingUser}
+                    onClose={() => setEditingUser(null)}
+                    onUserUpdated={() => {
+                        setEditingUser(null);
+                        fetchUsers();
+                    }}
+                />
+            )}
         </div>
     );
 };

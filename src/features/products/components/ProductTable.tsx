@@ -9,6 +9,9 @@ interface ProductTableProps {
   onPageChange: (page: number) => void;
   onEdit?: (product: Product) => void;
   onDelete?: (product: Product) => void;
+  onSort?: (column: string) => void;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
 }
 
 export const ProductTable = ({
@@ -19,6 +22,9 @@ export const ProductTable = ({
   onPageChange,
   onEdit,
   onDelete,
+  // onSort,
+  // sortBy,
+  // sortOrder,
 }: ProductTableProps) => {
   // Helper function to format stock display based on unit type
   const formatStock = (product: Product) => {
@@ -157,10 +163,10 @@ export const ProductTable = ({
                     <div className="flex flex-col items-end gap-1">
                       <p
                         className={`font-semibold ${isLowStock
-                            ? "text-error-600"
-                            : needsReorder
-                              ? "text-warning-600"
-                              : "text-success-600"
+                          ? "text-error-600"
+                          : needsReorder
+                            ? "text-warning-600"
+                            : "text-success-600"
                           }`}
                       >
                         {formatStock(product)}
@@ -180,8 +186,8 @@ export const ProductTable = ({
                   <td className="px-6 py-4 text-center">
                     <span
                       className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${product.is_active
-                          ? "bg-success-100 text-success-700 dark:bg-success-900/20 dark:text-success-300"
-                          : "bg-muted text-muted-foreground"
+                        ? "bg-success-100 text-success-700 dark:bg-success-900/20 dark:text-success-300"
+                        : "bg-muted text-muted-foreground"
                         }`}
                     >
                       {product.is_active ? "Active" : "Inactive"}

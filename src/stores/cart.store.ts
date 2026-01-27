@@ -8,7 +8,7 @@ interface CartState {
   tax: number;
   total: number;
   itemCount: number;
-  
+
   // Actions
   addItem: (product: Product, quantity?: number) => void;
   removeItem: (productId: string) => void;
@@ -28,46 +28,36 @@ export const useCartStore = create<CartState>()(
       itemCount: 0,
 
       addItem: (product: Product, quantity = 1) => {
-        console.log('Adding product to cart:', product);
         set((state) => {
           const existingItem = state.items.find(item => item.product_id === product.id);
-          const itemPrice = product.price || 0;
-          
-          console.log('Product details:', {
-            id: product.id,
-            name: product.name,
-            price: product.price,
-            itemPrice
-          });
-          
+          const itemPrice = Number(product.price) || 0;
+
           let newItems: CartItem[];
           if (existingItem) {
-              // Update existing item quantity
-              newItems = state.items.map(item =>
-                item.product_id === product.id
-                  ? {
-                      ...item,
-                      quantity: item.quantity + quantity,
-                      price: itemPrice,
-                      total: Math.ceil((item.quantity + quantity) * itemPrice)
-                    }
-                  : item
-              );
-            } else {
-              // Add new item - only include necessary fields
-              const newItem: CartItem = {
-                product_id: product.id,
-                product: { ...product },
-                quantity,
-                price: itemPrice,
-                total: Math.ceil(itemPrice * quantity)
-              };
-              newItems = [...state.items, newItem];
-            }
+            newItems = state.items.map(item =>
+              item.product_id === product.id
+                ? {
+                  ...item,
+                  quantity: item.quantity + quantity,
+                  price: itemPrice,
+                  total: (item.quantity + quantity) * itemPrice
+                }
+                : item
+            );
+          } else {
+            const newItem: CartItem = {
+              product_id: product.id,
+              product: { ...product },
+              quantity,
+              price: itemPrice,
+              total: itemPrice * quantity
+            };
+            newItems = [...state.items, newItem];
+          }
 
           return { items: newItems };
         });
-        
+
         get().calculateTotals();
       },
 
@@ -88,20 +78,11 @@ export const useCartStore = create<CartState>()(
           items: state.items.map(item =>
             item.product_id === productId
               ? {
-                    product_id: item.product_id,
-                    product: item.product,
-                    quantity,
-                    price: Number(item.price) || 0,
-                    total: Math.ceil(quantity * (Number(item.price) || 0))
-                  }
-              : {
-                    // Always include product_id even when not updating
-                    product_id: item.product_id,
-                    product: item.product,
-                    quantity,
-                    price: Number(item.price) || 0,
-                    total: Math.ceil(quantity * (Number(item.price) || 0))
-                  }
+                ...item,
+                quantity,
+                total: quantity * (Number(item.price) || 0)
+              }
+              : item
           )
         }));
         get().calculateTotals();
@@ -119,10 +100,12 @@ export const useCartStore = create<CartState>()(
 
       calculateTotals: () => {
         const state = get();
-        const subtotalRaw = state.items.reduce((sum, item) => sum + (Number(item.total) || 0), 0);
-        const subtotal = Math.ceil(subtotalRaw);
-        const tax = Math.ceil(subtotal * 0.16); // 16% tax
-        const total = Math.ceil(subtotal + tax);
+        const total = state.items.reduce((sum, item) => sum + (Number(item.total) || 0), 0);
+
+        // Tax is 16% of the inclusive total
+        const tax = total * (0.16 / 1.16);
+
+        const subtotal = total;
         const itemCount = state.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
 
         set({

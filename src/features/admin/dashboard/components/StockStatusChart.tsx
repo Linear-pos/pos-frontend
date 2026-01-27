@@ -11,9 +11,9 @@ interface StockStatusChartProps {
 
 export const StockStatusChart = ({ data }: StockStatusChartProps) => {
     const chartData = [
-        { name: 'In Stock', value: data.totalItems - data.lowStockItems - data.outOfStockItems, color: '#4ade80' },
-        { name: 'Low Stock', value: data.lowStockItems, color: '#facc15' },
-        { name: 'Out of Stock', value: data.outOfStockItems, color: '#f87171' },
+        { name: 'In Stock', value: data.totalItems - data.lowStockItems - data.outOfStockItems, color: 'var(--chart-1)' },
+        { name: 'Low Stock', value: data.lowStockItems, color: 'var(--chart-4)' },
+        { name: 'Out of Stock', value: data.outOfStockItems, color: 'var(--destructive)' },
     ].filter(item => item.value > 0);
 
     return (
@@ -32,6 +32,7 @@ export const StockStatusChart = ({ data }: StockStatusChartProps) => {
                                 innerRadius={60}
                                 outerRadius={80}
                                 paddingAngle={5}
+                                stroke='none'
                                 dataKey="value"
                             >
                                 {chartData.map((entry, index) => (
@@ -39,7 +40,9 @@ export const StockStatusChart = ({ data }: StockStatusChartProps) => {
                                 ))}
                             </Pie>
                             <Tooltip
-                                contentStyle={{ backgroundColor: "hsl(var(--card))", borderColor: "hsl(var(--border))" }}
+                                contentStyle={{ backgroundColor: "var(--card)", borderColor: "var(--border)", color: "var(--card-foreground)" }}
+                                itemStyle={{ color: "var(--card-foreground)" }}
+                                formatter={(value: number | undefined) => [`${(value ?? 0).toLocaleString()}`, "Items"]}
                             />
                             <Legend verticalAlign="bottom" height={36} />
                         </PieChart>

@@ -1,0 +1,464 @@
+
+
+ Product Requirements Document (PRD)
+
+Project Name: Offline-First LAN-Based Multi-Tenant POS System
+Version: v2.1
+Author: POS Engineering Team
+Date: January 2026
+
+
+
+ 1. Purpose & Vision
+
+ Purpose
+
+Define the functional, technical, and business requirements for an offline-first, LAN-based Point of Sale (POS) system designed for small to medium retail businesses operating in low-connectivity environments.
+
+ Vision Statement
+
+To deliver a fast, reliable, and secure multi-tenant POS system that operates fully offline on a local network, supports multiple terminals per branch, and is monetized through a sustainable per-branch subscription model.
+
+
+
+ 2. Problem Statement
+
+Many retail businesses operate in environments with:
+
+ Unreliable or expensive internet connectivity
+ Limited on-site technical expertise
+ Power and network instability
+ Cost-prohibitive cloud-only POS solutions
+
+Existing POS systems often:
+
+ Fail or degrade during internet outages
+ Depend on remote cloud databases for transactions
+ Are inflexible for multi-branch operations
+ Do not enforce strict tenant-level data isolation
+
+
+
+ 3. Goals & Objectives
+
+ Business Goals
+
+ Provide a dependable offline POS solution
+ Generate recurring revenue through subscriptions
+ Support scalable multi-branch and multi-terminal deployments
+ Guarantee strict tenant data isolation
+
+ Product Goals
+
+ Full operational capability without internet
+ Local transaction processing latency <200ms
+ Simple LAN-based terminal deployment
+ Secure local data storage with enforced isolation
+ Branch-scoped management dashboards
+
+ Non-Goals
+
+ No always-on internet requirement
+ No cloud-hosted transactional database
+ No consumer-facing e-commerce features (v1)
+
+
+
+ 4. Target Users
+
+ Primary Users
+
+ Cashiers – Process sales at terminals
+ Branch Managers – Manage a single branch
+ System Administrators – Manage tenants and licenses
+
+ Secondary Users
+
+ Business Owners – View analytics and reports
+ Support Technicians – Perform maintenance and troubleshooting
+
+
+
+ 5. Deployment Model
+
+ Architecture Overview
+
+ Local On-Premise Server (System of Record)
+
+ PostgreSQL database with Row-Level Security (RLS)
+ Node.js API server
+ License enforcement service
+ Terminal and user authentication authority
+
+> The local server is the single source of truth. All transactional writes are serialized through it.
+
+ Client Terminals
+
+ Electron desktop applications
+ Connected via LAN
+ Barcode scanner and printer support
+ No direct database access
+
+ Optional Cloud Services (Auxiliary Only)
+
+ License activation and renewal
+ Application update distribution
+ Aggregated analytics (future)
+
+> Cloud services are never required for live POS operation.
+
+
+
+ 6. System Components
+
+ 6.1 Backend
+
+ Node.js + Express
+ PostgreSQL with RLS
+ Drizzle ORM and migrations
+ License validation
+ M-Pesa integration
+
+ 6.2 Frontend
+
+ Electron desktop application
+ React + TypeScript
+ Tailwind CSS + shadcn/ui
+ Zustand for state management
+ Hardware integrations (scanner, printer)
+
+ 6.3 Database
+
+ PostgreSQL (local)
+ Tenant-scoped schema with RLS
+ Automated backups
+ ACID-compliant transactions
+
+
+
+ 7. Core Functional Requirements
+
+ 7.1 Authentication & Authorization
+
+ Authentication Modes
+
+ Management Authentication
+
+ Email + password
+ JWT-based sessions
+ Refresh tokens
+ Used by System Admins and Branch Managers
+
+ Terminal (Cashier) Authentication
+
+ PIN-based authentication only
+ Scoped to branch and terminal
+ No email or password
+ Optimized for speed and simplicity
+
+ Authorization (RBAC)
+
+ System Admin – Tenant and license management
+ Branch Manager – Branch operations and reporting
+ Cashier – Sales operations only
+
+ Security
+
+ Tenant and branch context enforced server-side
+ JWTs used only for management access
+ PINs stored hashed
+ Session timeouts and idle locks enforced on terminals
+
+
+
+ 7.2 Sales Management
+
+Transaction Flow
+
+ Create sale
+ Add/remove items (barcode/manual)
+ Apply discounts
+ Process payment
+ Print receipt
+
+Payment Methods
+
+ Cash
+ M-Pesa (STK Push, C2B)
+ Card (future)
+ Bank transfer (future)
+
+M-Pesa Integration
+
+ STK Push initiation
+ Callback handling
+ Local reconciliation
+ Retry queue for failed callbacks
+ Offline-safe fallback to cash
+
+
+
+ 7.3 Inventory Management
+
+Product Management
+
+ Product attributes: name, SKU, category, pricing, unit, size, image
+ Multiple barcodes per product
+ Bulk CSV import/export
+
+Stock Management
+
+ Automatic deduction on sale
+ Manual adjustments
+ Real-time LAN updates
+ Low-stock alerts
+ Inventory history and valuation
+
+
+
+ 7.4 Branch & Terminal Management
+
+ Branch Management
+
+ Branch creation
+ Branch-scoped inventory
+ Branch-specific reporting
+ One manager per branch
+
+ Terminal Management
+
+ Terminal registration
+ Device linking
+ Terminal status monitoring
+ Terminal-specific settings
+
+
+
+ 7.5 Device Provisioning
+
+ Provisioning Flow
+
+ Devices start in an unassigned state
+ Provisioning requires:
+
+   Manager authentication, or
+   Short-lived provisioning code
+ On success, device securely persists:
+
+   `tenant_id`
+   `branch_id`
+   `terminal_id`
+
+ Operational State
+
+ Persisted IDs used for all requests
+ Prevents manual input errors
+ Enforces strict isolation on the client
+
+
+
+ 7.6 User & Cashier Management
+
+ User Operations
+
+ Create/edit users
+ Assign roles and branches
+ Activate/deactivate users
+
+ Cashier PIN Lifecycle
+
+ System generates temporary PIN
+ Cashier sets personal 4-digit PIN on first login
+ Temporary PIN is invalidated
+ Manager-triggered resets generate new temporary PINs
+
+
+
+ 7.7 Shifts & Sessions
+
+ Shifts are derived from cashier login/logout
+ Terminal locks on idle, sleep, or app restart
+ Every authentication event is logged
+ Session history retained for audits
+
+
+
+ 7.8 Reporting & Dashboards
+
+ Branch Manager Dashboard
+
+ Branch sales overview
+ Inventory status
+ Top products
+ Recent transactions
+
+ System Admin Dashboard
+
+ Multi-branch overview
+ Cross-branch analytics
+ License and usage monitoring
+
+
+
+ 7.9 Receipt Management
+
+ Thermal and standard printer support
+ Itemized receipts
+ Reprint functionality
+ Customizable templates
+
+
+
+ 8. Licensing & Subscription
+
+ Per-branch subscription
+ Tiered by number of terminals
+ Monthly and annual plans
+
+ License Behavior
+
+ Encrypted local license token
+ Cached validation
+ Grace period (7–30 days)
+
+ Expiry Handling
+
+ Read-only during grace
+ Sales blocked after grace
+ Reports remain accessible
+
+
+
+ 9. Multi-Tenancy & Security
+
+ Database-Level Isolation
+
+ PostgreSQL RLS policies
+ Tenant context set per request
+ Impossible cross-tenant access
+
+ Application-Level Controls
+
+ Middleware-enforced scoping
+ Audit logging
+ Tenant-specific backups
+
+
+
+ 10. Offline-First Behavior
+
+ Principles
+
+ Full functionality without internet
+ Local-first reads and writes
+ Cloud is optional and asynchronous
+
+ LAN Sync
+
+ All writes go through local server
+ Terminals are stateless clients
+ Server serializes concurrent writes
+
+
+
+ 11. Non-Functional Requirements
+
+ Performance
+
+ Sale creation <200ms
+ UI response <100ms
+ Product search <50ms
+
+ Reliability
+
+ Crash recovery
+ Power-failure-safe writes
+ Automatic restart handling
+
+ Security
+
+ Bcrypt hashing
+ HTTPS (self-signed or local CA)
+ SQL injection and XSS protection
+
+
+
+ 12. Core Data Entities
+
+ Tenants
+ Branches
+ Users
+ Cashiers
+ Terminals
+ Terminal Sessions
+ Shifts
+ Products
+ Inventory
+ Sales
+ Sale Items
+ Payments
+ Licenses
+
+
+
+ 13. Installation & Setup
+
+ Server Setup
+
+ Ubuntu/Debian
+ PostgreSQL
+ API service
+ License activation
+
+ Client Setup
+
+ Electron app install
+ LAN discovery/manual config
+ Peripheral setup
+
+
+
+ 14. Update Strategy
+
+ Backend
+
+ Admin-controlled updates
+ Drizzle migrations
+ Rollback support
+
+ Frontend
+
+ Electron auto-updates
+ Updates pulled from:
+
+   GitHub Releases or
+   Public update endpoint
+ Optional local caching by server
+
+
+
+ 15. Testing Strategy
+
+ Unit, integration, E2E
+ Tenant isolation tests
+ Offline behavior tests
+ M-Pesa sandbox testing
+
+
+
+ 16. Risks & Mitigations
+
+(unchanged, valid as-is)
+
+
+
+ 17. Success Metrics
+
+(unchanged, valid as-is)
+
+
+
+ 18. Future Enhancements
+
+(unchanged, valid as-is)
+

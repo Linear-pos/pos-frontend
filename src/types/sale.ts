@@ -27,6 +27,8 @@ export interface Sale {
   notes?: string;
   created_at: string;
   updated_at: string;
+  shift_id?: string;
+  cashier_id?: string;
   items?: SaleItem[];
   user?: User;
   branch?: {
@@ -47,6 +49,8 @@ export interface CreateSalePayload {
     quantity: number;
     price?: number; // Uses product price if not provided
   }>;
+  shift_id?: string;
+  cashier_id?: string;
 }
 
 export interface SalesListResponse {
@@ -71,6 +75,9 @@ export interface CartItem {
   quantity: number;
   price: number;
   total: number;
+  sku?: string;
+  unit_size_value?: number;
+  product_name?: string;
 }
 
 /**

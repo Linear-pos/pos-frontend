@@ -3,7 +3,7 @@ import { useAuth } from "../../hooks/useAuth";
 import type { UserRole } from "../../types/user";
 
 interface ProtectedLayoutProps {
-    requiredRole?: UserRole[];
+    requiredRole?: UserRole | UserRole[];
 }
 
 export const ProtectedLayout = ({ requiredRole }: ProtectedLayoutProps) => {
@@ -35,20 +35,43 @@ export const ProtectedLayout = ({ requiredRole }: ProtectedLayoutProps) => {
 
     // Global "Bouncer" Logic
 
-    // 1. If Cashier tries to access Dashboard -> Redirect to POS
-    if (userRole === 'CASHIER' && location.pathname.startsWith('/dashboard')) {
+    // 1. If Cashier tries to access Manager/Admin Dashboards -> Redirect to POS
+    if (userRole === 'CASHIER' && (location.pathname.startsWith('/manager') || location.pathname.startsWith('/admin'))) {
         return <Navigate to="/pos" replace />;
     }
 
-    // 2. If valid user visits root '/', redirect based on role
+    // 2. If Branch Manager tries to access Admin dashboard -> Unauthorized
+    if (userRole === 'BRANCH_MANAGER' && location.pathname.startsWith('/admin')) {
+        return <Navigate to="/unauthorized" replace />;
+    }
+
+    // 3. If System Admin tries to access Manager dashboard -> Allow (can view operations)
+    // Admins can access manager dashboard for oversight - no redirect needed
+
+    // 4. Handle legacy /dashboard/* routes - redirect to appropriate dashboard
+    if (location.pathname.startsWith('/dashboard')) {
+        if (userRole === 'BRANCH_MANAGER') {
+            const subPath = location.pathname.replace('/dashboard', '');
+            return <Navigate to={`/manager${subPath}`} replace />;
+        } else if (userRole === 'SYSTEM_ADMIN') {
+            const subPath = location.pathname.replace('/dashboard', '');
+            return <Navigate to={`/admin${subPath}`} replace />;
+        }
+    }
+
+    // 5. If valid user visits root '/', redirect based on role
     if (location.pathname === '/') {
         if (userRole === 'CASHIER') return <Navigate to="/pos" replace />;
-        return <Navigate to="/dashboard/overview" replace />;
+        if (userRole === 'BRANCH_MANAGER') return <Navigate to="/manager/overview" replace />;
+        if (userRole === 'SYSTEM_ADMIN') return <Navigate to="/admin/overview" replace />;
     }
 
     // 3. Check for specific route requirements
-    if (requiredRole && !requiredRole.includes(userRole)) {
-        return <Navigate to="/unauthorized" replace />;
+    if (requiredRole) {
+        const rules = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+        if (!rules.includes(userRole)) {
+            return <Navigate to="/unauthorized" replace />;
+        }
     }
 
     return <Outlet />;

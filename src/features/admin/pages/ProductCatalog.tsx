@@ -11,8 +11,8 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+// import { Separator } from '@/components/ui/separator';
+// import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { productsAPI, type Product, type ProductsQueryParams } from '../api/products.api';
 import { categoriesAPI, type Category } from '../api/categories.api';
 import { ProductTable } from '../components/ProductTable';
@@ -36,7 +36,7 @@ export const ProductCatalog = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [categoryFilter, setCategoryFilter] = useState<string>('all');
     const [statusFilter, setStatusFilter] = useState<string>('active');
-    const [sortBy, setSortBy] = useState<string>('name');
+    const [sortBy, setSortBy] = useState<NonNullable<ProductsQueryParams['sort_by']>>('name');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
@@ -73,11 +73,11 @@ export const ProductCatalog = () => {
             setProducts(response.data);
             setTotalPages(response.pagination.pages);
             setTotalCount(response.pagination.total);
-            
+
             // Update active count
-            const activeProducts = response.data.filter(p => p.isActive);
+            const activeProducts = response.data.filter(p => p.is_active);
             setActiveCount(activeProducts.length);
-            
+
             setError(null);
         } catch (err: any) {
             setError(err.response?.data?.message || err.message || 'Failed to fetch products');
@@ -142,7 +142,7 @@ export const ProductCatalog = () => {
         if (sortBy === field) {
             setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
         } else {
-            setSortBy(field);
+            setSortBy(field as any);
             setSortOrder('asc');
         }
         setCurrentPage(1);
@@ -167,8 +167,8 @@ export const ProductCatalog = () => {
     }, [searchQuery]);
 
     // Calculate some stats
-    const lowStockProducts = products.filter(p => p.stockQuantity !== undefined && p.stockQuantity < 10).length;
-    const outOfStockProducts = products.filter(p => p.stockQuantity !== undefined && p.stockQuantity === 0).length;
+    const lowStockProducts = products.filter(p => p.stock_quantity !== undefined && p.stock_quantity < 10).length;
+    const outOfStockProducts = products.filter(p => p.stock_quantity !== undefined && p.stock_quantity === 0).length;
 
     return (
         <div className="p-6 space-y-6">
@@ -179,16 +179,16 @@ export const ProductCatalog = () => {
                     <p className="text-muted-foreground mt-1">Manage your products and inventory</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                    <Button 
-                        variant="outline" 
+                    <Button
+                        variant="outline"
                         onClick={() => setShowCategoryManager(!showCategoryManager)}
                         className="gap-2"
                     >
                         <Filter className="h-4 w-4" />
                         {showCategoryManager ? 'Hide Categories' : 'Manage Categories'}
                     </Button>
-                    <Button 
-                        variant="outline" 
+                    <Button
+                        variant="outline"
                         onClick={handleRefresh}
                         disabled={refreshing}
                         className="gap-2"
@@ -286,7 +286,7 @@ export const ProductCatalog = () => {
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold text-green-600">
-                            ${products.reduce((sum, p) => sum + (p.price * (p.stockQuantity || 0)), 0).toLocaleString()}
+                            ${products.reduce((sum, p) => sum + (p.price * (p.stock_quantity || 0)), 0).toLocaleString()}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
                             Total value of current stock
@@ -319,7 +319,7 @@ export const ProductCatalog = () => {
                                     <SelectContent>
                                         <SelectItem value="all">All Categories</SelectItem>
                                         {categories.map((cat) => (
-                                            <SelectItem key={cat.id} value={cat.name}>
+                                            <SelectItem key={cat.id} value={cat.id}>
                                                 {cat.name}
                                             </SelectItem>
                                         ))}
@@ -337,7 +337,7 @@ export const ProductCatalog = () => {
                                     </SelectContent>
                                 </Select>
 
-                                <Select value={sortBy} onValueChange={setSortBy}>
+                                <Select value={sortBy} onValueChange={(val) => setSortBy(val as any)}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Sort by" />
                                     </SelectTrigger>
@@ -345,22 +345,22 @@ export const ProductCatalog = () => {
                                         <SelectItem value="name">Name</SelectItem>
                                         <SelectItem value="price">Price</SelectItem>
                                         <SelectItem value="sku">SKU</SelectItem>
-                                        <SelectItem value="stockQuantity">Stock Quantity</SelectItem>
-                                        <SelectItem value="createdAt">Date Added</SelectItem>
+                                        <SelectItem value="stock_quantity">Stock Quantity</SelectItem>
+                                        <SelectItem value="created_at">Date Added</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
 
                             <div className="flex gap-2">
-                                <Button 
-                                    onClick={handleSearch} 
+                                <Button
+                                    onClick={handleSearch}
                                     className="gap-2"
                                 >
                                     <Search className="h-4 w-4" />
                                     Search
                                 </Button>
-                                <Button 
-                                    variant="outline" 
+                                <Button
+                                    variant="outline"
                                     onClick={handleClearFilters}
                                 >
                                     Clear Filters
@@ -387,7 +387,7 @@ export const ProductCatalog = () => {
                                 )}
                                 {categoryFilter !== 'all' && (
                                     <Badge variant="secondary" className="gap-1">
-                                        Category: {categoryFilter}
+                                        Category: {categories.find(c => c.id === categoryFilter)?.name || 'Unknown'}
                                         <Button
                                             variant="ghost"
                                             size="icon"
@@ -470,7 +470,7 @@ export const ProductCatalog = () => {
                                 <Button onClick={() => setShowCreateModal(true)}>
                                     Add Product
                                 </Button>
-                                <Button 
+                                <Button
                                     variant="outline"
                                     onClick={() => setShowBulkUploadModal(true)}
                                 >

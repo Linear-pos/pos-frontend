@@ -63,7 +63,11 @@ export const ProductGrid = ({
         <div
           key={product.id}
           className="bg-card text-card-foreground rounded-lg border border-border shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer overflow-hidden hover:border-primary"
-          onClick={() => onAddToCart(product)}
+          onClick={() => {
+            if (product.stock_quantity !== undefined && product.stock_quantity > 0) {
+              onAddToCart(product);
+            }
+          }}
         >
           {/* Product Image */}
           <div className="h-40 bg-gradient-to-br from-muted to-muted/80 flex items-center justify-center text-muted-foreground overflow-hidden">

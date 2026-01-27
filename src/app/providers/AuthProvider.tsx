@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import type { ReactNode } from "react";
 import { useAuth } from "../../hooks/useAuth";
-import { authAPI } from "../../features/auth/auth.api";
+import { authAPI } from "../../components/auth/auth.api";
 
 interface AuthProviderProps {
   children: ReactNode;

@@ -18,6 +18,10 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { inventoryAPI } from '../../products/api/inventory.api';
+import { useAuthStore } from '@/stores/auth.store';
+import { toast } from 'sonner';
+
 import { ImageUpload } from '@/components/ui/image-upload';
 import { productsAPI, type CreateProductPayload } from '../api/products.api';
 import type { Category } from '../api/categories.api';
@@ -30,9 +34,10 @@ interface CreateProductModalProps {
 }
 
 export const CreateProductModal = ({ open, categories, onClose, onProductCreated }: CreateProductModalProps) => {
+
+    const { user } = useAuthStore();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
     const [formData, setFormData] = useState({
         name: '',
         sku: '',
@@ -43,6 +48,7 @@ export const CreateProductModal = ({ open, categories, onClose, onProductCreated
         unit: 'pieces',
         unit_size: '',
         reorder_level: '10',
+        initial_stock: '',
         imageUrl: '',
     });
 
@@ -58,6 +64,7 @@ export const CreateProductModal = ({ open, categories, onClose, onProductCreated
                 unit: 'pieces',
                 unit_size: '',
                 reorder_level: '10',
+                initial_stock: '',
                 imageUrl: '',
             });
             setError(null);
@@ -69,13 +76,23 @@ export const CreateProductModal = ({ open, categories, onClose, onProductCreated
         setLoading(true);
         setError(null);
 
+        console.log('[CreateProduct] User keys:', user ? Object.keys(user) : 'null');
+        console.log('[CreateProduct] User values:', user);
+
         try {
+            // Try both snake_case and camelCase
+            const tenantId = user?.tenant_id || (user as any)?.tenantId;
+            console.log('[CreateProduct] Resolved tenantId:', tenantId);
+
             const payload: CreateProductPayload = {
                 name: formData.name,
                 price: parseFloat(formData.price),
                 cost: parseFloat(formData.cost),
                 unit: formData.unit,
+                tenant_id: tenantId
             };
+
+            console.log('[CreateProduct] Payload:', payload);
 
             if (formData.sku) payload.sku = formData.sku;
             if (formData.description) payload.description = formData.description;
@@ -84,7 +101,33 @@ export const CreateProductModal = ({ open, categories, onClose, onProductCreated
             if (formData.reorder_level) payload.reorder_level = parseInt(formData.reorder_level);
             if (formData.imageUrl) payload.image_url = formData.imageUrl;
 
-            await productsAPI.createProduct(payload);
+            const product = await productsAPI.createProduct(payload);
+
+            // Handle Initial Stock
+            console.log('[CreateProduct] Initial stock string:', formData.initial_stock);
+            const initialStockQty = parseFloat(formData.initial_stock);
+            console.log('[CreateProduct] Parsed stock qty:', initialStockQty);
+
+            if (!isNaN(initialStockQty) && initialStockQty > 0) {
+                console.log('[CreateProduct] Attempting restock for product:', product.id);
+                try {
+                    const restockResult = await inventoryAPI.restockProduct({
+                        productId: product.id,
+                        quantity: initialStockQty,
+                        notes: 'Initial stock on creation'
+                    });
+                    console.log('[CreateProduct] Restock success:', restockResult);
+                } catch (stockError) {
+                    console.error('[CreateProduct] Restock failed:', stockError);
+                    toast.error("Product created but stock failed", {
+                        description: "Could not set initial stock. Please adjust manually.",
+                        id: "stock-error",
+                    });
+                }
+            } else {
+                console.log('[CreateProduct] Skipping restock (qty invalid or <= 0)');
+            }
+
             onProductCreated();
         } catch (err: any) {
             setError(err.response?.data?.message || 'Failed to create product');
@@ -231,14 +274,26 @@ export const CreateProductModal = ({ open, categories, onClose, onProductCreated
                             </div>
                         </div>
 
-                        <div className="grid gap-2">
-                            <Label htmlFor="reorder_level">Reorder Level</Label>
-                            <Input
-                                id="reorder_level"
-                                type="number"
-                                value={formData.reorder_level}
-                                onChange={(e) => setFormData({ ...formData, reorder_level: e.target.value })}
-                            />
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="reorder_level">Reorder Level</Label>
+                                <Input
+                                    id="reorder_level"
+                                    type="number"
+                                    value={formData.reorder_level}
+                                    onChange={(e) => setFormData({ ...formData, reorder_level: e.target.value })}
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="initial_stock">Initial Stock</Label>
+                                <Input
+                                    id="initial_stock"
+                                    type="number"
+                                    placeholder="0"
+                                    value={formData.initial_stock}
+                                    onChange={(e) => setFormData({ ...formData, initial_stock: e.target.value })}
+                                />
+                            </div>
                         </div>
                     </div>
 

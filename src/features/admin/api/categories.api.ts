@@ -19,8 +19,22 @@ export interface UpdateCategoryPayload {
 
 export const categoriesAPI = {
     getCategories: async (): Promise<Category[]> => {
-        const response = await axiosInstance.get<{ success: boolean; data: Category[] }>('/categories');
-        return response.data.data;
+        const response = await axiosInstance.get<{ success: boolean; data: any[] }>('/categories');
+        const data = response.data.data;
+
+        // Handle case where API returns array of strings
+        if (Array.isArray(data) && data.length > 0 && typeof data[0] === 'string') {
+            return data.map((name: string) => ({
+                id: name,
+                name: name,
+                tenantId: '',
+                productCount: 0,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            }));
+        }
+
+        return data as Category[];
     },
 
     createCategory: async (payload: CreateCategoryPayload): Promise<Category> => {

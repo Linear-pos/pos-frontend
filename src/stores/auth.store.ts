@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { User, AuthResponse } from '../types/user';
+import type { User, AuthResponse, UserRole } from '../types/user';
 
 interface AuthState {
   user: User | null;
@@ -29,25 +29,71 @@ export const useAuthStore = create<AuthState>()(
       isLoading: false,
       error: null,
 
-      setAuth: (payload: AuthResponse) => {
+      setAuth: (payload: AuthResponse | any) => {
         console.log('[AuthStore.setAuth] ENTRY - Raw payload:', JSON.stringify(payload, null, 2));
 
-        // Handle both 'token' and 'access_token' field names from backend
-        const token = payload.token || (payload as any).access_token;
+        let user: User;
+        let token: string;
 
-        console.log('[AuthStore.setAuth] Before normalization - role:', payload.user.role, 'type:', typeof payload.user.role);
+        // Check if this is wrapped in a success/data structure (cashier auth)
+        if (payload.success && payload.data) {
+          console.log('[AuthStore.setAuth] Detected wrapped auth response (cashier)');
+          const authData = payload.data;
 
-        // Normalize role name (Client Migration: SYSTEM_ADMIN -> SYSTEM_ADMIN)
-        if (payload.user.role === 'SYSTEM_ADMIN' as any) {
-          console.log('[AuthStore.setAuth] Normalizing SYSTEM_ADMIN -> SYSTEM_ADMIN');
-          payload.user.role = 'SYSTEM_ADMIN';
+          // The user data is in payload.data.user
+          const backendUser = authData.user;
+          user = {
+            id: backendUser.id,
+            email: backendUser.email || '', // Cashiers might not have email
+            name: backendUser.name,
+            role: backendUser.role,
+            role_id: backendUser.roleId,
+            tenant_id: backendUser.tenantId,
+            tenant_name: backendUser.tenantName,
+            branch_id: backendUser.branchId,
+            branch_name: backendUser.branchName,
+            is_active: backendUser.isActive !== undefined ? backendUser.isActive : true,
+            created_at: backendUser.createdAt,
+            updated_at: backendUser.updatedAt,
+          };
+          token = authData.access_token || authData.token;
+        } else {
+          // Standard user auth response (direct structure)
+          console.log('[AuthStore.setAuth] Detected user auth response');
+
+          // Backend returns camelCase, normalize to snake_case for consistency
+          const backendUser = payload.user;
+          user = {
+            id: backendUser.id,
+            email: backendUser.email,
+            name: backendUser.name,
+            role: backendUser.role,
+            role_id: backendUser.roleId,
+            tenant_id: backendUser.tenantId,
+            tenant_name: backendUser.tenantName,
+            branch_id: backendUser.branchId, // Normalize branchId -> branch_id
+            branch_name: backendUser.branchName,
+            is_active: backendUser.isActive,
+            created_at: backendUser.createdAt,
+            updated_at: backendUser.updatedAt,
+          };
+          token = payload.token || payload.access_token;
+
+          console.log('[AuthStore.setAuth] Before normalization - role:', user.role, 'type:', typeof user.role);
+
+          // Normalize role name (Client Migration: SYSTEM_ADMIN -> SYSTEM_ADMIN)
+          if (user.role === 'SYSTEM_ADMIN' as any) {
+            console.log('[AuthStore.setAuth] Normalizing SYSTEM_ADMIN -> SYSTEM_ADMIN');
+            user.role = 'SYSTEM_ADMIN';
+          }
+
+          console.log('[AuthStore.setAuth] After normalization - role:', user.role);
         }
 
-        console.log('[AuthStore.setAuth] After normalization - role:', payload.user.role);
-        console.log('[AuthStore.setAuth] Full user object:', JSON.stringify(payload.user, null, 2));
+        console.log('[AuthStore.setAuth] Full user object:', JSON.stringify(user, null, 2));
 
         set({
-          user: payload.user,
+          user,
           token,
           isAuthenticated: true,
           error: null,

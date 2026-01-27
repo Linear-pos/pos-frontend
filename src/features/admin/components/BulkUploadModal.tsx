@@ -1,15 +1,15 @@
 import { useState, useRef } from 'react';
 import { Upload, FileText, Check, AlertTriangle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter 
+  DialogFooter
 } from '@/components/ui/dialog';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 import { productsAPI } from '../api/products.api';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -53,17 +53,17 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { toast } = useToast();
+
 
   const parseFileForPreview = async (file: File): Promise<PreviewProduct[]> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      
+
       reader.onload = (e) => {
         try {
           const content = e.target?.result as string;
           const extension = file.name.split('.').pop()?.toLowerCase();
-          
+
           if (extension === 'json') {
             const data = JSON.parse(content);
             const products = Array.isArray(data) ? data : [data];
@@ -71,8 +71,8 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
               name: item.name || item.product_name || 'N/A',
               sku: item.sku || item.id || `MISSING-${index + 1}`,
               price: Number(item.price) || 0,
-              stockQuantity: item.stockQuantity !== undefined ? Number(item.stockQuantity) : 
-                           item.stock_quantity !== undefined ? Number(item.stock_quantity) : undefined,
+              stockQuantity: item.stockQuantity !== undefined ? Number(item.stockQuantity) :
+                item.stock_quantity !== undefined ? Number(item.stock_quantity) : undefined,
               isActive: item.isActive !== false,
               _rowNumber: index + 1
             }));
@@ -84,17 +84,17 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
               reject(new Error('File is empty'));
               return;
             }
-            
-            const headers = lines[0].split(',').map((h: string) => 
+
+            const headers = lines[0].split(',').map((h: string) =>
               h.trim().toLowerCase().replace(/"/g, '')
             );
-            
+
             const data = lines.slice(1, 11).map((line, index) => {
               // Handle quoted values and commas within quotes
               const values: string[] = [];
               let currentValue = '';
               let inQuotes = false;
-              
+
               for (let i = 0; i < line.length; i++) {
                 const char = line[i];
                 if (char === '"') {
@@ -107,28 +107,28 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
                 }
               }
               values.push(currentValue.trim().replace(/^"|"$/g, ''));
-              
+
               const row: Record<string, any> = { _rowNumber: index + 1 };
               headers.forEach((header, i) => {
                 row[header] = values[i] || '';
               });
               return row;
             });
-            
+
             const previewProducts = data.map((item: any) => ({
               name: item.name || item.product_name || 'N/A',
               sku: item.sku || item.id || `MISSING-${item._rowNumber}`,
               price: Number(item.price) || 0,
-              stockQuantity: item.stockquantity !== undefined ? Number(item.stockquantity) : 
-                           item.stock_quantity !== undefined ? Number(item.stock_quantity) :
-                           item.stock !== undefined ? Number(item.stock) : undefined,
-              isActive: item.isactive === undefined ? true : 
-                       String(item.isactive).toLowerCase() === 'true' || 
-                       item.isactive === '1' || 
-                       item.isactive === 'yes',
+              stockQuantity: item.stockquantity !== undefined ? Number(item.stockquantity) :
+                item.stock_quantity !== undefined ? Number(item.stock_quantity) :
+                  item.stock !== undefined ? Number(item.stock) : undefined,
+              isActive: item.isactive === undefined ? true :
+                String(item.isactive).toLowerCase() === 'true' ||
+                item.isactive === '1' ||
+                item.isactive === 'yes',
               _rowNumber: item._rowNumber
             }));
-            
+
             resolve(previewProducts);
           }
         } catch (error) {
@@ -136,7 +136,7 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
           reject(new Error('Failed to parse file. Please check the file format.'));
         }
       };
-      
+
       reader.onerror = () => reject(new Error('Error reading file'));
       reader.readAsText(file);
     });
@@ -145,27 +145,27 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const selectedFile = e.target.files[0];
-      
+
       // Validate file type
       const validTypes = ['text/csv', 'application/json', 'application/vnd.ms-excel'];
       const fileExt = selectedFile.name.split('.').pop()?.toLowerCase();
-      const isValidType = validTypes.includes(selectedFile.type) || 
-                        ['.csv', '.json'].includes(`.${fileExt}`);
-      
+      const isValidType = validTypes.includes(selectedFile.type) ||
+        ['.csv', '.json'].includes(`.${fileExt}`);
+
       // Validate file size (10MB max)
       const maxSize = 10 * 1024 * 1024;
       const isValidSize = selectedFile.size <= maxSize;
-      
+
       if (!isValidType) {
         setError('Please upload a valid CSV or JSON file');
         return;
       }
-      
+
       if (!isValidSize) {
         setError('File size must be less than 10MB');
         return;
       }
-      
+
       try {
         setFile(selectedFile);
         setError(null);
@@ -204,7 +204,7 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
       const response = await productsAPI.bulkUpload(file);
       clearInterval(progressInterval);
       setUploadProgress(100);
-      
+
       if (response.success) {
         const result: UploadResult = {
           created: response.data.created || 0,
@@ -213,27 +213,23 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
           errors: response.data.errors || [],
           processingErrors: response.data.processingErrors || []
         };
-        
+
         setUploadResult(result);
         setStep('results');
-        
+
         // Show toast notification
         if (result.errors.length === 0 && result.processingErrors.length === 0) {
-          toast({
-            id: 'bulk-upload-success',
-            title: 'Success',
+          toast.success('Success', {
             description: `Successfully imported ${result.total} products`,
-            variant: 'default',
+            id: 'bulk-upload-success',
           });
         } else {
-          toast({
-            id: 'bulk-upload-partial',
-            title: 'Partial Success',
+          toast.warning('Partial Success', {
             description: `Imported ${result.created + result.updated} of ${result.total} products. ${result.errors.length + result.processingErrors.length} had errors.`,
-            variant: 'default',
+            id: 'bulk-upload-partial',
           });
         }
-        
+
         // If there were successful imports, trigger refresh
         if (result.created > 0 || result.updated > 0) {
           // Call onUploadComplete after a short delay to show results
@@ -247,7 +243,7 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
     } catch (err: unknown) {
       clearInterval(progressInterval);
       let errorMessage = 'Failed to upload products. Please try again.';
-      
+
       if (err instanceof Error) {
         if (err.message.includes('Network Error')) {
           errorMessage = 'Network error. Please check your connection.';
@@ -257,14 +253,12 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
           errorMessage = err.message;
         }
       }
-      
+
       console.error('Upload error details:', err);
       setError(errorMessage);
-      toast({
-        id: 'bulk-upload-error',
-        title: 'Error',
+      toast.error('Error', {
         description: errorMessage,
-        variant: 'destructive',
+        id: 'bulk-upload-error',
       });
     } finally {
       setIsLoading(false);
@@ -324,7 +318,7 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
             {step === 'results' && 'Upload completed with results'}
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="flex-1 overflow-auto py-4">
           {step === 'upload' && (
             <div className="space-y-4">
@@ -380,7 +374,7 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
                   Showing first {previewData.length} rows. Please review before uploading.
                 </AlertDescription>
               </Alert>
-              
+
               <div className="rounded-md border overflow-hidden">
                 <ScrollArea className="h-[300px]">
                   <Table>
@@ -415,7 +409,7 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
                             {item.stockQuantity !== undefined ? item.stockQuantity : 'N/A'}
                           </TableCell>
                           <TableCell>
-                            <Badge 
+                            <Badge
                               variant={item.isActive ? 'default' : 'secondary'}
                               className="text-xs"
                             >
@@ -433,7 +427,7 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
 
           {step === 'results' && uploadResult && (
             <div className="space-y-4">
-              <Alert className={uploadResult.errors.length + uploadResult.processingErrors.length === 0 ? 
+              <Alert className={uploadResult.errors.length + uploadResult.processingErrors.length === 0 ?
                 "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800" :
                 "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800"
               }>
@@ -443,18 +437,18 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
                   <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                 )}
                 <AlertTitle className={
-                  uploadResult.errors.length + uploadResult.processingErrors.length === 0 ? 
-                  "text-green-800 dark:text-green-300" : "text-amber-800 dark:text-amber-300"
+                  uploadResult.errors.length + uploadResult.processingErrors.length === 0 ?
+                    "text-green-800 dark:text-green-300" : "text-amber-800 dark:text-amber-300"
                 }>
-                  {uploadResult.errors.length + uploadResult.processingErrors.length === 0 ? 
+                  {uploadResult.errors.length + uploadResult.processingErrors.length === 0 ?
                     'Upload Complete' : 'Partial Success'}
                 </AlertTitle>
                 <AlertDescription className={
-                  uploadResult.errors.length + uploadResult.processingErrors.length === 0 ? 
-                  "text-green-700 dark:text-green-400" : "text-amber-700 dark:text-amber-400"
+                  uploadResult.errors.length + uploadResult.processingErrors.length === 0 ?
+                    "text-green-700 dark:text-green-400" : "text-amber-700 dark:text-amber-400"
                 }>
                   Processed {uploadResult.total} products successfully.
-                  {uploadResult.errors.length + uploadResult.processingErrors.length > 0 && 
+                  {uploadResult.errors.length + uploadResult.processingErrors.length > 0 &&
                     ` ${uploadResult.errors.length + uploadResult.processingErrors.length} had errors.`}
                 </AlertDescription>
               </Alert>
@@ -519,7 +513,7 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
         </div>
 
         <Separator className="my-4" />
-        
+
         <DialogFooter>
           {step === 'upload' && (
             <>

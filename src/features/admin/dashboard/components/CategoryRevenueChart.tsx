@@ -30,12 +30,12 @@ export const CategoryRevenueChart = ({ data }: CategoryRevenueChartProps) => {
                                 tickFormatter={(value) => `KES ${value}`}
                             />
                             <Tooltip
-                                contentStyle={{ backgroundColor: "hsl(var(--card))", borderColor: "hsl(var(--border))" }}
+                                contentStyle={{ backgroundColor: "var(--card)", borderColor: "var(--border)", color: "var(--card-foreground)" }}
                                 formatter={(value: number | undefined) => [`KES ${(value ?? 0).toLocaleString()}`, "Revenue"]}
                             />
                             <Bar
                                 dataKey="totalRevenue"
-                                fill="hsl(var(--primary))"
+                                fill="var(--chart-1)"
                                 radius={[4, 4, 0, 0]}
                                 barSize={40}
                             />

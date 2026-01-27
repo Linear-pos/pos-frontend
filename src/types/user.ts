@@ -13,7 +13,9 @@ export interface User {
   role?: Role | UserRole; // Can be role object or string
   role_id?: string;
   tenant_id?: string;
+  tenant_name?: string;
   branch_id?: string | null;
+  branch_name?: string;
   is_active?: boolean;
   avatar?: string;
   created_at?: string;

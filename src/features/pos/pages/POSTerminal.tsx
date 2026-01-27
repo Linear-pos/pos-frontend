@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { useCartStore } from "@/stores/cart.store";
 import type { Product } from "@/types/product";
 import { productsAPI } from "@/features/products/api/products.api";
@@ -9,8 +10,10 @@ import { CheckoutBar } from "../components/CheckoutBar";
 import { CategorySidebar } from "../components/CategorySidebar";
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { toast } from "sonner";
+import { CheckoutModal } from "../components/CheckoutModal";
 
 export const POSTerminal = () => {
+    const { isAuthenticated } = useAuth();
     // Cart Store
     const {
         items,
@@ -25,15 +28,20 @@ export const POSTerminal = () => {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+    const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
 
     // Fetch Products (Initial Load)
     useEffect(() => {
+        // Prevent 401 redirect by only fetching when authenticated
+        if (!isAuthenticated) {
+            setLoading(false);
+            return;
+        }
+
         const fetchProducts = async () => {
             try {
                 setLoading(true);
-                // Fetch all active products (pagination might be needed for large catalogs, 
-                // but for POS speed, loading all active items is often better or use infinite scroll)
-                // For MVP, fetch a large page
+                // Fetch all active products
                 const response = await productsAPI.getProducts({
                     page: 1,
                     per_page: 500, // Large specific limit
@@ -48,7 +56,7 @@ export const POSTerminal = () => {
             }
         };
         fetchProducts();
-    }, []);
+    }, [isAuthenticated]);
 
     // Barcode Scanner Hook
     useBarcodeScanner({
@@ -145,10 +153,15 @@ export const POSTerminal = () => {
 
                 {/* Checkout */}
                 <div className="p-4 border-t border-border bg-background">
-                    <CheckoutBar />
+                    <CheckoutBar onCheckout={() => setIsCheckoutModalOpen(true)} />
                 </div>
             </aside>
 
+            {/* Checkout Modal */}
+            <CheckoutModal
+                isOpen={isCheckoutModalOpen}
+                onClose={() => setIsCheckoutModalOpen(false)}
+            />
         </div>
     );
 };

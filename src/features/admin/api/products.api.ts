@@ -9,13 +9,15 @@ export interface Product {
     price: number;
     cost: number;
     unit: string;
-    unitSize: number | null;
-    reorderLevel: number;
-    imageUrl: string | null;
-    tenantId: string;
-    isActive: boolean;
-    createdAt: string;
-    updatedAt: string;
+    unit_size: number | null;
+    reorder_level: number;
+    image_url: string | null;
+    tenant_id: string;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+    stock_quantity: number;
+    stock_alert_quantity: number;
 }
 
 export interface ProductsListResponse {
@@ -40,6 +42,7 @@ export interface CreateProductPayload {
     unit_size?: number;
     reorder_level?: number;
     image_url?: string;
+    tenant_id?: string;
 }
 
 export interface UpdateProductPayload {
@@ -63,7 +66,7 @@ export interface ProductsQueryParams {
     category?: string;
     low_stock?: boolean;
     is_active?: boolean;
-    sort_by?: 'name' | 'price' | 'created_at';
+    sort_by?: 'name' | 'price' | 'created_at' | 'sku' | 'stock_quantity';
     sort_order?: 'asc' | 'desc';
 }
 

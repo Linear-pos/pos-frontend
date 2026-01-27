@@ -8,7 +8,6 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { format } from 'date-fns';
 import type { Branch } from '../api/branches.api';
 import { branchesAPI } from '../api/branches.api';
 import { EditBranchModal } from './EditBranchModal';

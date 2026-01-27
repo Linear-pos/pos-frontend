@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -18,6 +19,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { usersAPI, type User, type UpdateUserPayload } from '../api/users.api';
+import { branchesAPI } from '../api/branches.api';
 
 interface EditUserModalProps {
     user: User;
@@ -35,6 +37,13 @@ export const EditUserModal = ({ user, open, onClose, onUserUpdated }: EditUserMo
         email: user.email,
         role_id: user.roleId,
         branch_id: user.branchId || '',
+    });
+
+    // Fetch branches when modal opens
+    const { data: branchesData } = useQuery({
+        queryKey: ['branches'],
+        queryFn: () => branchesAPI.getBranches({ limit: 100 }),
+        enabled: open,
     });
 
     useEffect(() => {
@@ -138,9 +147,11 @@ export const EditUserModal = ({ user, open, onClose, onUserUpdated }: EditUserMo
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="_none">No Branch</SelectItem>
-                                    {/* TODO: Load branches from API */}
-                                    <SelectItem value="branch-1">Main Branch</SelectItem>
-                                    <SelectItem value="branch-2">Downtown Branch</SelectItem>
+                                    {branchesData?.data?.map((branch) => (
+                                        <SelectItem key={branch.id} value={branch.id}>
+                                            {branch.name}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>

@@ -33,12 +33,12 @@ const normalizeKenyanPhone = (input: string): string => {
   const raw = String(input ?? "").trim();
   const digits = raw.replace(/\D/g, "");
 
-  // Accept: 07XXXXXXXX, 7XXXXXXXX, 2547XXXXXXXX, +2547XXXXXXXX
-  if (/^07\d{8}$/.test(digits)) return `254${digits.slice(1)}`;
-  if (/^7\d{8}$/.test(digits)) return `254${digits}`;
-  if (/^2547\d{8}$/.test(digits)) return digits;
+  // Accept: 07XXXXXXXX, 01XXXXXXXX, 7XXXXXXXX, 1XXXXXXXX, 2547XXXXXXXX, 2541XXXXXXXX, +254...
+  if (/^0[17]\d{8}$/.test(digits)) return `254${digits.slice(1)}`;
+  if (/^[17]\d{8}$/.test(digits)) return `254${digits}`;
+  if (/^254[17]\d{8}$/.test(digits)) return digits;
 
-  throw new Error("Invalid phone number. Use format 07XXXXXXXX, 7XXXXXXXX, or 2547XXXXXXXX");
+  throw new Error("Invalid phone number. Use format 07XXXXXXXX, 01XXXXXXXX, or 254XXXXXXXXX");
 };
 
 const normalizeMpesaAmount = (amount: number): number => {
@@ -84,7 +84,13 @@ class PaymentService {
       };
 
       const response = await axiosInstance.post('/payments/mpesa/stk-push', payload);
-      return response.data;
+      const data = response.data;
+
+      return {
+        success: data.success,
+        message: data.message,
+        checkoutRequestID: data.data?.mpesaResponse?.CheckoutRequestID || data.checkoutRequestID
+      };
     } catch (error: unknown) {
       const err = error as AxiosError<unknown>;
       const data = err?.response?.data;

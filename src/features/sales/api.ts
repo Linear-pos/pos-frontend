@@ -108,8 +108,8 @@ export const salesAPI = {
   /**
    * Calculate tax for a subtotal
    */
-  calculateTax: (subtotal: number, taxRate: number = 0.16): number => {
-    return Math.round((subtotal * taxRate) * 100) / 100;
+  calculateTax: (subtotal: number, taxRate: number = 0): number => {
+    return 0; // Tax is assumed to be included in price
   },
 
   /**

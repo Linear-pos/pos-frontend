@@ -5,7 +5,13 @@ interface PaymentMethodsChartProps {
     data: { method: string; total: number }[];
 }
 
-const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088FE', '#00C49F'];
+const COLORS = [
+    'var(--chart-1)',
+    'var(--chart-2)',
+    'var(--chart-3)',
+    'var(--chart-4)',
+    'var(--chart-5)',
+];
 
 export const PaymentMethodsChart = ({ data }: PaymentMethodsChartProps) => {
     return (
@@ -25,6 +31,7 @@ export const PaymentMethodsChart = ({ data }: PaymentMethodsChartProps) => {
                                 outerRadius={80}
                                 paddingAngle={5}
                                 dataKey="total"
+                                stroke='none'
                                 nameKey="method"
                             >
                                 {data.map((_, index) => (
@@ -32,7 +39,8 @@ export const PaymentMethodsChart = ({ data }: PaymentMethodsChartProps) => {
                                 ))}
                             </Pie>
                             <Tooltip
-                                contentStyle={{ backgroundColor: "hsl(var(--card))", borderColor: "hsl(var(--border))" }}
+                                contentStyle={{ backgroundColor: "var(--card)", borderColor: "var(--border)", color: "var(--card-foreground)" }}
+                                itemStyle={{ color: "var(--card-foreground)" }}
                                 formatter={(value: number | undefined) => [`KES ${(value ?? 0).toLocaleString()}`, "Total"]}
                             />
                             <Legend verticalAlign="bottom" height={36} />

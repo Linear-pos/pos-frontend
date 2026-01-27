@@ -5,20 +5,21 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-export const CheckoutBar = () => {
-  const navigate = useNavigate();
-  const { total, itemCount } = useCartStore();
+interface CheckoutBarProps {
+  onCheckout?: () => void;
+}
 
-  // Calculate totals
-  const subtotal = total / 1.16;
-  const tax = total - subtotal;
+export const CheckoutBar = ({ onCheckout }: CheckoutBarProps) => {
+  const { total, subtotal, tax, itemCount } = useCartStore();
 
   const [error, setError] = useState<string | null>(null);
 
   const handleCheckout = () => {
     if (itemCount === 0) return;
     setError(null);
-    navigate("/pos/checkout");
+    if (onCheckout) {
+      onCheckout();
+    }
   };
 
   return (

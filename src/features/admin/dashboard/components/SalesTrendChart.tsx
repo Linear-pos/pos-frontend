@@ -18,13 +18,13 @@ export const SalesTrendChart = ({ data }: SalesTrendChartProps) => {
                         <AreaChart data={data}>
                             <defs>
                                 <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
-                                    <stop offset="95%" stopColor="#8884d8" stopOpacity={0} />
+                                    <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.8} />
+                                    <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
                                 </linearGradient>
                             </defs>
                             <XAxis
                                 dataKey="date"
-                                stroke="#888888"
+                                stroke="var(--muted-foreground)"
                                 fontSize={12}
                                 tickLine={false}
                                 axisLine={false}
@@ -34,7 +34,7 @@ export const SalesTrendChart = ({ data }: SalesTrendChartProps) => {
                                 }}
                             />
                             <YAxis
-                                stroke="#888888"
+                                stroke="var(--muted-foreground)"
                                 fontSize={12}
                                 tickLine={false}
                                 axisLine={false}
@@ -42,7 +42,7 @@ export const SalesTrendChart = ({ data }: SalesTrendChartProps) => {
                             />
                             <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-muted" />
                             <Tooltip
-                                contentStyle={{ backgroundColor: "hsl(var(--card))", borderColor: "hsl(var(--border))" }}
+                                contentStyle={{ backgroundColor: "var(--card)", borderColor: "var(--border)", color: "var(--card-foreground)" }}
                                 formatter={(value: number | undefined) => [`KES ${(value ?? 0).toLocaleString()}`, "Total Sales"]}
                                 labelFormatter={(label) => {
                                     const date = new Date(label);
@@ -52,7 +52,7 @@ export const SalesTrendChart = ({ data }: SalesTrendChartProps) => {
                             <Area
                                 type="monotone"
                                 dataKey="total"
-                                stroke="#8884d8"
+                                stroke="var(--primary)"
                                 fillOpacity={1}
                                 fill="url(#colorTotal)"
                             />

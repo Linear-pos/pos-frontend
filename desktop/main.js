@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, Menu } from "electron";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -87,12 +87,47 @@ function createWindow() {
     },
   });
 
+  // Create application menu with DevTools shortcuts
+  const template = [
+    {
+      label: 'View',
+      submenu: [
+        {
+          label: 'Toggle Developer Tools',
+          accelerator: process.platform === 'darwin' ? 'Alt+Command+I' : 'Ctrl+Shift+I',
+          click: () => {
+            win.webContents.toggleDevTools();
+          }
+        },
+        {
+          label: 'Reload',
+          accelerator: 'CmdOrCtrl+R',
+          click: () => {
+            win.webContents.reload();
+          }
+        }
+      ]
+    }
+  ];
+
+  const menu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(menu);
+
+  // Global F12 shortcut for DevTools
+  win.webContents.on('before-input-event', (event, input) => {
+    if (input.key === 'F12') {
+      win.webContents.toggleDevTools();
+    }
+  });
+
   if (isDev) {
     win.loadURL("http://localhost:5174");
     win.webContents.openDevTools();
   } else {
-    win.loadFile("../web/dist/index.html");
+    win.loadFile(path.join(__dirname, "..", "dist", "index.html"));
   }
+
+  return win;
 }
 
 app.whenReady().then(createWindow);
@@ -117,7 +152,7 @@ ipcMain.handle('products:import', async (event, payload) => {
     if (!products) {
       throw new Error('Products must be an array');
     }
-    
+
     // 2. Validate each product (preserve full payload for backend)
     const validatedProducts = products.map((product) => {
       if (!product || typeof product !== "object") {
@@ -140,28 +175,28 @@ ipcMain.handle('products:import', async (event, payload) => {
         price: validateNumber(price),
       };
     });
-    
+
     // 3. Business logic in main process
     const result = await productService.import(validatedProducts, token);
-    
+
     // 4. Logging/Auditing in main process
     auditLog('products_import', {
       count: validatedProducts.length,
       userId: getUserFromEvent(event), // Get sender info
       timestamp: new Date().toISOString()
     });
-    
+
     return {
       success: true,
       imported: result.imported,
       failed: result.failed,
       summary: result.summary
     };
-    
+
   } catch (error) {
     // Proper error handling in main process
     logger.error('Import failed:', error);
-    
+
     // Return structured error to renderer
     return {
       success: false,
@@ -179,18 +214,18 @@ class ProductService {
       failed: 0,
       errors: []
     };
-    
+
     for (const product of products) {
       try {
         // Database operations in main process
         await this.saveToDatabase(product);
-        
+
         // File system operations
         await this.generateProductFiles(product);
-        
+
         // External API calls (with API keys)
         await this.syncWithExternalAPI(product);
-        
+
         results.imported++;
       } catch (error) {
         results.failed++;
@@ -200,10 +235,10 @@ class ProductService {
         });
       }
     }
-    
+
     return results;
   }
-  
+
   async saveToDatabase(product) {
     const result = await postJson("/products/bulk-upload", { products: [product] });
     return result;

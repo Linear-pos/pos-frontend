@@ -1,252 +1,183 @@
-import { createBrowserRouter, Navigate } from "react-router-dom";
-import { Suspense, lazy } from "react";
+import { createHashRouter, Navigate } from "react-router-dom";
 import { RootLayout } from "./RootLayout";
+import { DefaultRedirect } from "./DefaultRedirect";
 import { ProtectedLayout } from "@/components/layout/ProtectedLayout";
+import { TerminalAwareLayout } from "@/components/layout/TerminalAwareLayout";
 import { POSLayout } from "@/components/layout/POSLayout";
-import DashboardLayout from "@/components/layout/DashboardLayout";
-import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
+import ManagerDashboardLayout from "@/components/layout/ManagerDashboardLayout";
+import AdminDashboardLayout from "@/components/layout/AdminDashboardLayout";
 import PagePlaceholder from "@/components/common/PagePlaceholder";
+import { createLazyRoute, createLazyIndexRoute } from "./routeHelpers";
 
-// Lazy load components
-const POSTerminal = lazy(() => import("../features/pos/pages/POSTerminal").then(module => ({ default: module.POSTerminal })));
-const CheckoutPage = lazy(() => import("../features/pos/pages/CheckoutPage").then(module => ({ default: module.CheckoutPage })));
-const ReceiptPage = lazy(() => import("../features/pos/pages/ReceiptPage").then(module => ({ default: module.ReceiptPage })));
-const LoginPage = lazy(() => import("../features/auth/LoginPage").then(module => ({ default: module.LoginPage })));
-const Products = lazy(() => import("../features/products/pages/Products"));
-const InventoryPage = lazy(() => import("../features/products/pages/InventoryPage"));
-const SalesHistory = lazy(() => import("../features/sales/SalesHistory"));
-const DashboardOverview = lazy(() => import("../features/dashboard/pages/DashboardOverview"));
-const AnalyticsPage = lazy(() => import("../features/dashboard/pages/AnalyticsPage"));
-const UserManagement = lazy(() => import("../features/admin/pages/UserManagement"));
-const BranchManagement = lazy(() => import("../features/admin/pages/BranchManagement"));
-const AccountProfile = lazy(() => import("../features/admin/pages/AccountProfile"));
-const ProductCatalog = lazy(() => import("../features/admin/pages/ProductCatalog"));
-const LicensingManagement = lazy(() => import("../features/admin/pages/LicensingManagement"));
-
-// Loading component
-const LoadingFallback = () => (
-  <div className="flex items-center justify-center w-full h-64">
-    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-  </div>
-);
-
-export const router = createBrowserRouter([
-  {
-    path: "/login",
-    element: (
-      <Suspense fallback={<LoadingFallback />}>
-        <LoginPage />
-      </Suspense>
-    ),
-  },
+export const router = createHashRouter([
+  createLazyRoute("/login", () => import("@/components/auth/LoginPage").then(m => ({ default: m.LoginPage })), "Login"),
+  createLazyRoute("/select-mode", () => import("@/components/auth/SelectModePage").then(m => ({ default: m.SelectModePage })), "Select Mode"),
+  createLazyRoute("/terminal-login", () => import("@/components/auth/TerminalLoginPage").then(m => ({ default: m.TerminalLoginPage })), "Terminal Login"),
+  // createLazyRoute("/pin-reset", () => import("@/components/auth/PinResetPage").then(m => ({ default: m.PinResetPage })), "PIN Reset"),
+  createLazyRoute("/unauthorized", () => import("@/components/auth/UnauthorizedPage").then(m => ({ default: m.UnauthorizedPage })), "Unauthorized"),
   {
     path: "/",
     element: <RootLayout />,
+    errorElement: <Navigate to="/pos" replace />,
     children: [
-      // Root Redirect Logic (handled by ProtectedLayout)
       {
-        path: "/",
-        element: <ProtectedLayout />,
+        index: true,
+        element: <DefaultRedirect />,
       },
+    ],
+  },
 
-      // POS Routes (Cashier & Manager)
+  // Dashboard Redirect (Legacy/Convenience)
+  {
+    path: "/dashboard",
+    element: <ProtectedLayout />,
+    children: [
       {
-        path: "/pos",
-        element: <ProtectedLayout />,
+        index: true,
+        // Role-based redirection can be handled by a component or we just redirect to manager for now
+        // Ideally LoginPage should send them to the right place.
+        element: <Navigate to="/manager" replace />,
+      }
+    ]
+  },
+
+  // POS Routes (Cashier & Manager)
+  // Uses TerminalAwareLayout to support PIN overlay in terminal mode
+  {
+    path: "/pos",
+    element: <TerminalAwareLayout />,
+    children: [
+      {
+        element: <POSLayout />,
         children: [
-          {
-            element: <POSLayout />,
-            children: [
-              {
-                index: true,
-                element: (
-                  <RouteErrorBoundary routeName="POS">
-                    <Suspense fallback={<LoadingFallback />}>
-                      <POSTerminal />
-                    </Suspense>
-                  </RouteErrorBoundary>
-                ),
-              },
-              {
-                path: "checkout",
-                element: (
-                  <RouteErrorBoundary routeName="Checkout">
-                    <Suspense fallback={<LoadingFallback />}>
-                      <CheckoutPage />
-                    </Suspense>
-                  </RouteErrorBoundary>
-                ),
-              },
-              {
-                path: "receipt/:saleId",
-                element: (
-                  <RouteErrorBoundary routeName="Receipt">
-                    <Suspense fallback={<LoadingFallback />}>
-                      <ReceiptPage />
-                    </Suspense>
-                  </RouteErrorBoundary>
-                ),
-              },
-            ],
-          },
+          createLazyIndexRoute(
+            () => import("../features/pos/pages/POSTerminal").then(m => ({ default: m.POSTerminal })),
+            "POS"
+          ),
+          createLazyRoute(
+            "receipt/:saleId",
+            () => import("../features/pos/pages/ReceiptPage").then(m => ({ default: m.ReceiptPage })),
+            "Receipt"
+          ),
         ],
       },
+    ],
+  },
 
-      // Dashboard / Admin Routes (Manager Only)
-      // Note: ProtectedLayout checks specific roles if we pass them, or we can rely on its global bouncer 
-      // strictly for cashier. 
-      // For now, Managers access these. Cashiers redirected to POS by ProtectedLayout Bouncer if they try.
-      // Dashboard / Admin Routes (Manager Only)
+  // Cashier Routes
+  {
+    path: "/cashier",
+    element: <ProtectedLayout />,
+    children: [
+      createLazyRoute(
+        "login",
+        () => import("../app/cashier/CashierLogin").then(m => ({ default: m.CashierLogin })),
+        "Cashier Login"
+      ),
+      createLazyRoute(
+        "terminal-select",
+        () => import("../app/cashier/TerminalSelection").then(m => ({ default: m.TerminalSelection })),
+        "Terminal Selection"
+      ),
+      createLazyRoute(
+        "shift",
+        () => import("../app/cashier/ShiftManagement").then(m => ({ default: m.ShiftManagement })),
+        "Shift Management"
+      ),
+    ],
+  },
+
+  // Manager Routes
+  {
+    path: "/manager",
+    element: <ProtectedLayout requiredRole="BRANCH_MANAGER" />,
+    children: [
       {
-        element: <ProtectedLayout requiredRole={['SYSTEM_ADMIN', 'BRANCH_MANAGER']} />,
+        element: <ManagerDashboardLayout />,
         children: [
-          {
-            path: "dashboard",
-            element: <DashboardLayout />,
-            children: [
-              {
-                index: true,
-                element: <Navigate to="overview" replace />,
-              },
-              {
-                path: "overview",
-                element: (
-                  <RouteErrorBoundary routeName="Overview">
-                    <Suspense fallback={<LoadingFallback />}>
-                      <DashboardOverview />
-                    </Suspense>
-                  </RouteErrorBoundary>
-                ),
-              },
-              {
-                path: "products",
-                element: (
-                  <RouteErrorBoundary routeName="Products">
-                    <Suspense fallback={<LoadingFallback />}>
-                      <Products />
-                    </Suspense>
-                  </RouteErrorBoundary>
-                ),
-              },
-              {
-                path: "products/:productId/barcodes",
-                element: <PagePlaceholder pageName="Product Barcodes" />,
-              },
-              {
-                path: "sales",
-                element: (
-                  <RouteErrorBoundary routeName="Sales History">
-                    <Suspense fallback={<LoadingFallback />}>
-                      <SalesHistory />
-                    </Suspense>
-                  </RouteErrorBoundary>
-                ),
-              },
-              {
-                path: "analytics",
-                element: (
-                  <RouteErrorBoundary routeName="Analytics">
-                    <Suspense fallback={<LoadingFallback />}>
-                      <AnalyticsPage />
-                    </Suspense>
-                  </RouteErrorBoundary>
-                ),
-              },
-              {
-                path: "inventory",
-                element: (
-                  <RouteErrorBoundary routeName="Inventory">
-                    <Suspense fallback={<LoadingFallback />}>
-                      <InventoryPage />
-                    </Suspense>
-                  </RouteErrorBoundary>
-                ),
-              },
-              {
-                path: "branches",
-                element: (
-                  <RouteErrorBoundary routeName="Branch Management">
-                    <Suspense fallback={<LoadingFallback />}>
-                      <BranchManagement />
-                    </Suspense>
-                  </RouteErrorBoundary>
-                ),
-              },
-              {
-                path: "users",
-                element: (
-                  <RouteErrorBoundary routeName="User Management">
-                    <Suspense fallback={<LoadingFallback />}>
-                      <UserManagement />
-                    </Suspense>
-                  </RouteErrorBoundary>
-                ),
-              },
-              {
-                path: "reports",
-                element: <PagePlaceholder pageName="Reports" />,
-              },
-              {
-                path: "profile",
-                element: (
-                  <RouteErrorBoundary routeName="Account Profile">
-                    <Suspense fallback={<LoadingFallback />}>
-                      <AccountProfile />
-                    </Suspense>
-                  </RouteErrorBoundary>
-                ),
-              },
-              {
-                path: "products-catalog",
-                element: (
-                  <RouteErrorBoundary routeName="Product Catalog">
-                    <Suspense fallback={<LoadingFallback />}>
-                      <ProductCatalog />
-                    </Suspense>
-                  </RouteErrorBoundary>
-                ),
-              },
-              {
-                path: "licensing",
-                element: (
-                  <RouteErrorBoundary routeName="Licensing">
-                    <Suspense fallback={<LoadingFallback />}>
-                      <LicensingManagement />
-                    </Suspense>
-                  </RouteErrorBoundary>
-                ),
-              },
-            ],
-          },
+          createLazyIndexRoute(
+            () => import("../features/admin/dashboard/pages/DashboardOverview"),
+            "Manager Overview"
+          ),
+          createLazyRoute("sales", () => import("../features/sales/SalesHistory"), "Sales History"),
+          createLazyRoute("inventory", () => import("../features/products/pages/InventoryPage"), "Inventory"),
+          createLazyRoute("analytics", () => import("../features/admin/dashboard/pages/AnalyticsPage"), "Analytics"),
+          createLazyRoute(
+            "reports",
+            () => Promise.resolve({ default: () => <PagePlaceholder pageName="Reports" /> }),
+            "Reports"
+          ),
+          createLazyRoute(
+            "cashiers",
+            () => import("../features/admin/pages/CashierManagement").then(m => ({ default: m.default })),
+            "Cashier Management"
+          ),
+          createLazyRoute(
+            "terminals",
+            () => import("../features/admin/pages/TerminalManagement").then(m => ({ default: m.default })),
+            "Terminal Management"
+          ),
+          createLazyRoute(
+            "profile",
+            () => import("../features/admin/pages/AccountProfile"),
+            "Account Profile"
+          ),
         ],
       },
+    ],
+  },
 
-      // Unauthorized Page
+  // Admin Routes
+  {
+    path: "/admin",
+    element: <ProtectedLayout requiredRole="SYSTEM_ADMIN" />,
+    children: [
       {
-        path: "/unauthorized",
-        element: (
-          <div className="flex items-center justify-center w-full h-screen">
-            <div className="text-center">
-              <h1 className="text-4xl font-bold">403</h1>
-              <p className="mt-4 text-lg text-muted-foreground">
-                You do not have permission to access this page.
-              </p>
-            </div>
-          </div>
-        ),
-      },
-      {
-        path: "*",
-        element: (
-          <div className="flex items-center justify-center w-full h-screen">
-            <div className="text-center">
-              <h1 className="text-4xl font-bold">404</h1>
-              <p className="mt-4 text-lg text-muted-foreground">
-                Page not found
-              </p>
-            </div>
-          </div>
-        ),
+        element: <AdminDashboardLayout />,
+        children: [
+          createLazyIndexRoute(
+            () => import("../features/admin/dashboard/pages/DashboardOverview"),
+            "Admin Overview"
+          ),
+          createLazyRoute(
+            "branches",
+            () => import("../features/admin/pages/BranchManagement").then(m => ({ default: m.BranchManagement })),
+            "Branch Management"
+          ),
+          createLazyRoute(
+            "users",
+            () => import("../features/admin/pages/UserManagement").then(m => ({ default: m.UserManagement })),
+            "User Management"
+          ),
+          createLazyRoute(
+            "products",
+            () => import("../features/admin/pages/ProductCatalog"),
+            "Product Catalog"
+          ),
+          createLazyRoute("sales", () => import("../features/sales/SalesHistory"), "Sales History"),
+          createLazyRoute("inventory", () => import("../features/products/pages/InventoryPage"), "Inventory"),
+          createLazyRoute("analytics", () => import("../features/admin/dashboard/pages/AnalyticsPage"), "Analytics"),
+          createLazyRoute(
+            "reports",
+            () => Promise.resolve({ default: () => <PagePlaceholder pageName="Reports" /> }),
+            "Reports"
+          ),
+          createLazyRoute(
+            "licensing",
+            () => import("../features/admin/pages/LicensingManagement").then(m => ({ default: m.default })),
+            "Licensing"
+          ),
+          createLazyRoute(
+            "settings",
+            () => Promise.resolve({ default: () => <PagePlaceholder pageName="Settings" /> }),
+            "Settings"
+          ),
+          createLazyRoute(
+            "profile",
+            () => import("../features/admin/pages/AccountProfile"),
+            "Account Profile"
+          ),
+        ],
       },
     ],
   },
