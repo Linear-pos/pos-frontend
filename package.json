@@ -16,7 +16,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "start": "electron .",
-    "electron": "wait-on http://localhost:5174 && electron . --no-sandbox --disable-setuid-sandbox",
+    "electron": "wait-on http://localhost:5173 && electron . --no-sandbox --disable-setuid-sandbox",
     "dev:electron": "concurrently \"pnpm dev\" \"pnpm electron\"",
     "dist": "pnpm build && electron-builder",
     "drizzle:generate": "drizzle-kit generate --config ./desktop/src/drizzle.config.ts",
@@ -39,6 +39,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "drizzle-orm": "^0.45.1",
+    "electron-updater": "^6.7.3",
     "framer-motion": "^12.27.1",
     "laravel-echo": "^2.2.6",
     "lucide-react": "^0.562.0",
@@ -92,7 +93,6 @@
       "dist/**/*",
       "desktop/**/*",
       "package.json",
-      "electron/**/*",
       "!node_modules"
     ],
     "asarUnpack": [
@@ -119,8 +119,7 @@
       "target": [
         "nsis",
         "portable"
-      ],
-      "icon": "desktop/assets/icon.ico"
+      ]
     },
     "mac": {
       "target": [

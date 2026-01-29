@@ -58,6 +58,7 @@ export default function CashierManagement() {
     // Form state
     const [formData, setFormData] = useState({
         fullName: '',
+        pin: '',
         role: 'cashier' as 'cashier' | 'supervisor' | 'manager',
         canOpenShift: true,
         canCloseShift: false,
@@ -148,6 +149,7 @@ export default function CashierManagement() {
     const resetForm = () => {
         setFormData({
             fullName: '',
+            pin: '',
             role: 'cashier',
             canOpenShift: true,
             canCloseShift: false,
@@ -475,167 +477,167 @@ export default function CashierManagement() {
                                 )}
                             </Button>
                         )}
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
-            {/* Edit Cashier Modal */ }
-    <Dialog open={editModal} onOpenChange={setEditModal}>
-        <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-                <DialogTitle>Edit Cashier</DialogTitle>
-                <DialogDescription>Update cashier information and permissions</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-                <div>
-                    <Label htmlFor="edit-name">Full Name</Label>
-                    <Input
-                        id="edit-name"
-                        value={formData.fullName}
-                        onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                    />
-                </div>
-                <div>
-                    <Label htmlFor="edit-role">Role</Label>
-                    <Select
-                        value={formData.role}
-                        onValueChange={(value: any) => setFormData({ ...formData, role: value })}
-                    >
-                        <SelectTrigger>
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="cashier">Cashier</SelectItem>
-                            <SelectItem value="supervisor">Supervisor</SelectItem>
-                            <SelectItem value="manager">Manager</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="space-y-2">
-                    <Label>Permissions</Label>
-                    <div className="flex flex-col gap-2">
-                        <label className="flex items-center gap-2">
-                            <input
-                                type="checkbox"
-                                checked={formData.canOpenShift}
-                                onChange={(e) => setFormData({ ...formData, canOpenShift: e.target.checked })}
+            {/* Edit Cashier Modal */}
+            <Dialog open={editModal} onOpenChange={setEditModal}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Edit Cashier</DialogTitle>
+                        <DialogDescription>Update cashier information and permissions</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div>
+                            <Label htmlFor="edit-name">Full Name</Label>
+                            <Input
+                                id="edit-name"
+                                value={formData.fullName}
+                                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                             />
-                            <span className="text-sm">Can open shifts</span>
-                        </label>
-                        <label className="flex items-center gap-2">
-                            <input
-                                type="checkbox"
-                                checked={formData.canCloseShift}
-                                onChange={(e) => setFormData({ ...formData, canCloseShift: e.target.checked })}
-                            />
-                            <span className="text-sm">Can close shifts</span>
-                        </label>
-                        <label className="flex items-center gap-2">
-                            <input
-                                type="checkbox"
-                                checked={formData.canOverridePrices}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, canOverridePrices: e.target.checked })
-                                }
-                            />
-                            <span className="text-sm">Can override prices</span>
-                        </label>
-                    </div>
-                </div>
-            </div>
-            <DialogFooter>
-                <Button variant="outline" onClick={() => setEditModal(false)}>
-                    Cancel
-                </Button>
-                <Button onClick={handleEdit} disabled={updateMutation.isPending}>
-                    {updateMutation.isPending ? (
-                        <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Updating...
-                        </>
-                    ) : (
-                        'Update Cashier'
-                    )}
-                </Button>
-            </DialogFooter>
-        </DialogContent>
-    </Dialog>
-
-    {/* Reset PIN Modal */ }
-    <Dialog open={resetPinModal} onOpenChange={setResetPinModal}>
-        <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-                <DialogTitle>Generate Temporary PIN</DialogTitle>
-                <DialogDescription>
-                    {newPin
-                        ? `Temporary PIN for ${selectedCashier?.fullName}`
-                        : `Generate a temporary PIN for ${selectedCashier?.fullName}`
-                    }
-                </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-                {newPin ? (
-                    <>
-                        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-                            <Label className="text-sm text-muted-foreground">Temporary PIN</Label>
-                            <div className="flex items-center justify-between mt-2">
-                                <span className="text-4xl font-mono font-bold tracking-widest">
-                                    {newPin}
-                                </span>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                        navigator.clipboard.writeText(newPin);
-                                        toast.success('PIN copied to clipboard');
-                                    }}
-                                >
-                                    Copy
-                                </Button>
+                        </div>
+                        <div>
+                            <Label htmlFor="edit-role">Role</Label>
+                            <Select
+                                value={formData.role}
+                                onValueChange={(value: any) => setFormData({ ...formData, role: value })}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="cashier">Cashier</SelectItem>
+                                    <SelectItem value="supervisor">Supervisor</SelectItem>
+                                    <SelectItem value="manager">Manager</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Permissions</Label>
+                            <div className="flex flex-col gap-2">
+                                <label className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.canOpenShift}
+                                        onChange={(e) => setFormData({ ...formData, canOpenShift: e.target.checked })}
+                                    />
+                                    <span className="text-sm">Can open shifts</span>
+                                </label>
+                                <label className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.canCloseShift}
+                                        onChange={(e) => setFormData({ ...formData, canCloseShift: e.target.checked })}
+                                    />
+                                    <span className="text-sm">Can close shifts</span>
+                                </label>
+                                <label className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.canOverridePrices}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, canOverridePrices: e.target.checked })
+                                        }
+                                    />
+                                    <span className="text-sm">Can override prices</span>
+                                </label>
                             </div>
                         </div>
-                        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-                            <p className="text-sm text-blue-800 dark:text-blue-300">
-                                <strong>Important:</strong> Share this PIN securely with the cashier.
-                                They must use it to set their permanent PIN within 24 hours.
-                            </p>
-                        </div>
-                    </>
-                ) : (
-                    <div className="text-center py-4">
-                        <p className="text-muted-foreground mb-4">
-                            Click "Generate PIN" to create a temporary 4-digit PIN.
-                            The cashier will use this to set their permanent PIN.
-                        </p>
                     </div>
-                )}
-            </div>
-            <DialogFooter>
-                <Button
-                    variant="outline"
-                    onClick={() => {
-                        setResetPinModal(false);
-                        setNewPin('');
-                        setSelectedCashier(null);
-                    }}
-                >
-                    {newPin ? 'Close' : 'Cancel'}
-                </Button>
-                {!newPin && (
-                    <Button onClick={handleResetPin} disabled={resetPinMutation.isPending}>
-                        {resetPinMutation.isPending ? (
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setEditModal(false)}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleEdit} disabled={updateMutation.isPending}>
+                            {updateMutation.isPending ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Updating...
+                                </>
+                            ) : (
+                                'Update Cashier'
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Reset PIN Modal */}
+            <Dialog open={resetPinModal} onOpenChange={setResetPinModal}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Generate Temporary PIN</DialogTitle>
+                        <DialogDescription>
+                            {newPin
+                                ? `Temporary PIN for ${selectedCashier?.fullName}`
+                                : `Generate a temporary PIN for ${selectedCashier?.fullName}`
+                            }
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        {newPin ? (
                             <>
-                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                Generating...
+                                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                                    <Label className="text-sm text-muted-foreground">Temporary PIN</Label>
+                                    <div className="flex items-center justify-between mt-2">
+                                        <span className="text-4xl font-mono font-bold tracking-widest">
+                                            {newPin}
+                                        </span>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(newPin);
+                                                toast.success('PIN copied to clipboard');
+                                            }}
+                                        >
+                                            Copy
+                                        </Button>
+                                    </div>
+                                </div>
+                                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                                    <p className="text-sm text-blue-800 dark:text-blue-300">
+                                        <strong>Important:</strong> Share this PIN securely with the cashier.
+                                        They must use it to set their permanent PIN within 24 hours.
+                                    </p>
+                                </div>
                             </>
                         ) : (
-                            'Generate PIN'
+                            <div className="text-center py-4">
+                                <p className="text-muted-foreground mb-4">
+                                    Click "Generate PIN" to create a temporary 4-digit PIN.
+                                    The cashier will use this to set their permanent PIN.
+                                </p>
+                            </div>
                         )}
-                    </Button>
-                )}
-            </DialogFooter>
-        </DialogContent>
-    </Dialog>
+                    </div>
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                setResetPinModal(false);
+                                setNewPin('');
+                                setSelectedCashier(null);
+                            }}
+                        >
+                            {newPin ? 'Close' : 'Cancel'}
+                        </Button>
+                        {!newPin && (
+                            <Button onClick={handleResetPin} disabled={resetPinMutation.isPending}>
+                                {resetPinMutation.isPending ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        Generating...
+                                    </>
+                                ) : (
+                                    'Generate PIN'
+                                )}
+                            </Button>
+                        )}
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div >
     );
 }

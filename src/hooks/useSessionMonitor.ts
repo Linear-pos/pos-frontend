@@ -48,8 +48,8 @@ export function useSessionMonitor(
     });
 
     const lastActivityRef = useRef<number>(Date.now());
-    const heartbeatTimerRef = useRef<number>();
-    const checkTimerRef = useRef<number>();
+    const heartbeatTimerRef = useRef<any>(null);
+    const checkTimerRef = useRef<any>(null);
     const hasTimedOutRef = useRef(false);
 
     /**

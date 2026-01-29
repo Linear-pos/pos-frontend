@@ -5,7 +5,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import { axiosInstance } from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Monitor, Users, Building2 } from 'lucide-react';
+import { Monitor, Users, Building2, Loader2 } from 'lucide-react';
 import {
     Select,
     SelectContent,
@@ -214,8 +214,9 @@ export const SelectModePage = () => {
                                 <Button
                                     onClick={handleTerminalSelect}
                                     className="flex-1"
-                                    disabled={!selectedTerminalId}
+                                    disabled={!selectedTerminalId || loading}
                                 >
+                                    {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                                     Bind Device
                                 </Button>
                             </div>

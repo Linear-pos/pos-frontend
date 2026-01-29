@@ -33,7 +33,7 @@ export interface Cashier {
 
 export interface CreateCashierRequest {
     fullName: string;
-    pin: string;
+    pin?: string;
     role?: 'cashier' | 'supervisor' | 'manager';
     branchId?: string;
     userId?: string;
