@@ -75,6 +75,62 @@ const productService = {
   },
 };
 
+import pkg from 'electron-updater';
+const { autoUpdater } = pkg;
+
+// Configure autoUpdater
+autoUpdater.autoDownload = false; // User requested non-aggressive updates
+autoUpdater.autoInstallOnAppQuit = true;
+
+function setupAutoUpdater(win) {
+  function sendStatusToWindow(text) {
+    win.webContents.send('message', text);
+  }
+
+  autoUpdater.on('checking-for-update', () => {
+    sendStatusToWindow('Checking for update...');
+    win.webContents.send('params:update-status', { status: 'checking' });
+  });
+
+  autoUpdater.on('update-available', (info) => {
+    sendStatusToWindow('Update available.');
+    win.webContents.send('params:update-status', { status: 'available', info });
+    // Optional: auto-download if we wanted to, but we'll let user trigger it or do it silently
+    autoUpdater.downloadUpdate();
+  });
+
+  autoUpdater.on('update-not-available', (info) => {
+    sendStatusToWindow('Update not available.');
+    win.webContents.send('params:update-status', { status: 'not-available', info });
+  });
+
+  autoUpdater.on('error', (err) => {
+    sendStatusToWindow('Error in auto-updater. ' + err);
+    win.webContents.send('params:update-status', { status: 'error', error: err.toString() });
+  });
+
+  autoUpdater.on('download-progress', (progressObj) => {
+    let log_message = "Download speed: " + progressObj.bytesPerSecond;
+    log_message = log_message + ' - Downloaded ' + progressObj.percent + '%';
+    log_message = log_message + ' (' + progressObj.transferred + "/" + progressObj.total + ')';
+    sendStatusToWindow(log_message);
+    win.webContents.send('params:update-status', { status: 'downloading', progress: progressObj });
+  });
+
+  autoUpdater.on('update-downloaded', (info) => {
+    sendStatusToWindow('Update downloaded');
+    win.webContents.send('params:update-status', { status: 'downloaded', info });
+  });
+
+  // Check for updates immediately
+  autoUpdater.checkForUpdatesAndNotify();
+
+  // IPC handlers for manual control if we build a UI for it
+  ipcMain.handle('updater:check', () => autoUpdater.checkForUpdates());
+  ipcMain.handle('updater:download', () => autoUpdater.downloadUpdate());
+  ipcMain.handle('updater:install', () => autoUpdater.quitAndInstall());
+}
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1200,
@@ -121,11 +177,13 @@ function createWindow() {
   });
 
   if (isDev) {
-    win.loadURL("http://localhost:5174");
+    win.loadURL("http://localhost:5173");
     win.webContents.openDevTools();
   } else {
     win.loadFile(path.join(__dirname, "..", "dist", "index.html"));
   }
+
+  setupAutoUpdater(win);
 
   return win;
 }

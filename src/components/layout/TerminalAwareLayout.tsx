@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useDeviceModeStore } from '@/stores/deviceMode.store';
 import { PINPadOverlay } from '@/components/auth/PINPadOverlay';
 import { ProtectedLayout } from './ProtectedLayout';
+import { UpdateStatusListener } from '@/components/updater/UpdateStatusListener';
 import type { UserRole } from '@/types/user';
 
 interface TerminalAwareLayoutProps {
@@ -47,5 +48,10 @@ export const TerminalAwareLayout = ({ requiredRole }: TerminalAwareLayoutProps) 
 
     // Only use ProtectedLayout for non-terminal modes
     console.log('[TerminalAwareLayout] Non-terminal mode, using ProtectedLayout');
-    return <ProtectedLayout requiredRole={requiredRole} />;
+    return (
+        <>
+            <UpdateStatusListener />
+            <ProtectedLayout requiredRole={requiredRole} />
+        </>
+    );
 };
