@@ -26,6 +26,7 @@ import { ImageUpload } from '@/components/ui/image-upload';
 import { productsAPI, type CreateProductPayload } from '../api/products.api';
 import type { Category } from '../api/categories.api';
 
+
 interface CreateProductModalProps {
     open: boolean;
     categories: Category[];

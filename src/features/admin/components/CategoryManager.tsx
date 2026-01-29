@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Plus, Edit, Trash2, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,16 +12,22 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { categoriesAPI, type Category } from '../api/categories.api';
+import { useCategories, type Category} from '@/hooks/useCategories';
+
 
 interface CategoryManagerProps {
-    onClose?: () => void;
+    onCategoryChange?: () => void;
 }
 
-export const CategoryManager = ({ onClose: _onClose }: CategoryManagerProps) => {
-    const [categories, setCategories] = useState<Category[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+export const CategoryManager = ({ onCategoryChange }: CategoryManagerProps) => {
+    const {
+        categories,
+        loading,
+        error: apiError,
+        createCategory,
+        updateCategory,
+        deleteCategory
+    } = useCategories();
 
     // Modals
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -30,64 +36,47 @@ export const CategoryManager = ({ onClose: _onClose }: CategoryManagerProps) => 
 
     // Form data
     const [newCategoryName, setNewCategoryName] = useState('');
+    const [newCategoryDescription, setNewCategoryDescription] = useState('');
     const [editCategoryName, setEditCategoryName] = useState('');
-
-    const fetchCategories = async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const data = await categoriesAPI.getCategories();
-            setCategories(data);
-        } catch (err: any) {
-            setError(err.message || 'Failed to fetch categories');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchCategories();
-    }, []);
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError(null);
+        if (!newCategoryName.trim()) return;
 
         try {
-            await categoriesAPI.createCategory({ name: newCategoryName });
+            await createCategory({ 
+                name: newCategoryName.trim()
+            });
             setNewCategoryName('');
             setShowCreateModal(false);
-            fetchCategories();
-        } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to create category');
+            onCategoryChange?.();
+        } catch (err) {
+            console.error('Failed to create category:', err);
         }
     };
 
     const handleEdit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!editingCategory) return;
+        if (!editingCategory || !editCategoryName.trim()) return;
 
-        setError(null);
         try {
-            await categoriesAPI.updateCategory(editingCategory.id, { name: editCategoryName });
+            await updateCategory(editingCategory.id, { name: editCategoryName.trim() });
             setEditingCategory(null);
-            setEditCategoryName('');
-            fetchCategories();
-        } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to update category');
+            onCategoryChange?.();
+        } catch (err) {
+            console.error('Failed to update category:', err);
         }
     };
 
     const handleDelete = async () => {
         if (!deletingCategory) return;
 
-        setError(null);
         try {
-            await categoriesAPI.deleteCategory(deletingCategory.id);
+            await deleteCategory(deletingCategory.id);
             setDeletingCategory(null);
-            fetchCategories();
-        } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to delete category');
+            onCategoryChange?.();
+        } catch (err) {
+            console.error('Failed to delete category:', err);
         }
     };
 
@@ -104,9 +93,9 @@ export const CategoryManager = ({ onClose: _onClose }: CategoryManagerProps) => 
                 </Button>
             </div>
 
-            {error && (
+            {apiError && (
                 <div className="bg-destructive/10 text-destructive px-4 py-2 rounded-md text-sm">
-                    {error}
+                    {apiError}
                 </div>
             )}
 
@@ -170,13 +159,24 @@ export const CategoryManager = ({ onClose: _onClose }: CategoryManagerProps) => 
                     <form onSubmit={handleCreate}>
                         <div className="grid gap-4 py-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="category-name">Category Name</Label>
+                                <Label htmlFor="category-name">Category Name <span className='text-red-500'>(required)</span></Label>
                                 <Input
                                     id="category-name"
                                     value={newCategoryName}
                                     onChange={(e) => setNewCategoryName(e.target.value)}
                                     placeholder="e.g., Electronics, Food, Beverages"
                                     required
+                                />
+                            </div>
+                        </div>
+                        <div className="grid gap-4 py-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="description">Description (Optional)</Label>
+                                <Input
+                                    id="description"
+                                    value={newCategoryDescription}
+                                    onChange={(e) => setNewCategoryDescription(e.target.value)}
+                                    placeholder="Enter a description for this category"
                                 />
                             </div>
                         </div>
@@ -191,7 +191,7 @@ export const CategoryManager = ({ onClose: _onClose }: CategoryManagerProps) => 
             </Dialog>
 
             {/* Edit Modal */}
-            <Dialog open={!!editingCategory} onOpenChange={() => setEditingCategory(null)}>
+            <Dialog open={!!editingCategory} onOpenChange={(open) => !open && setEditingCategory(null)}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Edit Category</DialogTitle>
@@ -207,6 +207,7 @@ export const CategoryManager = ({ onClose: _onClose }: CategoryManagerProps) => 
                                     id="edit-category-name"
                                     value={editCategoryName}
                                     onChange={(e) => setEditCategoryName(e.target.value)}
+                                    placeholder="Enter category name"
                                     required
                                 />
                             </div>

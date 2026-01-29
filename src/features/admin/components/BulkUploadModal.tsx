@@ -1,571 +1,856 @@
-import { useState, useRef } from 'react';
-import { Upload, FileText, Check, AlertTriangle, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter
-} from '@/components/ui/dialog';
-import { toast } from 'sonner';
-import { productsAPI } from '../api/products.api';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
+import { useState, useRef, useEffect } from 'react';
+import { 
+  Upload, 
+  FileText, 
+  CheckCircle, 
+  AlertCircle,
+  X,
+  Loader2,
+  FileSpreadsheet,
+  Image as ImageIcon,
+  ExternalLink
+} from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+import { axiosInstance as api } from '../../../services/api';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+// import { Button } from '@/components/ui/button';
 
-type UploadStep = 'upload' | 'preview' | 'results';
-
-interface PreviewProduct {
-  name: string;
-  sku: string;
-  price: number;
-  stockQuantity?: number;
-  isActive: boolean;
-  _rowNumber: number;
+interface BulkUploadModalProps {
+  open: boolean;
+  onClose: () => void;
+  onUploadComplete?: () => void;
 }
 
 interface UploadResult {
-  created: number;
-  updated: number;
-  total: number;
-  errors: { sku: string; error: string }[];
-  processingErrors: string[];
-}
-
-// CORRECTED: Changed from isOpen to open to match ProductCatalog usage
-interface BulkUploadModalProps {
-  open: boolean;  // Changed from isOpen to open
-  onClose: () => void;
-  onUploadComplete: () => void;
+  success: boolean;
+  data: {
+    total: number;
+    created: number;
+    errors?: Array<{
+      sku: string;
+      error: string;
+      details?: string;
+    }>;
+    processingErrors?: string[];
+  };
 }
 
 export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadModalProps) => {
-  const [isLoading, setIsLoading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [step, setStep] = useState<UploadStep>('upload');
-  const [previewData, setPreviewData] = useState<PreviewProduct[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [previewData, setPreviewData] = useState<any[]>([]);
+  const [showPreview, setShowPreview] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [imagePreview, setImagePreview] = useState<{url: string, sku: string} | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
 
-  const parseFileForPreview = async (file: File): Promise<PreviewProduct[]> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (!selectedFile) return;
 
-      reader.onload = (e) => {
-        try {
-          const content = e.target?.result as string;
-          const extension = file.name.split('.').pop()?.toLowerCase();
+    // Check file type
+    if (!selectedFile.name.endsWith('.csv')) {
+      toast.error('Please select a CSV file');
+      return;
+    }
 
-          if (extension === 'json') {
-            const data = JSON.parse(content);
-            const products = Array.isArray(data) ? data : [data];
-            const previewProducts = products.slice(0, 10).map((item: any, index: number) => ({
-              name: item.name || item.product_name || 'N/A',
-              sku: item.sku || item.id || `MISSING-${index + 1}`,
-              price: Number(item.price) || 0,
-              stockQuantity: item.stockQuantity !== undefined ? Number(item.stockQuantity) :
-                item.stock_quantity !== undefined ? Number(item.stock_quantity) : undefined,
-              isActive: item.isActive !== false,
-              _rowNumber: index + 1
-            }));
-            resolve(previewProducts);
-          } else {
-            // CSV parsing with better handling
-            const lines = content.split('\n').filter(line => line.trim().length > 0);
-            if (lines.length === 0) {
-              reject(new Error('File is empty'));
-              return;
-            }
+    // Check file size (max 10MB)
+    if (selectedFile.size > 10 * 1024 * 1024) {
+      toast.error('File size must be less than 10MB');
+      return;
+    }
 
-            const headers = lines[0].split(',').map((h: string) =>
-              h.trim().toLowerCase().replace(/"/g, '')
-            );
-
-            const data = lines.slice(1, 11).map((line, index) => {
-              // Handle quoted values and commas within quotes
-              const values: string[] = [];
-              let currentValue = '';
-              let inQuotes = false;
-
-              for (let i = 0; i < line.length; i++) {
-                const char = line[i];
-                if (char === '"') {
-                  inQuotes = !inQuotes;
-                } else if (char === ',' && !inQuotes) {
-                  values.push(currentValue.trim().replace(/^"|"$/g, ''));
-                  currentValue = '';
-                } else {
-                  currentValue += char;
-                }
-              }
-              values.push(currentValue.trim().replace(/^"|"$/g, ''));
-
-              const row: Record<string, any> = { _rowNumber: index + 1 };
-              headers.forEach((header, i) => {
-                row[header] = values[i] || '';
-              });
-              return row;
-            });
-
-            const previewProducts = data.map((item: any) => ({
-              name: item.name || item.product_name || 'N/A',
-              sku: item.sku || item.id || `MISSING-${item._rowNumber}`,
-              price: Number(item.price) || 0,
-              stockQuantity: item.stockquantity !== undefined ? Number(item.stockquantity) :
-                item.stock_quantity !== undefined ? Number(item.stock_quantity) :
-                  item.stock !== undefined ? Number(item.stock) : undefined,
-              isActive: item.isactive === undefined ? true :
-                String(item.isactive).toLowerCase() === 'true' ||
-                item.isactive === '1' ||
-                item.isactive === 'yes',
-              _rowNumber: item._rowNumber
-            }));
-
-            resolve(previewProducts);
-          }
-        } catch (error) {
-          console.error('Preview parse error:', error);
-          reject(new Error('Failed to parse file. Please check the file format.'));
-        }
-      };
-
-      reader.onerror = () => reject(new Error('Error reading file'));
-      reader.readAsText(file);
-    });
+    setFile(selectedFile);
+    setUploadResult(null);
+    setValidationErrors([]);
+    setImagePreview(null);
+    
+    // Preview CSV data
+    await previewCSV(selectedFile);
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const selectedFile = e.target.files[0];
-
-      // Validate file type
-      const validTypes = ['text/csv', 'application/json', 'application/vnd.ms-excel'];
-      const fileExt = selectedFile.name.split('.').pop()?.toLowerCase();
-      const isValidType = validTypes.includes(selectedFile.type) ||
-        ['.csv', '.json'].includes(`.${fileExt}`);
-
-      // Validate file size (10MB max)
-      const maxSize = 10 * 1024 * 1024;
-      const isValidSize = selectedFile.size <= maxSize;
-
-      if (!isValidType) {
-        setError('Please upload a valid CSV or JSON file');
-        return;
-      }
-
-      if (!isValidSize) {
-        setError('File size must be less than 10MB');
-        return;
-      }
-
+  const previewCSV = async (selectedFile: File) => {
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
       try {
-        setFile(selectedFile);
-        setError(null);
-        const preview = await parseFileForPreview(selectedFile);
-        setPreviewData(preview);
-        setStep('preview');
-      } catch (err: any) {
-        console.error('Preview error:', err);
-        setError(err.message || 'Failed to process file for preview');
+        const text = e.target?.result as string;
+        const lines = text.split('\n').filter(line => line.trim());
+        
+        if (lines.length <= 1) { // Only header or empty
+          setValidationErrors(['CSV file appears to be empty or only contains headers']);
+          return;
+        }
+
+        // Parse CSV headers
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        
+        // Parse CSV data
+        const data = lines.slice(1).map((line, index) => {
+          // Handle quoted values with commas inside
+          const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => {
+            let val = v.trim();
+            // Remove surrounding quotes if present
+            if (val.startsWith('"') && val.endsWith('"')) {
+              val = val.slice(1, -1);
+            }
+            return val;
+          });
+          
+          const row: any = {};
+          
+          headers.forEach((header, i) => {
+            row[header] = values[i] || '';
+          });
+          
+          return {
+            ...row,
+            _rowNumber: index + 2 // +2 because header is row 1 and 1-indexed
+          };
+        }).filter(row => Object.values(row).some(val => val !== '')); // Remove empty rows
+
+        // Validate required columns
+        const requiredColumns = ['sku', 'name', 'price'];
+        const missingColumns = requiredColumns.filter(col => !headers.includes(col));
+        
+        if (missingColumns.length > 0) {
+          setValidationErrors([`Missing required columns: ${missingColumns.join(', ')}`]);
+          setPreviewData([]);
+        } else {
+          // Validate data
+          const errors: string[] = [];
+          data.forEach((row, _index) => {
+            if (!row.sku?.trim()) {
+              errors.push(`Row ${row._rowNumber}: SKU is required`);
+            }
+            if (!row.name?.trim()) {
+              errors.push(`Row ${row._rowNumber}: Name is required`);
+            }
+            const price = Number(row.price);
+            if (isNaN(price) || price <= 0) {
+              errors.push(`Row ${row._rowNumber}: Price must be a valid number greater than 0`);
+            }
+            // Validate image URLs if present - FIX: Check if image_url exists and is not empty
+            if (row.image_url && row.image_url.trim() !== '') {
+              if (!isValidUrl(row.image_url)) {
+                errors.push(`Row ${row._rowNumber}: Invalid image URL format`);
+              }
+            }
+          });
+
+          if (errors.length > 0) {
+            setValidationErrors(errors.slice(0, 5)); // Show first 5 errors
+            if (errors.length > 5) {
+              setValidationErrors(prev => [...prev, `... and ${errors.length - 5} more errors`]);
+            }
+          } else {
+            setPreviewData(data.slice(0, 5)); // Show first 5 rows for preview
+            setShowPreview(true);
+          }
+        }
+      } catch (error) {
+        console.error('Error parsing CSV:', error);
+        toast.error('Error parsing CSV file. Make sure it is properly formatted.');
       }
+    };
+    
+    reader.readAsText(selectedFile, 'UTF-8');
+  };
+
+  const isValidUrl = (urlString: string) => {
+    try {
+      const url = new URL(urlString);
+      return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch {
+      return false;
     }
+  };
+
+  const downloadTemplate = () => {
+    const headers = Object.keys(csvTemplate[0]);
+    const csvContent = [
+      headers.join(','),
+      ...csvTemplate.map(row => 
+        headers.map(header => {
+          const value = row[header as keyof typeof row];
+          // Quote values that contain commas
+          return typeof value === 'string' && value.includes(',') ? `"${value}"` : value;
+        }).join(',')
+      )
+    ].join('\n');
+
+    const blob = new Blob([`\ufeff${csvContent}`], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'product-bulk-upload-template.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    
+    toast.success('Template downloaded. Fill it with your product data.');
+  };
+
+  const previewImage = (url: string, sku: string) => {
+    if (!url || url.trim() === '') {
+      toast.error('No image URL provided');
+      return;
+    }
+    
+    if (!isValidUrl(url)) {
+      toast.error('Invalid image URL format');
+      return;
+    }
+    setImagePreview({ url, sku });
   };
 
   const handleUpload = async () => {
     if (!file) {
-      setError('Please select a file to upload');
+      toast.error('Please select a file first');
       return;
     }
 
-    setIsLoading(true);
-    setError(null);
-    setUploadProgress(0);
+    if (validationErrors.length > 0) {
+      toast.error('Please fix validation errors before uploading');
+      return;
+    }
 
-    // Simulate progress updates
-    const progressInterval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 90) {
-          clearInterval(progressInterval);
-          return prev;
-        }
-        return prev + 10;
-      });
-    }, 300);
+    setIsUploading(true);
+    setUploadResult(null);
+    
+    const formData = new FormData();
+    
+    formData.append('file', file);
 
     try {
-      const response = await productsAPI.bulkUpload(file);
-      clearInterval(progressInterval);
-      setUploadProgress(100);
+      const response = await api.post('/products/bulk', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        onUploadProgress: (progressEvent) => {
+          // You can add progress bar here if needed
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / (progressEvent.total || 100)
+          );
+          console.log(`Upload progress: ${percentCompleted}%`);
+        }
+      });
 
-      if (response.success) {
-        const result: UploadResult = {
-          created: response.data.created || 0,
-          updated: response.data.updated || 0,
-          total: response.data.total || 0,
-          errors: response.data.errors || [],
-          processingErrors: response.data.processingErrors || []
-        };
-
-        setUploadResult(result);
-        setStep('results');
-
-        // Show toast notification
-        if (result.errors.length === 0 && result.processingErrors.length === 0) {
-          toast.success('Success', {
-            description: `Successfully imported ${result.total} products`,
-            id: 'bulk-upload-success',
-          });
-        } else {
-          toast.warning('Partial Success', {
-            description: `Imported ${result.created + result.updated} of ${result.total} products. ${result.errors.length + result.processingErrors.length} had errors.`,
-            id: 'bulk-upload-partial',
+      setUploadResult(response.data);
+      
+      if (response.data.success) {
+        const { created, errors, processingErrors } = response.data.data;
+        
+        toast.success(`Successfully processed ${created} products`, {
+          duration: 5000,
+        });
+        
+        if (errors?.length > 0) {
+          toast.error(`${errors.length} products failed to process`, {
+            duration: 6000,
           });
         }
-
-        // If there were successful imports, trigger refresh
-        if (result.created > 0 || result.updated > 0) {
-          // Call onUploadComplete after a short delay to show results
-          setTimeout(() => {
-            onUploadComplete();
-          }, 2000);
+        
+        if (processingErrors?.length > 0) {
+          toast.error(`${processingErrors.length} image processing errors occurred`, {
+            duration: 6000,
+          });
+        }
+        
+        // Call the upload complete callback
+        if (onUploadComplete) {
+          onUploadComplete();
         }
       } else {
-        throw new Error(response.message || 'Failed to upload products');
+        toast.error('Upload failed. Please try again.');
       }
-    } catch (err: unknown) {
-      clearInterval(progressInterval);
-      let errorMessage = 'Failed to upload products. Please try again.';
-
-      if (err instanceof Error) {
-        if (err.message.includes('Network Error')) {
-          errorMessage = 'Network error. Please check your connection.';
-        } else if (err.message.includes('timeout')) {
-          errorMessage = 'Request timed out. The file might be too large.';
-        } else {
-          errorMessage = err.message;
-        }
-      }
-
-      console.error('Upload error details:', err);
-      setError(errorMessage);
-      toast.error('Error', {
-        description: errorMessage,
-        id: 'bulk-upload-error',
-      });
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.error || 
+                          'Upload failed. Please check your connection and try again.';
+      toast.error(errorMessage, { duration: 6000 });
     } finally {
-      setIsLoading(false);
+      setIsUploading(false);
     }
   };
 
-  const handleClose = () => {
+  const resetUpload = () => {
     setFile(null);
-    setError(null);
-    setStep('upload');
-    setPreviewData([]);
     setUploadResult(null);
-    setUploadProgress(0);
+    setPreviewData([]);
+    setShowPreview(false);
+    setValidationErrors([]);
+    setImagePreview(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+  };
+
+  const formatNumber = (num: any) => {
+    if (num === undefined || num === null || num === '') return 'N/A';
+    const number = Number(num);
+    return isNaN(number) ? num : number.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  };
+
+  // Reset state when modal is closed
+  useEffect(() => {
+    if (!open) {
+      resetUpload();
+    }
+  }, [open]);
+
+  const handleClose = () => {
     onClose();
   };
 
-  const handleCancelPreview = () => {
-    setStep('upload');
-    setPreviewData([]);
-    setUploadResult(null);
-  };
-
-  const handleRetry = () => {
-    setStep('upload');
-    setUploadResult(null);
-    setPreviewData([]);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] flex flex-col">
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            <span>
-              {step === 'upload' && 'Bulk Upload Products'}
-              {step === 'preview' && 'Review Products'}
-              {step === 'results' && 'Upload Results'}
-            </span>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleClose}
-              className="h-6 w-6"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+          <DialogTitle className="flex items-center gap-2">
+            <Upload className="h-5 w-5" />
+            Bulk Product Upload
           </DialogTitle>
-          <DialogDescription>
-            {step === 'upload' && 'Upload a CSV or JSON file to import multiple products at once'}
-            {step === 'preview' && 'Review the products before importing'}
-            {step === 'results' && 'Upload completed with results'}
-          </DialogDescription>
         </DialogHeader>
-
-        <div className="flex-1 overflow-auto py-4">
-          {step === 'upload' && (
-            <div className="space-y-4">
-              <div
-                className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  accept=".csv, .json, text/csv, application/json"
-                  className="hidden"
-                />
-                <Upload className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                <p className="text-sm font-medium text-gray-600 mb-1">
-                  Click to upload or drag and drop
-                </p>
-                <p className="text-xs text-gray-500">
-                  CSV or JSON files (Max 10MB)
-                </p>
-              </div>
-
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-md">
-                <h4 className="font-medium text-sm text-blue-800 dark:text-blue-300 mb-2 flex items-center">
-                  <FileText className="h-4 w-4 mr-2" />
-                  File Format Requirements
-                </h4>
-                <ul className="text-xs text-blue-700 dark:text-blue-400 space-y-1">
-                  <li>• CSV or JSON format with UTF-8 encoding</li>
-                  <li>• Required fields: <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">sku</code>, <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">name</code>, <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">price</code></li>
-                  <li>• Optional fields: <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">stockQuantity</code>, <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">isActive</code>, <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">category</code>, <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">description</code></li>
-                  <li>• First row should contain headers</li>
-                </ul>
-              </div>
-
-              {error && (
-                <Alert variant="destructive">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertTitle>Error</AlertTitle>
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
+        <div className="p-1">
+          <div className="space-y-6">
+            <div className="mb-4">
+              <p className="text-gray-600 text-sm">
+                Upload a CSV file to create multiple products at once. Images will be automatically downloaded from URLs and uploaded to Cloudinary.
+              </p>
             </div>
-          )}
 
-          {step === 'preview' && (
-            <div className="space-y-4">
-              <Alert className="bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
-                <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                <AlertTitle className="text-amber-800 dark:text-amber-300">Preview</AlertTitle>
-                <AlertDescription className="text-amber-700 dark:text-amber-400">
-                  Showing first {previewData.length} rows. Please review before uploading.
-                </AlertDescription>
-              </Alert>
-
-              <div className="rounded-md border overflow-hidden">
-                <ScrollArea className="h-[300px]">
-                  <Table>
-                    <TableHeader className="bg-gray-50 dark:bg-gray-800">
-                      <TableRow>
-                        <TableHead className="w-12">#</TableHead>
-                        <TableHead>SKU</TableHead>
-                        <TableHead>Name</TableHead>
-                        <TableHead className="text-right">Price</TableHead>
-                        <TableHead className="text-right">Stock</TableHead>
-                        <TableHead>Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {previewData.map((item) => (
-                        <TableRow key={`${item.sku}-${item._rowNumber}`}>
-                          <TableCell className="text-xs text-gray-500">{item._rowNumber}</TableCell>
-                          <TableCell className="font-mono text-xs">
-                            <div className="max-w-[120px] truncate" title={item.sku}>
-                              {item.sku}
-                            </div>
-                          </TableCell>
-                          <TableCell className="max-w-[200px] truncate">
-                            <div className="truncate" title={item.name}>
-                              {item.name}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            ${item.price.toFixed(2)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {item.stockQuantity !== undefined ? item.stockQuantity : 'N/A'}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={item.isActive ? 'default' : 'secondary'}
-                              className="text-xs"
-                            >
-                              {item.isActive ? 'Active' : 'Inactive'}
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </ScrollArea>
-              </div>
-            </div>
-          )}
-
-          {step === 'results' && uploadResult && (
-            <div className="space-y-4">
-              <Alert className={uploadResult.errors.length + uploadResult.processingErrors.length === 0 ?
-                "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800" :
-                "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800"
-              }>
-                {uploadResult.errors.length + uploadResult.processingErrors.length === 0 ? (
-                  <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
-                ) : (
-                  <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                )}
-                <AlertTitle className={
-                  uploadResult.errors.length + uploadResult.processingErrors.length === 0 ?
-                    "text-green-800 dark:text-green-300" : "text-amber-800 dark:text-amber-300"
-                }>
-                  {uploadResult.errors.length + uploadResult.processingErrors.length === 0 ?
-                    'Upload Complete' : 'Partial Success'}
-                </AlertTitle>
-                <AlertDescription className={
-                  uploadResult.errors.length + uploadResult.processingErrors.length === 0 ?
-                    "text-green-700 dark:text-green-400" : "text-amber-700 dark:text-amber-400"
-                }>
-                  Processed {uploadResult.total} products successfully.
-                  {uploadResult.errors.length + uploadResult.processingErrors.length > 0 &&
-                    ` ${uploadResult.errors.length + uploadResult.processingErrors.length} had errors.`}
-                </AlertDescription>
-              </Alert>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                    {uploadResult.created}
+            {/* Image Preview Modal */}
+            {imagePreview && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+                  <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+                    <div>
+                      <h3 className="font-semibold text-gray-800">Image Preview</h3>
+                      <p className="text-sm text-gray-500">SKU: {imagePreview.sku}</p>
+                    </div>
+                    <button
+                      onClick={() => setImagePreview(null)}
+                      className="p-2 hover:bg-gray-100 rounded-lg"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
                   </div>
-                  <div className="text-sm text-blue-700 dark:text-blue-300">Created</div>
-                </div>
-                <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
-                    {uploadResult.updated}
+                  <div className="p-4 flex items-center justify-center bg-gray-50">
+                    <img
+                      src={imagePreview.url}
+                      alt={`Preview for ${imagePreview.sku}`}
+                      className="max-w-full max-h-[60vh] object-contain rounded-lg"
+                      onError={(e) => {
+                        e.currentTarget.src = 'https://via.placeholder.com/400x300?text=Image+Not+Available';
+                        toast.error('Failed to load image from URL');
+                      }}
+                    />
                   </div>
-                  <div className="text-sm text-amber-700 dark:text-amber-300">Updated</div>
-                </div>
-                <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-red-600 dark:text-red-400">
-                    {uploadResult.errors.length + uploadResult.processingErrors.length}
+                  <div className="p-4 border-t border-gray-200 flex justify-between items-center">
+                    <a
+                      href={imagePreview.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Open in New Tab
+                    </a>
+                    <button
+                      onClick={() => setImagePreview(null)}
+                      className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900"
+                    >
+                      Close
+                    </button>
                   </div>
-                  <div className="text-sm text-red-700 dark:text-red-300">Errors</div>
                 </div>
               </div>
+            )}
 
-              {(uploadResult.errors.length > 0 || uploadResult.processingErrors.length > 0) && (
-                <div className="space-y-2">
-                  <h4 className="font-medium text-sm flex items-center">
-                    <AlertTriangle className="h-4 w-4 mr-2 text-amber-500" />
-                    Errors ({uploadResult.errors.length + uploadResult.processingErrors.length})
-                  </h4>
-                  <ScrollArea className="h-[200px] border rounded-md p-4">
-                    {uploadResult.processingErrors.map((err, i) => (
-                      <div key={`proc-${i}`} className="text-sm text-red-600 dark:text-red-400 mb-1">
-                        • {err}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Left Column - Upload Section */}
+              <div className="lg:col-span-2 space-y-6">
+                {/* Upload Card */}
+                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-lg font-semibold text-gray-800">Upload CSV File</h2>
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={downloadTemplate}
+                        className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                      >
+                        <FileSpreadsheet className="mr-2 h-4 w-4" />
+                        Download Template
+                      </button>
+                      {file && (
+                        <button
+                          onClick={resetUpload}
+                          className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                        >
+                          <X className="mr-2 h-4 w-4" />
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Upload Area */}
+                  <div
+                    className={`border-2 border-dashed rounded-xl p-8 text-center transition-all ${
+                      file 
+                        ? 'border-green-500 bg-green-50' 
+                        : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50 cursor-pointer'
+                    } ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    onClick={() => !isUploading && fileInputRef.current?.click()}
+                  >
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".csv"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                      disabled={isUploading}
+                    />
+                    
+                    {file ? (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-center">
+                          <FileText className="h-12 w-12 text-green-500" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{file.name}</p>
+                          <p className="text-sm text-gray-500 mt-1">
+                            {(file.size / 1024).toFixed(2)} KB • {previewData.length} rows in preview
+                          </p>
+                        </div>
+                        <div className="flex items-center justify-center space-x-3">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              resetUpload();
+                            }}
+                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                            disabled={isUploading}
+                          >
+                            <X className="h-4 w-4 inline mr-1" />
+                            Remove File
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUpload();
+                            }}
+                            disabled={isUploading || validationErrors.length > 0}
+                            className={`px-4 py-2 text-sm font-medium text-white rounded-lg ${
+                              validationErrors.length > 0
+                                ? 'bg-gray-400 cursor-not-allowed'
+                                : 'bg-green-600 hover:bg-green-700'
+                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                          >
+                            {isUploading ? (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
+                                Processing...
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="h-4 w-4 inline mr-2" />
+                                Confirm Upload
+                              </>
+                            )}
+                          </button>
+                        </div>
                       </div>
-                    ))}
-                    {uploadResult.errors.map((err, i) => (
-                      <div key={`row-${i}`} className="text-sm text-red-600 dark:text-red-400 mb-1">
-                        • <span className="font-mono text-xs bg-red-100 dark:bg-red-900 px-1 rounded mr-2">
-                          {err.sku}
+                    ) : (
+                      <div className="space-y-4">
+                        <Upload className="h-12 w-12 text-gray-400 mx-auto" />
+                        <div>
+                          <p className="font-medium text-gray-900">Click to upload or drag & drop</p>
+                          <p className="text-sm text-gray-500 mt-1">CSV file with product data</p>
+                        </div>
+                        <p className="text-xs text-gray-400">
+                          Supports .csv files up to 10MB
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Validation Errors */}
+                  {validationErrors.length > 0 && (
+                    <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                      <div className="flex items-center text-red-600 mb-2">
+                        <AlertCircle className="h-5 w-5 mr-2" />
+                        <span className="font-medium">Validation Errors</span>
+                      </div>
+                      <ul className="text-sm text-red-600 space-y-1 max-h-40 overflow-y-auto">
+                        {validationErrors.map((error, index) => (
+                          <li key={index} className="flex items-start">
+                            <span className="mr-2">•</span>
+                            <span>{error}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <p className="text-xs text-red-500 mt-2">
+                        Please fix these errors in your CSV file before uploading.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Preview Section */}
+                {showPreview && previewData.length > 0 && (
+                  <div className="bg-white rounded-xl border border-gray-200 p-6">
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-lg font-semibold text-gray-800">CSV Preview (First 5 Rows)</h2>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm text-gray-500">
+                          {previewData.length} rows
                         </span>
-                        {err.error}
+                        <button
+                          onClick={() => setShowPreview(!showPreview)}
+                          className="text-sm text-blue-600 hover:text-blue-800"
+                        >
+                          {showPreview ? 'Hide' : 'Show'}
+                        </button>
                       </div>
-                    ))}
-                  </ScrollArea>
-                </div>
-              )}
-            </div>
-          )}
+                    </div>
+                    
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Row
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              SKU
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Name
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Price
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Category_id
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Image
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {previewData.map((row, index) => (
+                            <tr key={index} className="hover:bg-gray-50">
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                {row._rowNumber}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                                <span className="px-2 py-1 bg-gray-100 rounded-md">
+                                  {row.sku}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-900 max-w-xs">
+                                <div className="truncate" title={row.name}>
+                                  {row.name}
+                                </div>
+                                {row.description && (
+                                  <div className="text-xs text-gray-500 truncate mt-1" title={row.description}>
+                                    {row.description}
+                                  </div>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-900">
+                                KSh {formatNumber(row.price)}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                {row.category_id ? (
+                                  <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-md text-xs">
+                                    {row.category_id}
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-400 text-sm">—</span>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                {row.image_url && row.image_url.trim() !== '' ? (
+                                  <div className="flex items-center space-x-2">
+                                    <button
+                                      onClick={() => previewImage(row.image_url, row.sku)}
+                                      className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100"
+                                      title={row.image_url}
+                                    >
+                                      <ImageIcon className="h-3 w-3 mr-1" />
+                                      Preview
+                                    </button>
+                                    <span className="text-xs text-gray-500 truncate max-w-[100px]">
+                                      {row.image_url.split('/').pop()}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-400 text-sm">No image</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
 
-          {isLoading && (
-            <div className="space-y-4">
-              <div className="text-center py-8">
-                <Upload className="h-12 w-12 mx-auto mb-4 animate-pulse text-primary" />
-                <p className="text-sm font-medium mb-2">Uploading and processing...</p>
-                <Progress value={uploadProgress} className="w-full" />
-                <p className="text-xs text-gray-500 mt-2">{uploadProgress}% complete</p>
+                {/* Upload Result */}
+                {uploadResult && (
+                  <div className="bg-white rounded-xl border border-gray-200 p-6">
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-lg font-semibold text-gray-800">Upload Results</h2>
+                      <div className={`flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                        uploadResult.data.created > 0 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {uploadResult.data.created> 0 ? (
+                          <>
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            {uploadResult.data.created} Created
+                          </>
+                        ) : (
+                          <>
+                            <AlertCircle className="h-4 w-4 mr-1" />
+                            No products created
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Summary Stats */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <p className="text-sm font-medium text-gray-500">Total Rows</p>
+                        <p className="text-2xl font-semibold text-gray-900">
+                          {uploadResult.data.total}
+                        </p>
+                      </div>
+                      <div className="bg-green-50 p-4 rounded-lg">
+                        <p className="text-sm font-medium text-green-700">Successfully Created</p>
+                        <p className="text-2xl font-semibold text-green-900">
+                          {uploadResult.data.created}
+                        </p>
+                      </div>
+                      <div className="bg-red-50 p-4 rounded-lg">
+                        <p className="text-sm font-medium text-red-700">Failed</p>
+                        <p className="text-2xl font-semibold text-red-900">
+                          {uploadResult.data.errors?.length || 0}
+                        </p>
+                      </div>
+                      <div className="bg-yellow-50 p-4 rounded-lg">
+                        <p className="text-sm font-medium text-yellow-700">Image Errors</p>
+                        <p className="text-2xl font-semibold text-yellow-900">
+                          {uploadResult.data.processingErrors?.length || 0}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* How Images Are Processed */}
+                    {uploadResult.data.created > 0 && (
+                      <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
+                        <div className="flex items-center text-blue-700 mb-2">
+                          <ImageIcon className="h-5 w-5 mr-2" />
+                          <span className="font-medium">Image Processing Information</span>
+                        </div>
+                        <p className="text-sm text-blue-600">
+                          Product images were automatically downloaded from URLs and uploaded to Cloudinary.
+                          Each image is now stored securely with optimized delivery.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Errors List */}
+                    {uploadResult.data.errors && uploadResult.data.errors.length > 0 && (
+                      <div className="mb-6">
+                        <h3 className="text-md font-semibold text-gray-700 mb-3">Failed Products</h3>
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                              <tr>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  SKU
+                                </th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Error
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                              {uploadResult.data.errors.map((error: any, index: number) => (
+                                <tr key={index} className="hover:bg-red-50">
+                                  <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    {error.sku}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-red-600">
+                                    <div>{error.error}</div>
+                                    {error.details && (
+                                      <div className="text-xs text-gray-500 mt-1">
+                                        Details: {error.details.substring(0, 100)}...
+                                      </div>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Image Processing Errors */}
+                    {uploadResult.data.processingErrors && uploadResult.data.processingErrors.length > 0 && (
+                      <div className="mb-6">
+                        <h3 className="text-md font-semibold text-gray-700 mb-3">Image Processing Errors</h3>
+                        <p className="text-sm text-gray-600 mb-2">
+                          These products were created without images. You can add images later in the product editor.
+                        </p>
+                        <div className="space-y-2 max-h-60 overflow-y-auto">
+                          {uploadResult.data.processingErrors.map((error: string, index: number) => (
+                            <div key={index} className="flex items-start text-sm text-yellow-700 bg-yellow-50 p-3 rounded-lg">
+                              <AlertCircle className="h-4 w-4 mt-0.5 mr-2 flex-shrink-0" />
+                              <span>{error}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Next Steps */}
+                    <div className="mt-6 pt-6 border-t border-gray-200">
+                      <h3 className="text-md font-semibold text-gray-700 mb-3">Next Steps</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <button
+                          onClick={resetUpload}
+                          className="px-4 py-3 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                        >
+                          Upload Another File
+                        </button>
+                        <button
+                          onClick={() => {
+                            onClose();
+                            if (onUploadComplete) onUploadComplete();
+                          }}
+                          className="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+                        >
+                          View Products List
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Right Column - Instructions & Info */}
+              <div className="space-y-6">
+                {/* How It Works Card */}
+                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                  <h2 className="text-lg font-semibold text-gray-800 mb-4">How It Works</h2>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-start">
+                      <div className="flex-shrink-0 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                        <span className="text-sm font-semibold text-blue-600">1</span>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900">Prepare CSV File</h4>
+                        <p className="text-sm text-gray-600 mt-1">
+                          Download template and fill with product data
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start">
+                      <div className="flex-shrink-0 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                        <span className="text-sm font-semibold text-blue-600">2</span>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900">Upload & Validate</h4>
+                        <p className="text-sm text-gray-600 mt-1">
+                          Upload CSV file and check for validation errors
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start">
+                      <div className="flex-shrink-0 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                        <span className="text-sm font-semibold text-blue-600">3</span>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900">Image Processing</h4>
+                        <p className="text-sm text-gray-600 mt-1">
+                          Images are downloaded from URLs and uploaded to Cloudinary
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start">
+                      <div className="flex-shrink-0 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                        <span className="text-sm font-semibold text-blue-600">4</span>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900">Products Created</h4>
+                        <p className="text-sm text-gray-600 mt-1">
+                          Products are created with optimized images
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {/* Tips Card */}
+                <div className="bg-gray-50 rounded-xl border border-gray-200 p-6">
+                  <h2 className="text-lg font-semibold text-gray-800 mb-3">Best Practices</h2>
+                  
+                  <ul className="space-y-3 text-sm text-gray-600">
+                    <li className="flex items-start">
+                      <div className="flex-shrink-0 h-5 w-5 rounded-full bg-green-100 flex items-center justify-center mr-3">
+                        <CheckCircle className="h-3 w-3 text-green-600" />
+                      </div>
+                      <span>Test image URLs in browser before adding to CSV</span>
+                    </li>
+                    <li className="flex items-start">
+                      <div className="flex-shrink-0 h-5 w-5 rounded-full bg-green-100 flex items-center justify-center mr-3">
+                        <CheckCircle className="h-3 w-3 text-green-600" />
+                      </div>
+                      <span>Keep image file sizes under 5MB for faster processing</span>
+                    </li>
+                    <li className="flex items-start">
+                      <div className="flex-shrink-0 h-5 w-5 rounded-full bg-green-100 flex items-center justify-center mr-3">
+                        <CheckCircle className="h-3 w-3 text-green-600" />
+                      </div>
+                      <span>Use HTTPS URLs for secure image transfers</span>
+                    </li>
+                    <li className="flex items-start">
+                      <div className="flex-shrink-0 h-5 w-5 rounded-full bg-green-100 flex items-center justify-center mr-3">
+                        <CheckCircle className="h-3 w-3 text-green-600" />
+                      </div>
+                      <span>Add image preview in CSV to verify before upload</span>
+                    </li>
+                    <li className="flex items-start">
+                      <div className="flex-shrink-0 h-5 w-5 rounded-full bg-green-100 flex items-center justify-center mr-3">
+                        <CheckCircle className="h-3 w-3 text-green-600" />
+                      </div>
+                      <span>Start with small batches (10-20 products) to test</span>
+                    </li>
+                  </ul>
+                </div>
               </div>
             </div>
-          )}
+          </div>
         </div>
-
-        <Separator className="my-4" />
-
-        <DialogFooter>
-          {step === 'upload' && (
-            <>
-              <Button variant="outline" onClick={handleClose}>
-                Cancel
-              </Button>
-              <Button
-                onClick={() => fileInputRef.current?.click()}
-                variant="outline"
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                Select File
-              </Button>
-            </>
-          )}
-
-          {step === 'preview' && (
-            <>
-              <Button variant="outline" onClick={handleCancelPreview}>
-                Back
-              </Button>
-              <Button
-                onClick={handleUpload}
-                disabled={isLoading}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                {isLoading ? (
-                  <span className="flex items-center">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Uploading...
-                  </span>
-                ) : (
-                  <span className="flex items-center">
-                    <Check className="h-4 w-4 mr-2" />
-                    Confirm Upload
-                  </span>
-                )}
-              </Button>
-            </>
-          )}
-
-          {step === 'results' && (
-            <>
-              <Button variant="outline" onClick={handleRetry}>
-                Upload Another File
-              </Button>
-              <Button onClick={handleClose}>
-                Done
-              </Button>
-            </>
-          )}
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
