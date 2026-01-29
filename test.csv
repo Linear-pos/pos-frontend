@@ -1,0 +1,6 @@
+name,sku,description,category,cost,unit_size,unit,stock_quantity,reorder_level,image_url,is_active,price
+Milk 1L,sajsa,Fresh whole milk 1 litre,Dairy,55,1,litre,120,20,https://example.com/images/milk-1l.jpg,true,200
+Brown Bread,asas,Whole grain brown bread,Bakery,45,400,grams,80,15,https://example.com/images/brown-bread.jpg,true,2000
+Sugar 2kg,SUG-2KG,White refined sugar 2kg,Groceries,260,2,kg,60,10,https://example.com/images/sugar-2kg.jpg,true,320
+Cooking Oil 1L,asasaw,Sunflower cooking oil 1 litre,Groceries,320,1,litre,50,10,https://example.com/images/oil-1l.jpg,true,120
+Eggs Tray 30,Eggs-30,Tray of 30 eggs,Dairy,420,30,pcs,40,10,https://example.com/images/eggs-30.jpg,true,300
