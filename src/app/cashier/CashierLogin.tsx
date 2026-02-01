@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PinPad } from '../../components/cashier/PinPad';
+import { PinPad } from '../../components/terminal/cashier/PinPad';
 import { useCashierStore } from '../../stores/cashier.store';
 import { authenticateCashier } from '../../services/cashier.api';
 import { useAuthStore } from '../../stores/auth.store';

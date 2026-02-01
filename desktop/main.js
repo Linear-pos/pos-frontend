@@ -76,7 +76,7 @@ const productService = {
 };
 
 import pkg from 'electron-updater';
-const { autoUpdater } = pkg;
+const autoUpdater = pkg;
 
 // Configure autoUpdater
 autoUpdater.autoDownload = false; // User requested non-aggressive updates

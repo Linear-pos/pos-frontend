@@ -63,11 +63,6 @@ class PaymentService {
     return response.data;
   }
 
-  /**
-   * Process M-Pesa payment (STK Push)
-   * @param mpesaData - M-Pesa payment request data
-   * @returns Promise resolving to payment result
-   */
   async processMpesaPayment(mpesaData: MpesaPaymentRequest): Promise<{
     success: boolean;
     message: string;
@@ -83,16 +78,37 @@ class PaymentService {
         description: `Sale ${mpesaData.sale_id}`
       };
 
+      console.log('[M-Pesa] Sending STK push request:', payload);
       const response = await axiosInstance.post('/payments/mpesa/stk-push', payload);
       const data = response.data;
+      console.log('[M-Pesa] Raw API response:', JSON.stringify(data, null, 2));
+
+      console.log('[M-Pesa] Inspecting data for CheckoutRequestID:', data);
+
+      // Robust parsing for CheckoutRequestID
+      let checkoutRequestID =
+        // 1. Expected path from backend
+        data.data?.mpesaResponse?.CheckoutRequestID ||
+        // 2. Direct property (if backend structure changes)
+        data.checkoutRequestID ||
+        // 3. Lowercase variation
+        data.data?.mpesaResponse?.checkoutRequestID ||
+        // 4. Root level response (direct from Safaricom proxies)
+        data.CheckoutRequestID ||
+        // 5. Nested in payment object?
+        data.data?.payment?.reference;
+
+      console.log('[M-Pesa] Parsed checkoutRequestID:', checkoutRequestID);
+      console.log('[M-Pesa] data.success:', data.success);
 
       return {
         success: data.success,
         message: data.message,
-        checkoutRequestID: data.data?.mpesaResponse?.CheckoutRequestID || data.checkoutRequestID
+        checkoutRequestID
       };
     } catch (error: unknown) {
       const err = error as AxiosError<unknown>;
+      console.error('[M-Pesa] STK push error:', err.response?.data || err.message);
       const data = err?.response?.data;
 
       const messageFromObject =

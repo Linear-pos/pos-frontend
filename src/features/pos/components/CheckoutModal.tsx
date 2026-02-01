@@ -155,6 +155,8 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
                 phone_number: normalizedPhone
             });
 
+            console.log('[Checkout] Created pending sale:', pendingSale);
+
             const result = await paymentService.processMpesaPayment({
                 phone_number: phoneNumber,
                 amount: total,
@@ -165,7 +167,10 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
             if (result.success && result.checkoutRequestID) {
                 setPaymentStatus('waiting');
                 setCheckoutRequestId(result.checkoutRequestID);
-                pollPaymentStatus(result.checkoutRequestID, pendingSale.id);
+                // Wait 5s before first poll to allow user to see prompt
+                setTimeout(() => {
+                    pollPaymentStatus(result.checkoutRequestID!, pendingSale.id);
+                }, 5000);
             } else {
                 throw new Error(result.message || "Failed to initiate M-Pesa");
             }

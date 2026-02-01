@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShiftSummary } from '../../components/shift/ShiftSummary';
-import { CashOperationModal } from '../../components/shift/CashOperationModal';
+import { ShiftSummary } from '../../components/terminal/shift/ShiftSummary';
+import { CashOperationModal } from '../../components/terminal/shift/CashOperationModal';
 import { useShiftStore } from '../../stores/shift.store';
 import { useCashierStore } from '../../stores/cashier.store';
 import {
