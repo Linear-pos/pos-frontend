@@ -1,6 +1,6 @@
 import { User, ShieldCheck, Crown } from 'lucide-react';
-import { cn } from '../../lib/utils';
-import type { Cashier } from '../../services/cashier.api';
+import { cn } from '../../../lib/utils';
+import type { Cashier } from '../../../services/cashier.api';
 
 interface CashierCardProps {
     cashier: Cashier;

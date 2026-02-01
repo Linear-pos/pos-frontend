@@ -1,7 +1,7 @@
 import { Clock, DollarSign, TrendingUp, Wallet } from 'lucide-react';
-import { cn } from '../../lib/utils';
-import { useShiftStore } from '../../stores/shift.store';
-import { useCashierStore } from '../../stores/cashier.store';
+import { cn } from '../../../lib/utils';
+import { useShiftStore } from '../../../stores/shift.store';
+import { useCashierStore } from '../../../stores/cashier.store';
 import { formatDistanceToNow } from 'date-fns';
 
 export function ShiftSummary() {

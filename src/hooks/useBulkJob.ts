@@ -1,6 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 
+interface JobProgress {
+  processed: number;
+  created: number;
+  failed: number;
+  status: 'idle' | 'running' | 'completed';
+}
+
+interface RowError {
+  sku: string;
+  error: string;
+}
+
 export const useBulkJob = (jobId?: string) => {
   const socketRef = useRef<Socket | null>(null);
 
@@ -21,7 +33,7 @@ export const useBulkJob = (jobId?: string) => {
 
     socket.emit('subscribe', jobId);
 
-    socket.on('progress', (data) => {
+    socket.on('progress', (data: Partial<JobProgress>) => {
       setProgress((p) => ({
         ...p,
         ...data,
@@ -29,11 +41,11 @@ export const useBulkJob = (jobId?: string) => {
       }));
     });
 
-    socket.on('row_error', (data) => {
+    socket.on('row_error', (data: RowError) => {
       setRowErrors((prev) => [...prev, data]);
     });
 
-    socket.on('completed', (data) => {
+    socket.on('completed', (data: JobProgress) => {
       setProgress({
         ...data,
         status: 'completed'
@@ -41,7 +53,9 @@ export const useBulkJob = (jobId?: string) => {
       socket.disconnect();
     });
 
-    return () => socket.disconnect();
+    return () => {
+      socket.disconnect();
+    };
   }, [jobId]);
 
   return { progress, rowErrors };
