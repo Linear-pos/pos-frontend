@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
-import { 
-  Upload, 
-  FileText, 
-  CheckCircle, 
+import {
+  Upload,
+  FileText,
+  CheckCircle,
   AlertCircle,
   X,
   Loader2,
@@ -35,6 +35,18 @@ interface UploadResult {
   };
 }
 
+const csvTemplate = [
+  {
+    sku: 'PROD-001',
+    name: 'Example Product',
+    price: '999.00',
+    category_id: 'CAT-123',
+    description: 'Product description goes here',
+    image_url: 'https://example.com/image.jpg',
+    stock_quantity: '100'
+  }
+];
+
 export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadModalProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -42,7 +54,7 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
   const [previewData, setPreviewData] = useState<any[]>([]);
   const [showPreview, setShowPreview] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
-  const [imagePreview, setImagePreview] = useState<{url: string, sku: string} | null>(null);
+  const [imagePreview, setImagePreview] = useState<{ url: string, sku: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
 
@@ -66,19 +78,19 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
     setUploadResult(null);
     setValidationErrors([]);
     setImagePreview(null);
-    
+
     // Preview CSV data
     await previewCSV(selectedFile);
   };
 
   const previewCSV = async (selectedFile: File) => {
     const reader = new FileReader();
-    
+
     reader.onload = (e) => {
       try {
         const text = e.target?.result as string;
         const lines = text.split('\n').filter(line => line.trim());
-        
+
         if (lines.length <= 1) { // Only header or empty
           setValidationErrors(['CSV file appears to be empty or only contains headers']);
           return;
@@ -86,7 +98,7 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
 
         // Parse CSV headers
         const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-        
+
         // Parse CSV data
         const data = lines.slice(1).map((line, index) => {
           // Handle quoted values with commas inside
@@ -98,13 +110,13 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
             }
             return val;
           });
-          
+
           const row: any = {};
-          
+
           headers.forEach((header, i) => {
             row[header] = values[i] || '';
           });
-          
+
           return {
             ...row,
             _rowNumber: index + 2 // +2 because header is row 1 and 1-indexed
@@ -114,7 +126,7 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
         // Validate required columns
         const requiredColumns = ['sku', 'name', 'price'];
         const missingColumns = requiredColumns.filter(col => !headers.includes(col));
-        
+
         if (missingColumns.length > 0) {
           setValidationErrors([`Missing required columns: ${missingColumns.join(', ')}`]);
           setPreviewData([]);
@@ -155,7 +167,7 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
         toast.error('Error parsing CSV file. Make sure it is properly formatted.');
       }
     };
-    
+
     reader.readAsText(selectedFile, 'UTF-8');
   };
 
@@ -172,7 +184,7 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
     const headers = Object.keys(csvTemplate[0]);
     const csvContent = [
       headers.join(','),
-      ...csvTemplate.map(row => 
+      ...csvTemplate.map(row =>
         headers.map(header => {
           const value = row[header as keyof typeof row];
           // Quote values that contain commas
@@ -190,7 +202,7 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
     a.click();
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
-    
+
     toast.success('Template downloaded. Fill it with your product data.');
   };
 
@@ -199,7 +211,7 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
       toast.error('No image URL provided');
       return;
     }
-    
+
     if (!isValidUrl(url)) {
       toast.error('Invalid image URL format');
       return;
@@ -220,9 +232,9 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
 
     setIsUploading(true);
     setUploadResult(null);
-    
+
     const formData = new FormData();
-    
+
     formData.append('file', file);
 
     try {
@@ -240,26 +252,26 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
       });
 
       setUploadResult(response.data);
-      
+
       if (response.data.success) {
         const { created, errors, processingErrors } = response.data.data;
-        
+
         toast.success(`Successfully processed ${created} products`, {
           duration: 5000,
         });
-        
+
         if (errors?.length > 0) {
           toast.error(`${errors.length} products failed to process`, {
             duration: 6000,
           });
         }
-        
+
         if (processingErrors?.length > 0) {
           toast.error(`${processingErrors.length} image processing errors occurred`, {
             duration: 6000,
           });
         }
-        
+
         // Call the upload complete callback
         if (onUploadComplete) {
           onUploadComplete();
@@ -269,9 +281,9 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
       }
     } catch (error: any) {
       console.error('Upload error:', error);
-      const errorMessage = error.response?.data?.message || 
-                          error.response?.data?.error || 
-                          'Upload failed. Please check your connection and try again.';
+      const errorMessage = error.response?.data?.message ||
+        error.response?.data?.error ||
+        'Upload failed. Please check your connection and try again.';
       toast.error(errorMessage, { duration: 6000 });
     } finally {
       setIsUploading(false);
@@ -404,11 +416,10 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
 
                   {/* Upload Area */}
                   <div
-                    className={`border-2 border-dashed rounded-xl p-8 text-center transition-all ${
-                      file 
-                        ? 'border-green-500 bg-green-50' 
+                    className={`border-2 border-dashed rounded-xl p-8 text-center transition-all ${file
+                        ? 'border-green-500 bg-green-50'
                         : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50 cursor-pointer'
-                    } ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      } ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     onClick={() => !isUploading && fileInputRef.current?.click()}
                   >
                     <input
@@ -419,7 +430,7 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
                       className="hidden"
                       disabled={isUploading}
                     />
-                    
+
                     {file ? (
                       <div className="space-y-4">
                         <div className="flex items-center justify-center">
@@ -449,11 +460,10 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
                               handleUpload();
                             }}
                             disabled={isUploading || validationErrors.length > 0}
-                            className={`px-4 py-2 text-sm font-medium text-white rounded-lg ${
-                              validationErrors.length > 0
+                            className={`px-4 py-2 text-sm font-medium text-white rounded-lg ${validationErrors.length > 0
                                 ? 'bg-gray-400 cursor-not-allowed'
                                 : 'bg-green-600 hover:bg-green-700'
-                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                              } disabled:opacity-50 disabled:cursor-not-allowed`}
                           >
                             {isUploading ? (
                               <>
@@ -522,7 +532,7 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
                         </button>
                       </div>
                     </div>
-                    
+
                     <div className="overflow-x-auto">
                       <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
@@ -612,12 +622,11 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
                   <div className="bg-white rounded-xl border border-gray-200 p-6">
                     <div className="flex items-center justify-between mb-6">
                       <h2 className="text-lg font-semibold text-gray-800">Upload Results</h2>
-                      <div className={`flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                        uploadResult.data.created > 0 
-                          ? 'bg-green-100 text-green-800' 
+                      <div className={`flex items-center px-3 py-1 rounded-full text-sm font-medium ${uploadResult.data.created > 0
+                          ? 'bg-green-100 text-green-800'
                           : 'bg-red-100 text-red-800'
-                      }`}>
-                        {uploadResult.data.created> 0 ? (
+                        }`}>
+                        {uploadResult.data.created > 0 ? (
                           <>
                             <CheckCircle className="h-4 w-4 mr-1" />
                             {uploadResult.data.created} Created
@@ -759,7 +768,7 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
                 {/* How It Works Card */}
                 <div className="bg-white rounded-xl border border-gray-200 p-6">
                   <h2 className="text-lg font-semibold text-gray-800 mb-4">How It Works</h2>
-                  
+
                   <div className="space-y-4">
                     <div className="flex items-start">
                       <div className="flex-shrink-0 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center mr-3">
@@ -813,7 +822,7 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
                 {/* Tips Card */}
                 <div className="bg-gray-50 rounded-xl border border-gray-200 p-6">
                   <h2 className="text-lg font-semibold text-gray-800 mb-3">Best Practices</h2>
-                  
+
                   <ul className="space-y-3 text-sm text-gray-600">
                     <li className="flex items-start">
                       <div className="flex-shrink-0 h-5 w-5 rounded-full bg-green-100 flex items-center justify-center mr-3">

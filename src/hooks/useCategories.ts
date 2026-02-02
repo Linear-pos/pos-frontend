@@ -9,6 +9,7 @@ export interface Category {
   description?: string | null;
   created_at: string;
   updated_at: string;
+  productCount?: number;
 }
 
 interface UseCategoriesResult {
