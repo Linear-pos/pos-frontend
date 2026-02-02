@@ -4,7 +4,7 @@ import { persist } from 'zustand/middleware';
 
 type PaymentMethod = 'mpesa' | 'cash' | 'card' | '';
 // In payment.store.ts
-type PaymentStatus = 'idle' | 'processing' | 'waiting' | 'success' | 'failed' | 'timeout';
+type PaymentStatus = 'idle' | 'processing' | 'waiting' | 'waiting_confirmation' | 'success' | 'failed' | 'timeout';
 
 interface PaymentState {
   paymentStatus: PaymentStatus;
@@ -45,7 +45,7 @@ export const usePaymentStore = create<PaymentState>()(
       setCurrentSaleId: (saleId) => set({ currentSaleId: saleId }),
       setCheckoutRequestId: (requestId) => set({ checkoutRequestId: requestId }),
       setTransactionDetails: (details) => set({ transactionDetails: details }),  // Add this line
-      resetPaymentState: () => 
+      resetPaymentState: () =>
         set({
           paymentStatus: 'idle',
           paymentMethod: '',
@@ -89,7 +89,7 @@ class PaymentWebSocketService {
   private connect() {
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${wsProtocol}//${window.location.host}/ws/payment/callback`;
-    
+
     this.socket = new WebSocket(wsUrl);
 
     this.socket.onopen = () => {
@@ -135,7 +135,7 @@ class PaymentWebSocketService {
     phoneNumber?: string;
   }) {
     const { checkoutRequestID, resultCode, resultDesc, mpesaReceiptNumber, transactionDate } = data;
-    
+
     // Only process if we have a matching checkout request ID
     const paymentStore = usePaymentStore.getState();
     if (paymentStore.checkoutRequestId !== checkoutRequestID) return;
@@ -144,7 +144,7 @@ class PaymentWebSocketService {
       // Payment successful
       paymentStore.setPaymentStatus('success');
       paymentStore.setSuccess('Payment received successfully');
-      
+
       // You can update the sale status in your backend here if needed
       // This is just an example - you might want to handle this differently
       if (paymentStore.currentSaleId) {
@@ -152,7 +152,7 @@ class PaymentWebSocketService {
         fetch(`/api/sales/${paymentStore.currentSaleId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
+          body: JSON.stringify({
             status: 'completed',
             paymentStatus: 'completed',
             paymentMethod: 'mpesa',

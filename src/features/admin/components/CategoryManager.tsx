@@ -12,11 +12,12 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { useCategories, type Category} from '@/hooks/useCategories';
+import { useCategories, type Category } from '@/hooks/useCategories';
 
 
 interface CategoryManagerProps {
     onCategoryChange?: () => void;
+    onClose?: () => void;
 }
 
 export const CategoryManager = ({ onCategoryChange }: CategoryManagerProps) => {
@@ -44,7 +45,7 @@ export const CategoryManager = ({ onCategoryChange }: CategoryManagerProps) => {
         if (!newCategoryName.trim()) return;
 
         try {
-            await createCategory({ 
+            await createCategory({
                 name: newCategoryName.trim()
             });
             setNewCategoryName('');
@@ -229,9 +230,9 @@ export const CategoryManager = ({ onCategoryChange }: CategoryManagerProps) => {
                         <DialogTitle>Delete Category</DialogTitle>
                         <DialogDescription>
                             Are you sure you want to delete "{deletingCategory?.name}"?
-                            {deletingCategory && deletingCategory.productCount > 0 && (
+                            {deletingCategory && (deletingCategory.productCount || 0) > 0 && (
                                 <span className="block mt-2 text-warning-600">
-                                    This category has {deletingCategory.productCount} product(s).
+                                    This category has {deletingCategory.productCount || 0} product(s).
                                     They will be uncategorized.
                                 </span>
                             )}

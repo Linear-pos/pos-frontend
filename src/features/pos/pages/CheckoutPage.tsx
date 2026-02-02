@@ -32,7 +32,7 @@ const BAG_OPTIONS = [
 
 export const CheckoutPage = () => {
   const navigate = useNavigate();
-  const { items, total, clearCart, removeItem } = useCartStore();
+  const { items, total, clearCart, removeItem, updateQuantity } = useCartStore();
 
   // Payment state from store
   const {
@@ -74,12 +74,12 @@ export const CheckoutPage = () => {
   useEffect(() => {
     if (paymentStatus === 'waiting' || paymentStatus === 'waiting_confirmation') {
       const timer = setTimeout(() => {
-        if (paymentStatus !== 'success' && paymentStatus !== 'failed') {
-          setPaymentStatus('timeout');
-          setError('Payment request timed out. Please try again.');
-        }
+        // if (paymentStatus !== 'success' && paymentStatus !== 'failed') { // Redundant check removed
+        setPaymentStatus('timeout');
+        setError('Payment request timed out. Please try again.');
+        // }
       }, 120000); // 2 minutes timeout
-      
+
       return () => clearTimeout(timer);
     }
   }, [paymentStatus, setPaymentStatus, setError]);
@@ -140,6 +140,11 @@ export const CheckoutPage = () => {
     navigate("/pos");
   }, [navigate]);
 
+  const handleQuantityChange = (productId: string, newQuantity: number) => {
+    if (newQuantity < 1) return;
+    updateQuantity(productId, newQuantity);
+  };
+
   // Payment processing
   const buildPaymentReference = () => {
     return crypto.randomUUID();
@@ -192,11 +197,11 @@ export const CheckoutPage = () => {
       setError("Insufficient amount tendered");
       return;
     }
-    
+
     setPaymentMethod('cash');
     setPaymentStatus('processing');
     setError(null);
-    
+
     try {
       await handleProcessPayment("cash", {
         amount_tendered: tendered,
@@ -245,7 +250,7 @@ export const CheckoutPage = () => {
         setSuccess("Please check your phone to complete the payment");
         setPaymentStatus('waiting');  // This should be 'waiting' not 'waiting_confirmation'
         setCheckoutRequestId(result.checkoutRequestID);
-        
+
         // Start polling as a fallback
         pollPaymentStatus(result.checkoutRequestID, pendingSale.id);
       } else {
@@ -266,7 +271,7 @@ export const CheckoutPage = () => {
     const poll = async () => {
       // If payment was already confirmed via WebSocket, stop polling
       if (paymentStatus === 'success') return;
-      
+
       attempts++;
       try {
         const result = await paymentService.verifyMpesaPayment(checkoutID);
@@ -315,7 +320,7 @@ export const CheckoutPage = () => {
 
     // Start polling
     const pollTimer = setTimeout(poll, 2000);
-    
+
     // Cleanup function to clear the timeout if component unmounts
     return () => clearTimeout(pollTimer);
   }, [paymentStatus, setError, setSuccess, setPaymentStatus]);
@@ -332,7 +337,7 @@ export const CheckoutPage = () => {
       setShowReceipt(true);
     }
     setShowMpesaModal(false);
-    
+
     // Reset payment status if not completed
     if (paymentStatus !== 'success') {
       setPaymentStatus('idle');
@@ -347,7 +352,7 @@ export const CheckoutPage = () => {
     // Small delay to allow state to reset before retrying
     setTimeout(handleMpesaSubmit, 300);
   };
-  
+
   // Cleanup payment state when component unmounts
   useEffect(() => {
     return () => {
@@ -366,9 +371,9 @@ export const CheckoutPage = () => {
     }
   };
 
-  const validStatus = ['processing', 'waiting', 'success', 'failed', 'timeout'].includes(paymentStatus) 
-  ? paymentStatus as PaymentStatus 
-  : 'processing';
+  const validStatus = ['processing', 'waiting', 'success', 'failed', 'timeout'].includes(paymentStatus)
+    ? paymentStatus as PaymentStatus
+    : 'processing';
 
   return (
     <div className="h-screen bg-background flex flex-col p-4 md:p-6">
@@ -563,30 +568,30 @@ export const CheckoutPage = () => {
                   )}
                 </AnimatePresence>
 
-                <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
                   <TabsList className="grid grid-cols-3 w-full">
                     <TabsTrigger value="cash">
                       <Banknote className="h-4 w-4 mr-2" /> Cash
                     </TabsTrigger>
-                    <TabsTrigger 
+                    <TabsTrigger
                       value="mpesa"
                       className="relative"
                       disabled={isProcessing}
                     >
                       <div className="flex items-center">
-                        <Smartphone className="h-4 w-4 mr-2" /> 
+                        <Smartphone className="h-4 w-4 mr-2" />
                         <span>M-Pesa</span>
                         {isProcessing && (
-                          <motion.div 
+                          <motion.div
                             className="ml-2 h-2 w-2 rounded-full bg-primary"
-                            animate={{ 
+                            animate={{
                               scale: [1, 1.5, 1],
                               opacity: [0.5, 1, 0.5],
                             }}
-                            transition={{ 
+                            transition={{
                               duration: 1.5,
                               repeat: Infinity,
-                              ease: "easeInOut" 
+                              ease: "easeInOut"
                             }}
                           />
                         )}
@@ -663,7 +668,7 @@ export const CheckoutPage = () => {
 
                   {/* M-Pesa Tab */}
                   <TabsContent value="mpesa" className="space-y-4 pt-4">
-                    <motion.div 
+                    <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3 }}
@@ -696,7 +701,7 @@ export const CheckoutPage = () => {
                           disabled={isProcessing || !phoneNumber || phoneNumber.length < 12}
                           size="lg"
                         >
-                          <motion.span 
+                          <motion.span
                             className="absolute inset-0 bg-primary/10"
                             initial={{ width: '0%' }}
                             animate={isProcessing ? { width: '100%' } : { width: '0%' }}
@@ -716,9 +721,9 @@ export const CheckoutPage = () => {
                             )}
                           </span>
                         </Button>
-                        
+
                         {isProcessing && (
-                          <motion.div 
+                          <motion.div
                             className="mt-3 text-sm text-muted-foreground flex items-center justify-center gap-2"
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -729,9 +734,9 @@ export const CheckoutPage = () => {
                           </motion.div>
                         )}
                       </div>
-                      
+
                       {error && (
-                        <motion.div 
+                        <motion.div
                           className="mt-2"
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -745,9 +750,9 @@ export const CheckoutPage = () => {
                           </Alert>
                         </motion.div>
                       )}
-                      
+
                       {success && (
-                        <motion.div 
+                        <motion.div
                           className="mt-2"
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
