@@ -1,0 +1,26 @@
+appId: com.omnipos.com
+productName: omnipos
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - dist/**
+  - electron/**
+
+asar: true
+
+linux:
+  target:
+    - AppImage
+    - deb
+  category: public.app-category.business
+
+win:
+  target:
+    - nsis
+
+mac:
+  target:
+    - dmg
+  category: public.app-category.business

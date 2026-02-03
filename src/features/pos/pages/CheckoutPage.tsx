@@ -10,20 +10,30 @@ import type { Sale } from "@/types/sale";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MpesaProcessingModal, type PaymentStatus } from "../components/MpesaProcessingModal";
+import { MpesaProcessingModal } from "../components/MpesaProcessingModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import Receipt from "@/components/receipts/Receipt";
+import type { PaymentStatus } from '@/types/payment.ts';
 
-// interface Category {
-//   id: string;
-//   name: string;
-//   count?: number;
-// }
-
+function mapToSaleStatus(paymentStatus: PaymentStatus): 'completed' | 'pending' | 'cancelled' | undefined {
+  switch(paymentStatus) {
+    case 'success':
+      return 'completed';
+    case 'failed':
+    case 'timeout':
+      return 'cancelled';
+    case 'waiting':
+    case 'processing':
+      return 'pending';
+    case 'idle':
+    default:
+      return undefined;
+  }
+}
 const BAG_OPTIONS = [
   { id: 'bag-small', name: 'Small Bag', price: 20 },
   { id: 'bag-medium', name: 'Medium Bag', price: 30 },
@@ -33,6 +43,13 @@ const BAG_OPTIONS = [
 export const CheckoutPage = () => {
   const navigate = useNavigate();
   const { items, total, clearCart, removeItem, updateQuantity } = useCartStore();
+<<<<<<< Updated upstream
+=======
+
+  const handleQuantityChange = useCallback((productId: string, newQuantity: number) => {
+    updateQuantity(productId, newQuantity);
+  }, [updateQuantity]);
+>>>>>>> Stashed changes
 
   // Payment state from store
   const {
@@ -58,7 +75,7 @@ export const CheckoutPage = () => {
   const [currentSale, setCurrentSale] = useState<Sale | null>(null);
 
   // Derived state
-  const isProcessing = paymentStatus === 'processing' || paymentStatus === 'waiting' || paymentStatus === 'waiting_confirmation';
+  const isProcessing = paymentStatus === 'processing' || paymentStatus === 'waiting';
 
   // Reset payment state on component mount
   useEffect(() => {
@@ -70,6 +87,7 @@ export const CheckoutPage = () => {
     };
   }, [isProcessing, resetPaymentState]);
 
+<<<<<<< Updated upstream
   // Handle payment status timeout
   useEffect(() => {
     if (paymentStatus === 'waiting' || paymentStatus === 'waiting_confirmation') {
@@ -83,6 +101,21 @@ export const CheckoutPage = () => {
       return () => clearTimeout(timer);
     }
   }, [paymentStatus, setPaymentStatus, setError]);
+=======
+useEffect(() => {
+  if (paymentStatus !== 'waiting') return;
+
+  const timer = setTimeout(() => {
+      if (paymentStatus === 'waiting') {
+        setError('Payment request timed out. Please try again.');
+        setPaymentStatus('timeout');
+      }
+  }, 120000);
+
+  return () => clearTimeout(timer);
+}, [paymentStatus, setPaymentStatus, setError]);
+
+>>>>>>> Stashed changes
 
   // Redirect if cart is empty and not processing/showing receipt
   useEffect(() => {
@@ -150,31 +183,43 @@ export const CheckoutPage = () => {
     return crypto.randomUUID();
   };
 
-  const handleProcessPayment = useCallback(async (method: 'cash' | 'mpesa' | 'card', data: any = {}) => {
+  type PaymentData = {
+    reference?: string;
+    status?: PaymentStatus;
+    phone_number?: string;
+    amount_tendered?: number;
+    change?: number;
+    [key: string]: unknown;
+  };
+
+  const handleProcessPayment = useCallback(async (method: 'cash' | 'mpesa' | 'card', data: Omit<PaymentData, 'status'> & { status?: PaymentStatus } = {}) => {
     try {
       const reference = data.reference || buildPaymentReference();
-      const payload = {
+      // Create the payload with all necessary fields for the API
+      const apiPayload = {
         payment_method: method,
-        status: data.status || (method === 'mpesa' ? 'pending' : 'completed'),
+        status: mapToSaleStatus(data.status || 'waiting'),
         reference,
         items: items.map(item => ({
           product_id: item.product_id,
           quantity: item.quantity,
-          price: Number(item.price)
+          price: Number(item.price) // price is optional in CreateSalePayload but we include it
         })),
         tax: tax,
-        total: finalTotal,
-        bag_fee: selectedBag ? bagPrice : 0,
-        ...data
+        // Include other fields that might be needed
+        branch_id: data.branch_id,
+        notes: data.notes,
+        // Include the rest of the data that might be needed
+        ...(selectedBag && { bag_fee: bagPrice })
       };
-
-      const sale = await salesAPI.createSale(payload);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any      
+      const sale = await salesAPI.createSale(apiPayload as any);
       setCurrentSale(sale);
       setCurrentSaleId(sale.id);
       return sale;
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Payment processing error:", err);
-      const errorMessage = err.response?.data?.message || "Payment processing failed";
+      const errorMessage = (err as string) || "Payment processing failed";
       setError(errorMessage);
       setPaymentStatus('failed');
       throw new Error(errorMessage);
@@ -209,8 +254,8 @@ export const CheckoutPage = () => {
       });
       setSuccess("Payment Successful!");
       setPaymentStatus('success');
-    } catch (err: any) {
-      setError(err.message || "Payment failed");
+    } catch (err: unknown) {
+      setError(err as string || "Payment failed");
       setPaymentStatus('failed');
     }
   };
@@ -229,7 +274,7 @@ export const CheckoutPage = () => {
 
       // 1. Create Pending Sale First
       const pendingSale = await handleProcessPayment("mpesa", {
-        status: "pending",
+        status: "waiting",
         phone_number: phoneNumber
       });
 
@@ -257,9 +302,9 @@ export const CheckoutPage = () => {
         console.log(result)
         throw new Error(result.message || "Failed to initiate M-Pesa payment");
       }
-    } catch (err: any) {
-      console.error("M-Pesa payment error:", err);
-      setError(err.message || "Failed to process M-Pesa payment");
+    } catch (error: unknown) {
+      console.error("M-Pesa payment error:", error);
+      setError(error as string || "Failed to process M-Pesa payment");
       setPaymentStatus('failed');
     }
   };
@@ -288,7 +333,7 @@ export const CheckoutPage = () => {
             setPaymentStatus('success');
             // Close modal after a short delay
             setTimeout(() => setShowMpesaModal(false), 2000);
-          } catch (saleError: any) {
+          } catch (saleError) {
             console.error("Failed to update sale status:", saleError);
             setError("Payment verified but failed to update sale status");
             setPaymentStatus('failed');
@@ -306,8 +351,8 @@ export const CheckoutPage = () => {
           setError("Payment verification timeout. Please check your M-Pesa statement.");
           setPaymentStatus('timeout');
         }
-      } catch (error: any) {
-        console.error("Error verifying payment:", error);
+      } catch (error: unknown) {
+        console.error("Error verifying payment:", error as string);
         if (attempts < maxAttempts) {
           // Retry on error
           setTimeout(poll, 2000);
@@ -568,7 +613,11 @@ export const CheckoutPage = () => {
                   )}
                 </AnimatePresence>
 
+<<<<<<< Updated upstream
                 <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+=======
+                <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "cash" | "mpesa" | "card")}>
+>>>>>>> Stashed changes
                   <TabsList className="grid grid-cols-3 w-full">
                     <TabsTrigger value="cash">
                       <Banknote className="h-4 w-4 mr-2" /> Cash

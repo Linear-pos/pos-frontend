@@ -56,7 +56,7 @@ export const salesAPI = {
    */
   createSale: async (payload: CreateSalePayload): Promise<Sale> => {
     const response = await axiosInstance.post<SaleResponse>('/sales', payload);
-    const sale = response.data.data || response.data as any;
+    const sale = response.data.data || response.data as unknown as Sale;
     return salesAPI.formatSale(sale);
   },
 
@@ -65,7 +65,7 @@ export const salesAPI = {
    */
   updateSale: async (id: string, payload: Partial<CreateSalePayload>): Promise<Sale> => {
     const response = await axiosInstance.patch<SaleResponse>(`/sales/${id}`, payload);
-    const sale = response.data.data || response.data as any;
+    const sale = response.data.data || response.data as unknown as Sale;
     return salesAPI.formatSale(sale);
   },
 
@@ -109,12 +109,15 @@ export const salesAPI = {
    * Calculate tax for a subtotal
    */
   calculateTax: (_subtotal: number, _taxRate: number = 0): number => {
-    return 0; // Tax is assumed to be included in price
+    const taxRate = _taxRate;
+    const tax = _subtotal * taxRate;
+    return tax;
   },
 
   /**
    * Format sale for display - maps backend camelCase to frontend snake_case
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   formatSale: (sale: any): Sale => {
     return {
       id: sale.id,

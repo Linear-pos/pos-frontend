@@ -20,7 +20,7 @@ interface CategoryManagerProps {
     onClose?: () => void;
 }
 
-export const CategoryManager = ({ onCategoryChange }: CategoryManagerProps) => {
+export const CategoryManager = ({ onCategoryChange, onClose }: CategoryManagerProps) => {
     const {
         categories,
         loading,
@@ -80,6 +80,15 @@ export const CategoryManager = ({ onCategoryChange }: CategoryManagerProps) => {
             console.error('Failed to delete category:', err);
         }
     };
+
+    const handleClose = () => {
+        setShowCreateModal(false);
+        setEditingCategory(null);
+        setDeletingCategory(null);
+        setNewCategoryName('');
+        setNewCategoryDescription('');
+        onClose?.();
+    }
 
     return (
         <div className="space-y-4">
@@ -149,7 +158,7 @@ export const CategoryManager = ({ onCategoryChange }: CategoryManagerProps) => {
             )}
 
             {/* Create Modal */}
-            <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+            <Dialog open={showCreateModal} onOpenChange={(open) => !open && handleClose()}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Create Category</DialogTitle>
@@ -182,7 +191,7 @@ export const CategoryManager = ({ onCategoryChange }: CategoryManagerProps) => {
                             </div>
                         </div>
                         <DialogFooter>
-                            <Button type="button" variant="outline" onClick={() => setShowCreateModal(false)}>
+                            <Button type="button" variant="outline" onClick={handleClose}>
                                 Cancel
                             </Button>
                             <Button type="submit">Create</Button>
@@ -235,7 +244,7 @@ export const CategoryManager = ({ onCategoryChange }: CategoryManagerProps) => {
                                     This category has {deletingCategory.productCount || 0} product(s).
                                     They will be uncategorized.
                                 </span>
-                            )}
+                            ) : null}
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>

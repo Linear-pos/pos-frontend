@@ -1,16 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
 import { axiosInstance as api } from '@/services/api';
+import type { Category as APICategory } from '../features/admin/api/categories.api';
 
-export interface Category {
-  id: string;
-  name: string;
-  slug: string;
+// Re-export the Category type for backward compatibility
+export type Category = Omit<APICategory, 'tenantId' | 'productCount' | 'createdAt' | 'updatedAt'> & {
   tenant_id: string;
-  description?: string | null;
   created_at: string;
   updated_at: string;
   productCount?: number;
+<<<<<<< Updated upstream
 }
+=======
+};
+>>>>>>> Stashed changes
 
 interface UseCategoriesResult {
   categories: Category[];
@@ -49,11 +51,8 @@ export const useCategories = (): UseCategoriesResult => {
       const res = await api.get('/categories');
 
       setCategories(res.data.data ?? []);
-    } catch (err: any) {
-      setError(
-        err?.response?.data?.message ??
-        'Failed to load categories'
-      );
+    } catch (err: unknown) {
+      setError(`failed to load categories ${err}`);
     } finally {
       setLoading(false);
     }
@@ -70,11 +69,8 @@ export const useCategories = (): UseCategoriesResult => {
         const res = await api.post('/categories', payload);
 
         setCategories(prev => [res.data.data, ...prev]);
-      } catch (err: any) {
-        throw new Error(
-          err?.response?.data?.message ??
-          'Failed to create category'
-        );
+      } catch (err: unknown) {
+        throw new Error(`failed to create category: ${err}`);
       }
     },
     []
@@ -95,11 +91,8 @@ export const useCategories = (): UseCategoriesResult => {
             cat.id === id ? res.data.data : cat
           )
         );
-      } catch (err: any) {
-        throw new Error(
-          err?.response?.data?.message ??
-          'Failed to update category'
-        );
+      } catch (err: unknown) {
+        throw new Error(`failed to update category: ${err}`);
       }
     },
     []
@@ -117,11 +110,8 @@ export const useCategories = (): UseCategoriesResult => {
       setCategories(prev =>
         prev.filter(cat => cat.id !== id)
       );
-    } catch (err: any) {
-      throw new Error(
-        err?.response?.data?.message ??
-        'Failed to delete category'
-      );
+    } catch (err: unknown) {
+      throw new Error(`failed to delete category ${err}`)
     }
   }, []);
 

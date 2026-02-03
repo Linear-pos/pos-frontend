@@ -1,10 +1,17 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, CheckCircle, XCircle, Clock, RotateCw, AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-export type PaymentStatus = 'processing' | 'waiting' | 'success' | 'failed' | 'timeout';
+import type { PaymentStatus } from '@/types/payment.ts';
 
 const statusConfig = {
+  idle: {
+    title: 'Ready',
+    description: 'Waiting to process payment...',
+    icon: Clock,
+    color: 'bg-muted',
+    textColor: 'text-muted-foreground',
+    borderColor: 'border-muted',
+  },
   processing: {
     title: 'Processing Payment',
     description: 'Initiating M-Pesa payment request...',

@@ -8,14 +8,12 @@ import {
   Loader2,
   FileSpreadsheet,
   Image as ImageIcon,
-  ExternalLink
-} from 'lucide-react';
+  ExternalLink} from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { axiosInstance as api } from '../../../services/api';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-// import { Button } from '@/components/ui/button';
 
-interface BulkUploadModalProps {
+interface BulkUploadProps {
   open: boolean;
   onClose: () => void;
   onUploadComplete?: () => void;
@@ -47,7 +45,7 @@ const csvTemplate = [
   }
 ];
 
-export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadModalProps) => {
+export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
@@ -57,18 +55,15 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
   const [imagePreview, setImagePreview] = useState<{ url: string, sku: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
 
-    // Check file type
     if (!selectedFile.name.endsWith('.csv')) {
       toast.error('Please select a CSV file');
       return;
     }
 
-    // Check file size (max 10MB)
     if (selectedFile.size > 10 * 1024 * 1024) {
       toast.error('File size must be less than 10MB');
       return;
@@ -78,8 +73,7 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
     setUploadResult(null);
     setValidationErrors([]);
     setImagePreview(null);
-
-    // Preview CSV data
+    
     await previewCSV(selectedFile);
   };
 
@@ -98,13 +92,11 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
 
         // Parse CSV headers
         const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-
-        // Parse CSV data
+        
         const data = lines.slice(1).map((line, index) => {
           // Handle quoted values with commas inside
           const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => {
             let val = v.trim();
-            // Remove surrounding quotes if present
             if (val.startsWith('"') && val.endsWith('"')) {
               val = val.slice(1, -1);
             }
@@ -119,11 +111,10 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
 
           return {
             ...row,
-            _rowNumber: index + 2 // +2 because header is row 1 and 1-indexed
+            _rowNumber: index + 2
           };
         }).filter(row => Object.values(row).some(val => val !== '')); // Remove empty rows
 
-        // Validate required columns
         const requiredColumns = ['sku', 'name', 'price'];
         const missingColumns = requiredColumns.filter(col => !headers.includes(col));
 
@@ -131,9 +122,8 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
           setValidationErrors([`Missing required columns: ${missingColumns.join(', ')}`]);
           setPreviewData([]);
         } else {
-          // Validate data
           const errors: string[] = [];
-          data.forEach((row, _index) => {
+          data.forEach((row) => {
             if (!row.sku?.trim()) {
               errors.push(`Row ${row._rowNumber}: SKU is required`);
             }
@@ -144,7 +134,6 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
             if (isNaN(price) || price <= 0) {
               errors.push(`Row ${row._rowNumber}: Price must be a valid number greater than 0`);
             }
-            // Validate image URLs if present - FIX: Check if image_url exists and is not empty
             if (row.image_url && row.image_url.trim() !== '') {
               if (!isValidUrl(row.image_url)) {
                 errors.push(`Row ${row._rowNumber}: Invalid image URL format`);
@@ -153,12 +142,12 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
           });
 
           if (errors.length > 0) {
-            setValidationErrors(errors.slice(0, 5)); // Show first 5 errors
+            setValidationErrors(errors.slice(0, 5));
             if (errors.length > 5) {
               setValidationErrors(prev => [...prev, `... and ${errors.length - 5} more errors`]);
             }
           } else {
-            setPreviewData(data.slice(0, 5)); // Show first 5 rows for preview
+            setPreviewData(data.slice(0, 5));
             setShowPreview(true);
           }
         }
@@ -187,7 +176,6 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
       ...csvTemplate.map(row =>
         headers.map(header => {
           const value = row[header as keyof typeof row];
-          // Quote values that contain commas
           return typeof value === 'string' && value.includes(',') ? `"${value}"` : value;
         }).join(',')
       )
@@ -234,7 +222,6 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
     setUploadResult(null);
 
     const formData = new FormData();
-
     formData.append('file', file);
 
     try {
@@ -243,7 +230,6 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
           'Content-Type': 'multipart/form-data',
         },
         onUploadProgress: (progressEvent) => {
-          // You can add progress bar here if needed
           const percentCompleted = Math.round(
             (progressEvent.loaded * 100) / (progressEvent.total || 100)
           );
@@ -271,19 +257,35 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
             duration: 6000,
           });
         }
-
-        // Call the upload complete callback
         if (onUploadComplete) {
           onUploadComplete();
         }
       } else {
         toast.error('Upload failed. Please try again.');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Upload error:', error);
       const errorMessage = error.response?.data?.message ||
         error.response?.data?.error ||
         'Upload failed. Please check your connection and try again.';
+      let errorMessage = 'Upload failed. Please check your connection and try again.';
+      
+      if (error && typeof error === 'object') {
+        const axiosError = error as {
+          response?: {
+            data?: {
+              message?: string;
+              error?: string;
+            };
+          };
+        };
+        
+        errorMessage = 
+          axiosError.response?.data?.message || 
+          axiosError.response?.data?.error || 
+          errorMessage;
+      }
+      
       toast.error(errorMessage, { duration: 6000 });
     } finally {
       setIsUploading(false);
@@ -302,8 +304,8 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
     }
   };
 
-  const formatNumber = (num: any) => {
-    if (num === undefined || num === null || num === '') return 'N/A';
+  const formatNumber = (num: number) => {
+    if (num === undefined || num === null) return 'N/A';
     const number = Number(num);
     return isNaN(number) ? num : number.toLocaleString(undefined, {
       minimumFractionDigits: 2,
@@ -311,7 +313,6 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
     });
   };
 
-  // Reset state when modal is closed
   useEffect(() => {
     if (!open) {
       resetUpload();
@@ -324,38 +325,40 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5" />
-            Bulk Product Upload
-          </DialogTitle>
-        </DialogHeader>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto dark:bg-gray-900 dark:border-gray-800">
+        <DialogHeader className="dark:text-gray-100">
+          <div className="flex items-center justify-between">
+            <DialogTitle className="flex items-center gap-2 dark:text-gray-100">
+              <Upload className="h-5 w-5" />
+              Bulk Product Upload
+            </DialogTitle>
+          </div>
+        </DialogHeader>        
         <div className="p-1">
           <div className="space-y-6">
             <div className="mb-4">
-              <p className="text-gray-600 text-sm">
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
                 Upload a CSV file to create multiple products at once. Images will be automatically downloaded from URLs and uploaded to Cloudinary.
               </p>
             </div>
 
             {/* Image Preview Modal */}
             {imagePreview && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
-                  <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+              <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center p-4 z-50">
+                <div className="bg-white dark:bg-gray-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+                  <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                     <div>
-                      <h3 className="font-semibold text-gray-800">Image Preview</h3>
-                      <p className="text-sm text-gray-500">SKU: {imagePreview.sku}</p>
+                      <h3 className="font-semibold text-gray-800 dark:text-gray-200">Image Preview</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">SKU: {imagePreview.sku}</p>
                     </div>
                     <button
                       onClick={() => setImagePreview(null)}
-                      className="p-2 hover:bg-gray-100 rounded-lg"
+                      className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-400"
                     >
                       <X className="h-5 w-5" />
                     </button>
                   </div>
-                  <div className="p-4 flex items-center justify-center bg-gray-50">
+                  <div className="p-4 flex items-center justify-center bg-gray-50 dark:bg-gray-900">
                     <img
                       src={imagePreview.url}
                       alt={`Preview for ${imagePreview.sku}`}
@@ -366,19 +369,19 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
                       }}
                     />
                   </div>
-                  <div className="p-4 border-t border-gray-200 flex justify-between items-center">
+                  <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
                     <a
                       href={imagePreview.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                      className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
                     >
                       <ExternalLink className="h-4 w-4 mr-2" />
                       Open in New Tab
                     </a>
                     <button
                       onClick={() => setImagePreview(null)}
-                      className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900"
+                      className="px-4 py-2 bg-gray-800 dark:bg-gray-700 text-white dark:text-gray-100 rounded-lg hover:bg-gray-900 dark:hover:bg-gray-600"
                     >
                       Close
                     </button>
@@ -391,13 +394,13 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
               {/* Left Column - Upload Section */}
               <div className="lg:col-span-2 space-y-6">
                 {/* Upload Card */}
-                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-lg font-semibold text-gray-800">Upload CSV File</h2>
+                    <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Upload CSV File</h2>
                     <div className="flex items-center space-x-3">
                       <button
                         onClick={downloadTemplate}
-                        className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                        className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
                       >
                         <FileSpreadsheet className="mr-2 h-4 w-4" />
                         Download Template
@@ -405,7 +408,7 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
                       {file && (
                         <button
                           onClick={resetUpload}
-                          className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                          className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
                         >
                           <X className="mr-2 h-4 w-4" />
                           Clear
@@ -416,10 +419,11 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
 
                   {/* Upload Area */}
                   <div
-                    className={`border-2 border-dashed rounded-xl p-8 text-center transition-all ${file
-                        ? 'border-green-500 bg-green-50'
-                        : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50 cursor-pointer'
-                      } ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    className={`border-2 border-dashed rounded-xl p-8 text-center transition-all ${
+                      file 
+                        ? 'border-green-500 bg-green-50 dark:bg-green-900/20 dark:border-green-400' 
+                        : 'border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer'
+                    } ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     onClick={() => !isUploading && fileInputRef.current?.click()}
                   >
                     <input
@@ -434,11 +438,11 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
                     {file ? (
                       <div className="space-y-4">
                         <div className="flex items-center justify-center">
-                          <FileText className="h-12 w-12 text-green-500" />
+                          <FileText className="h-12 w-12 text-green-500 dark:text-green-400" />
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">{file.name}</p>
-                          <p className="text-sm text-gray-500 mt-1">
+                          <p className="font-medium text-gray-700 dark:text-gray-200">{file.name}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                             {(file.size / 1024).toFixed(2)} KB • {previewData.length} rows in preview
                           </p>
                         </div>
@@ -448,7 +452,7 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
                               e.stopPropagation();
                               resetUpload();
                             }}
-                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
                             disabled={isUploading}
                           >
                             <X className="h-4 w-4 inline mr-1" />
@@ -481,12 +485,12 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        <Upload className="h-12 w-12 text-gray-400 mx-auto" />
+                        <Upload className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto" />
                         <div>
-                          <p className="font-medium text-gray-900">Click to upload or drag & drop</p>
-                          <p className="text-sm text-gray-500 mt-1">CSV file with product data</p>
+                          <p className="font-medium text-gray-700 dark:text-gray-200">Click to upload or drag & drop</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">CSV file with product data</p>
                         </div>
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-gray-400 dark:text-gray-500">
                           Supports .csv files up to 10MB
                         </p>
                       </div>
@@ -495,12 +499,12 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
 
                   {/* Validation Errors */}
                   {validationErrors.length > 0 && (
-                    <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                      <div className="flex items-center text-red-600 mb-2">
+                    <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                      <div className="flex items-center text-red-600 dark:text-red-400 mb-2">
                         <AlertCircle className="h-5 w-5 mr-2" />
                         <span className="font-medium">Validation Errors</span>
                       </div>
-                      <ul className="text-sm text-red-600 space-y-1 max-h-40 overflow-y-auto">
+                      <ul className="text-sm text-red-600 dark:text-red-300 space-y-1 max-h-40 overflow-y-auto">
                         {validationErrors.map((error, index) => (
                           <li key={index} className="flex items-start">
                             <span className="mr-2">•</span>
@@ -508,7 +512,7 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
                           </li>
                         ))}
                       </ul>
-                      <p className="text-xs text-red-500 mt-2">
+                      <p className="text-xs text-red-500 dark:text-red-400 mt-2">
                         Please fix these errors in your CSV file before uploading.
                       </p>
                     </div>
@@ -517,16 +521,16 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
 
                 {/* Preview Section */}
                 {showPreview && previewData.length > 0 && (
-                  <div className="bg-white rounded-xl border border-gray-200 p-6">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
                     <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-lg font-semibold text-gray-800">CSV Preview (First 5 Rows)</h2>
+                      <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">CSV Preview (First 5 Rows)</h2>
                       <div className="flex items-center space-x-2">
-                        <span className="text-sm text-gray-500">
+                        <span className="text-sm text-gray-500 dark:text-gray-400">
                           {previewData.length} rows
                         </span>
                         <button
                           onClick={() => setShowPreview(!showPreview)}
-                          className="text-sm text-blue-600 hover:text-blue-800"
+                          className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
                         >
                           {showPreview ? 'Hide' : 'Show'}
                         </button>
@@ -534,60 +538,60 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
                     </div>
 
                     <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
+                      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead className="bg-gray-50 dark:bg-gray-900">
                           <tr>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                               Row
                             </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                               SKU
                             </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                               Name
                             </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                               Price
                             </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Category_id
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                              Category
                             </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                               Image
                             </th>
                           </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
+                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                           {previewData.map((row, index) => (
-                            <tr key={index} className="hover:bg-gray-50">
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                            <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                                 {row._rowNumber}
                               </td>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                                <span className="px-2 py-1 bg-gray-100 rounded-md">
+                              <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-700 dark:text-gray-200">
+                                <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-md">
                                   {row.sku}
                                 </span>
                               </td>
-                              <td className="px-4 py-3 text-sm text-gray-900 max-w-xs">
+                              <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 max-w-xs">
                                 <div className="truncate" title={row.name}>
                                   {row.name}
                                 </div>
                                 {row.description && (
-                                  <div className="text-xs text-gray-500 truncate mt-1" title={row.description}>
+                                  <div className="text-xs text-gray-500 dark:text-gray-400 truncate mt-1" title={row.description}>
                                     {row.description}
                                   </div>
                                 )}
                               </td>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-900">
+                              <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-700 dark:text-gray-200">
                                 KSh {formatNumber(row.price)}
                               </td>
                               <td className="px-4 py-3 whitespace-nowrap">
-                                {row.category_id ? (
-                                  <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-md text-xs">
-                                    {row.category_id}
+                                {row.category ? (
+                                  <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-md text-xs">
+                                    {row.category}
                                   </span>
                                 ) : (
-                                  <span className="text-gray-400 text-sm">—</span>
+                                  <span className="text-gray-400 dark:text-gray-500 text-sm">—</span>
                                 )}
                               </td>
                               <td className="px-4 py-3 whitespace-nowrap">
@@ -595,18 +599,18 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
                                   <div className="flex items-center space-x-2">
                                     <button
                                       onClick={() => previewImage(row.image_url, row.sku)}
-                                      className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100"
+                                      className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50"
                                       title={row.image_url}
                                     >
                                       <ImageIcon className="h-3 w-3 mr-1" />
                                       Preview
                                     </button>
-                                    <span className="text-xs text-gray-500 truncate max-w-[100px]">
+                                    <span className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[100px]">
                                       {row.image_url.split('/').pop()}
                                     </span>
                                   </div>
                                 ) : (
-                                  <span className="text-gray-400 text-sm">No image</span>
+                                  <span className="text-gray-400 dark:text-gray-500 text-sm">No image</span>
                                 )}
                               </td>
                             </tr>
@@ -619,13 +623,14 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
 
                 {/* Upload Result */}
                 {uploadResult && (
-                  <div className="bg-white rounded-xl border border-gray-200 p-6">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
                     <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-lg font-semibold text-gray-800">Upload Results</h2>
-                      <div className={`flex items-center px-3 py-1 rounded-full text-sm font-medium ${uploadResult.data.created > 0
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                        }`}>
+                      <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Upload Results</h2>
+                      <div className={`flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                        uploadResult.data.created > 0 
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' 
+                          : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
+                      }`}>
                         {uploadResult.data.created > 0 ? (
                           <>
                             <CheckCircle className="h-4 w-4 mr-1" />
@@ -642,27 +647,27 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
 
                     {/* Summary Stats */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <p className="text-sm font-medium text-gray-500">Total Rows</p>
-                        <p className="text-2xl font-semibold text-gray-900">
+                      <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Rows</p>
+                        <p className="text-2xl font-semibold text-gray-700 dark:text-gray-200">
                           {uploadResult.data.total}
                         </p>
                       </div>
-                      <div className="bg-green-50 p-4 rounded-lg">
-                        <p className="text-sm font-medium text-green-700">Successfully Created</p>
-                        <p className="text-2xl font-semibold text-green-900">
+                      <div className="bg-green-50 dark:bg-green-900/30 p-4 rounded-lg">
+                        <p className="text-sm font-medium text-green-700 dark:text-green-300">Successfully Created</p>
+                        <p className="text-2xl font-semibold text-green-900 dark:text-green-200">
                           {uploadResult.data.created}
                         </p>
                       </div>
-                      <div className="bg-red-50 p-4 rounded-lg">
-                        <p className="text-sm font-medium text-red-700">Failed</p>
-                        <p className="text-2xl font-semibold text-red-900">
+                      <div className="bg-red-50 dark:bg-red-900/30 p-4 rounded-lg">
+                        <p className="text-sm font-medium text-red-700 dark:text-red-300">Failed</p>
+                        <p className="text-2xl font-semibold text-red-900 dark:text-red-200">
                           {uploadResult.data.errors?.length || 0}
                         </p>
                       </div>
-                      <div className="bg-yellow-50 p-4 rounded-lg">
-                        <p className="text-sm font-medium text-yellow-700">Image Errors</p>
-                        <p className="text-2xl font-semibold text-yellow-900">
+                      <div className="bg-yellow-50 dark:bg-yellow-900/30 p-4 rounded-lg">
+                        <p className="text-sm font-medium text-yellow-700 dark:text-yellow-300">Image Errors</p>
+                        <p className="text-2xl font-semibold text-yellow-900 dark:text-yellow-200">
                           {uploadResult.data.processingErrors?.length || 0}
                         </p>
                       </div>
@@ -670,12 +675,12 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
 
                     {/* How Images Are Processed */}
                     {uploadResult.data.created > 0 && (
-                      <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
-                        <div className="flex items-center text-blue-700 mb-2">
+                      <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-100 dark:border-blue-800">
+                        <div className="flex items-center text-blue-700 dark:text-blue-300 mb-2">
                           <ImageIcon className="h-5 w-5 mr-2" />
                           <span className="font-medium">Image Processing Information</span>
                         </div>
-                        <p className="text-sm text-blue-600">
+                        <p className="text-sm text-blue-600 dark:text-blue-400">
                           Product images were automatically downloaded from URLs and uploaded to Cloudinary.
                           Each image is now stored securely with optimized delivery.
                         </p>
@@ -685,29 +690,29 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
                     {/* Errors List */}
                     {uploadResult.data.errors && uploadResult.data.errors.length > 0 && (
                       <div className="mb-6">
-                        <h3 className="text-md font-semibold text-gray-700 mb-3">Failed Products</h3>
+                        <h3 className="text-md font-semibold text-gray-700 dark:text-gray-200 mb-3">Failed Products</h3>
                         <div className="overflow-x-auto">
-                          <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
+                          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead className="bg-gray-50 dark:bg-gray-900">
                               <tr>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                   SKU
                                 </th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                   Error
                                 </th>
                               </tr>
                             </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
+                            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                               {uploadResult.data.errors.map((error: any, index: number) => (
-                                <tr key={index} className="hover:bg-red-50">
-                                  <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                                <tr key={index} className="hover:bg-red-50 dark:hover:bg-red-900/20">
+                                  <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-700 dark:text-gray-200">
                                     {error.sku}
                                   </td>
-                                  <td className="px-4 py-3 text-sm text-red-600">
+                                  <td className="px-4 py-3 text-sm text-red-600 dark:text-red-400">
                                     <div>{error.error}</div>
                                     {error.details && (
-                                      <div className="text-xs text-gray-500 mt-1">
+                                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                         Details: {error.details.substring(0, 100)}...
                                       </div>
                                     )}
@@ -723,13 +728,13 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
                     {/* Image Processing Errors */}
                     {uploadResult.data.processingErrors && uploadResult.data.processingErrors.length > 0 && (
                       <div className="mb-6">
-                        <h3 className="text-md font-semibold text-gray-700 mb-3">Image Processing Errors</h3>
-                        <p className="text-sm text-gray-600 mb-2">
+                        <h3 className="text-md font-semibold text-gray-700 dark:text-gray-200 mb-3">Image Processing Errors</h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                           These products were created without images. You can add images later in the product editor.
                         </p>
                         <div className="space-y-2 max-h-60 overflow-y-auto">
                           {uploadResult.data.processingErrors.map((error: string, index: number) => (
-                            <div key={index} className="flex items-start text-sm text-yellow-700 bg-yellow-50 p-3 rounded-lg">
+                            <div key={index} className="flex items-start text-sm text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/30 p-3 rounded-lg">
                               <AlertCircle className="h-4 w-4 mt-0.5 mr-2 flex-shrink-0" />
                               <span>{error}</span>
                             </div>
@@ -739,12 +744,12 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
                     )}
 
                     {/* Next Steps */}
-                    <div className="mt-6 pt-6 border-t border-gray-200">
-                      <h3 className="text-md font-semibold text-gray-700 mb-3">Next Steps</h3>
+                    <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                      <h3 className="text-md font-semibold text-gray-700 dark:text-gray-200 mb-3">Next Steps</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <button
                           onClick={resetUpload}
-                          className="px-4 py-3 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                          className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
                         >
                           Upload Another File
                         </button>
@@ -753,7 +758,7 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
                             onClose();
                             if (onUploadComplete) onUploadComplete();
                           }}
-                          className="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+                          className="px-4 py-3 bg-blue-600 dark:bg-blue-700 text-white dark:text-gray-100 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 text-sm font-medium"
                         >
                           View Products List
                         </button>
@@ -766,91 +771,92 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadM
               {/* Right Column - Instructions & Info */}
               <div className="space-y-6">
                 {/* How It Works Card */}
-                <div className="bg-white rounded-xl border border-gray-200 p-6">
-                  <h2 className="text-lg font-semibold text-gray-800 mb-4">How It Works</h2>
-
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+                  <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">How It Works</h2>
+                  
                   <div className="space-y-4">
                     <div className="flex items-start">
-                      <div className="flex-shrink-0 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center mr-3">
-                        <span className="text-sm font-semibold text-blue-600">1</span>
+                      <div className="flex-shrink-0 h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center mr-3">
+                        <span className="text-sm font-semibold text-blue-600 dark:text-blue-300">1</span>
                       </div>
                       <div>
-                        <h4 className="text-sm font-medium text-gray-900">Prepare CSV File</h4>
-                        <p className="text-sm text-gray-600 mt-1">
+                        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200">Prepare CSV File</h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                           Download template and fill with product data
                         </p>
                       </div>
                     </div>
 
                     <div className="flex items-start">
-                      <div className="flex-shrink-0 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center mr-3">
-                        <span className="text-sm font-semibold text-blue-600">2</span>
+                      <div className="flex-shrink-0 h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center mr-3">
+                        <span className="text-sm font-semibold text-blue-600 dark:text-blue-300">2</span>
                       </div>
                       <div>
-                        <h4 className="text-sm font-medium text-gray-900">Upload & Validate</h4>
-                        <p className="text-sm text-gray-600 mt-1">
+                        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200">Upload & Validate</h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                           Upload CSV file and check for validation errors
                         </p>
                       </div>
                     </div>
 
                     <div className="flex items-start">
-                      <div className="flex-shrink-0 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center mr-3">
-                        <span className="text-sm font-semibold text-blue-600">3</span>
+                      <div className="flex-shrink-0 h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center mr-3">
+                        <span className="text-sm font-semibold text-blue-600 dark:text-blue-300">3</span>
                       </div>
                       <div>
-                        <h4 className="text-sm font-medium text-gray-900">Image Processing</h4>
-                        <p className="text-sm text-gray-600 mt-1">
+                        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200">Image Processing</h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                           Images are downloaded from URLs and uploaded to Cloudinary
                         </p>
                       </div>
                     </div>
 
                     <div className="flex items-start">
-                      <div className="flex-shrink-0 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center mr-3">
-                        <span className="text-sm font-semibold text-blue-600">4</span>
+                      <div className="flex-shrink-0 h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center mr-3">
+                        <span className="text-sm font-semibold text-blue-600 dark:text-blue-300">4</span>
                       </div>
                       <div>
-                        <h4 className="text-sm font-medium text-gray-900">Products Created</h4>
-                        <p className="text-sm text-gray-600 mt-1">
+                        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200">Products Created</h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                           Products are created with optimized images
                         </p>
                       </div>
                     </div>
                   </div>
                 </div>
-                {/* Tips Card */}
-                <div className="bg-gray-50 rounded-xl border border-gray-200 p-6">
-                  <h2 className="text-lg font-semibold text-gray-800 mb-3">Best Practices</h2>
 
-                  <ul className="space-y-3 text-sm text-gray-600">
+                {/* Tips Card */}
+                <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+                  <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3">Best Practices</h2>
+                  
+                  <ul className="space-y-3 text-sm text-gray-600 dark:text-gray-400">
                     <li className="flex items-start">
-                      <div className="flex-shrink-0 h-5 w-5 rounded-full bg-green-100 flex items-center justify-center mr-3">
-                        <CheckCircle className="h-3 w-3 text-green-600" />
+                      <div className="flex-shrink-0 h-5 w-5 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center mr-3">
+                        <CheckCircle className="h-3 w-3 text-green-600 dark:text-green-400" />
                       </div>
                       <span>Test image URLs in browser before adding to CSV</span>
                     </li>
                     <li className="flex items-start">
-                      <div className="flex-shrink-0 h-5 w-5 rounded-full bg-green-100 flex items-center justify-center mr-3">
-                        <CheckCircle className="h-3 w-3 text-green-600" />
+                      <div className="flex-shrink-0 h-5 w-5 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center mr-3">
+                        <CheckCircle className="h-3 w-3 text-green-600 dark:text-green-400" />
                       </div>
                       <span>Keep image file sizes under 5MB for faster processing</span>
                     </li>
                     <li className="flex items-start">
-                      <div className="flex-shrink-0 h-5 w-5 rounded-full bg-green-100 flex items-center justify-center mr-3">
-                        <CheckCircle className="h-3 w-3 text-green-600" />
+                      <div className="flex-shrink-0 h-5 w-5 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center mr-3">
+                        <CheckCircle className="h-3 w-3 text-green-600 dark:text-green-400" />
                       </div>
                       <span>Use HTTPS URLs for secure image transfers</span>
                     </li>
                     <li className="flex items-start">
-                      <div className="flex-shrink-0 h-5 w-5 rounded-full bg-green-100 flex items-center justify-center mr-3">
-                        <CheckCircle className="h-3 w-3 text-green-600" />
+                      <div className="flex-shrink-0 h-5 w-5 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center mr-3">
+                        <CheckCircle className="h-3 w-3 text-green-600 dark:text-green-400" />
                       </div>
                       <span>Add image preview in CSV to verify before upload</span>
                     </li>
                     <li className="flex items-start">
-                      <div className="flex-shrink-0 h-5 w-5 rounded-full bg-green-100 flex items-center justify-center mr-3">
-                        <CheckCircle className="h-3 w-3 text-green-600" />
+                      <div className="flex-shrink-0 h-5 w-5 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center mr-3">
+                        <CheckCircle className="h-3 w-3 text-green-600 dark:text-green-400" />
                       </div>
                       <span>Start with small batches (10-20 products) to test</span>
                     </li>

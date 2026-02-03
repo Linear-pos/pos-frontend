@@ -6,18 +6,6 @@ import { ThemeProvider } from "./providers/ThemeProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Toaster } from "sonner";
 
-declare global {
-  interface Window {
-    electron?: {
-      platform: string;
-      products: {
-        import: (data: unknown) => Promise<unknown>;
-        validate: (data: unknown) => Promise<unknown>;
-      };
-    };
-  }
-}
-
 
 export function App() {
   return (

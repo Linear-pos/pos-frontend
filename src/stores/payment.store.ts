@@ -1,10 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-
+import type { PaymentStatus } from '@/types/payment.ts';
 
 type PaymentMethod = 'mpesa' | 'cash' | 'card' | '';
-// In payment.store.ts
-type PaymentStatus = 'idle' | 'processing' | 'waiting' | 'waiting_confirmation' | 'success' | 'failed' | 'timeout';
 
 interface PaymentState {
   paymentStatus: PaymentStatus;
