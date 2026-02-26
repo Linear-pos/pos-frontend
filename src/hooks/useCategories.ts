@@ -8,11 +8,7 @@ export type Category = Omit<APICategory, 'tenantId' | 'productCount' | 'createdA
   created_at: string;
   updated_at: string;
   productCount?: number;
-<<<<<<< Updated upstream
-}
-=======
 };
->>>>>>> Stashed changes
 
 interface UseCategoriesResult {
   categories: Category[];

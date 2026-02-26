@@ -68,6 +68,9 @@ export const useCloudinaryUpload = (options: CloudinaryUploadOptions) => {
         formData.append('timestamp', timestamp.toString());
         formData.append('signature', signature);
         formData.append('folder', folder);
+        if (options.uploadPreset) {
+          formData.append('upload_preset', options.uploadPreset);
+        }
 
         // 3. Upload to Cloudinary
         const response = await fetch(

@@ -84,6 +84,36 @@ export const authAPI = {
       access_token: data.token || data.access_token,
     } as AuthResponse;
   },
+
+  /**
+   * Forgot password - send reset link to email (restricted to SYSTEM_ADMIN and BRANCH_MANAGER)
+   * Backend POST /auth/forgot-password returns { success: true, message: string }
+   */
+  forgotPassword: async (email: string): Promise<{ message: string }> => {
+    const response = await axiosInstance.post<BackendResponse<{ message: string }>>('/auth/forgot-password', { email });
+    return response.data.data;
+  },
+
+  /**
+   * Reset password - update password using token
+   * Backend POST /auth/reset-password returns { success: true, message: string }
+   */
+  resetPassword: async (token: string, newPassword: string): Promise<{ message: string }> => {
+    const response = await axiosInstance.post<BackendResponse<{ message: string }>>('/auth/reset-password', {
+      token,
+      password: newPassword,
+    });
+    return response.data.data;
+  },
+
+  /**
+   * Verify reset token - check if token is valid
+   * Backend POST /auth/verify-reset-token returns { success: true, data: { valid: boolean, email?: string } }
+   */
+  verifyResetToken: async (token: string): Promise<{ valid: boolean; email?: string }> => {
+    const response = await axiosInstance.post<BackendResponse<{ valid: boolean; email?: string }>>('/auth/verify-reset-token', { token });
+    return response.data.data;
+  },
 };
 
 export default authAPI;

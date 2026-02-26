@@ -265,26 +265,13 @@ export const BulkUploadModal = ({ open, onClose, onUploadComplete }: BulkUploadP
       }
     } catch (error: unknown) {
       console.error('Upload error:', error);
-      const errorMessage = error.response?.data?.message ||
-        error.response?.data?.error ||
-        'Upload failed. Please check your connection and try again.';
-      let errorMessage = 'Upload failed. Please check your connection and try again.';
       
-      if (error && typeof error === 'object') {
-        const axiosError = error as {
-          response?: {
-            data?: {
-              message?: string;
-              error?: string;
-            };
-          };
-        };
-        
-        errorMessage = 
-          axiosError.response?.data?.message || 
-          axiosError.response?.data?.error || 
-          errorMessage;
-      }
+      const errorMessage = 
+        (error && typeof error === 'object' && 
+         (error as any).response?.data?.message) ||
+        (error && typeof error === 'object' && 
+         (error as any).response?.data?.error) ||
+        'Upload failed. Please check your connection and try again.';
       
       toast.error(errorMessage, { duration: 6000 });
     } finally {

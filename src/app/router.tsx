@@ -13,6 +13,8 @@ export const router = createHashRouter([
   createLazyRoute("/login", () => import("@/components/auth/LoginPage").then(m => ({ default: m.LoginPage })), "Login"),
   createLazyRoute("/select-mode", () => import("@/components/auth/SelectModePage").then(m => ({ default: m.SelectModePage })), "Select Mode"),
   createLazyRoute("/terminal-login", () => import("@/components/auth/TerminalLoginPage").then(m => ({ default: m.TerminalLoginPage })), "Terminal Login"),
+  createLazyRoute("/forgot-password", () => import("@/components/auth/ForgotPasswordPage").then(m => ({ default: m.ForgotPasswordPage })), "Forgot Password"),
+  createLazyRoute("/reset-password", () => import("@/components/auth/ResetPasswordPage").then(m => ({ default: m.ResetPasswordPage })), "Reset Password"),
   // createLazyRoute("/pin-reset", () => import("@/components/auth/PinResetPage").then(m => ({ default: m.PinResetPage })), "PIN Reset"),
   createLazyRoute("/unauthorized", () => import("@/components/auth/UnauthorizedPage").then(m => ({ default: m.UnauthorizedPage })), "Unauthorized"),
   {
