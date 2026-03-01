@@ -137,6 +137,10 @@ export const CheckoutPage = () => {
     return bag ? bag.price : 0;
   }, [selectedBag]);
 
+  const finalTotal = useMemo(() => {
+    return subtotal + tax + bagPrice;
+  }, [subtotal, tax, bagPrice]);
+
   // Quick add amounts for cash
   const QUICK_AMOUNTS = [50, 100, 200, 500, 1000, 2000];
 
@@ -144,6 +148,24 @@ export const CheckoutPage = () => {
   const handleBackToPos = useCallback(() => {
     navigate("/pos");
   }, [navigate]);
+
+  const refreshSyncCounts = useCallback(() => {
+    setQueuedSalesCount(salesSyncAPI.getQueuedSalesCount());
+    setConflictedSalesCount(salesSyncAPI.getConflictedSalesCount());
+  }, []);
+
+  useEffect(() => {
+    refreshSyncCounts();
+
+    const interval = window.setInterval(refreshSyncCounts, 10000);
+    const onOnline = () => refreshSyncCounts();
+    window.addEventListener("online", onOnline);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("online", onOnline);
+    };
+  }, [refreshSyncCounts]);
 
   const handleQuantityChange = useCallback((productId: string, newQuantity: number) => {
     if (newQuantity < 1) return;
