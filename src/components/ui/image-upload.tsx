@@ -19,7 +19,7 @@ export const ImageUpload = ({
   onChange,
   label = 'Product Image',
   cloudName,
-  uploadPreset = 'pos_products',
+  uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'pos_products',
   folder,
 }: ImageUploadProps) => {
   const [preview, setPreview] = useState<string | undefined>(value);

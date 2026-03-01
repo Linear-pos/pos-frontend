@@ -1,4 +1,11 @@
 import { axiosInstance } from '../../services/api';
+import {
+  getConflictedSalesCount,
+  getQueuedSalesCount,
+  isNetworkOrOfflineError,
+  queueSaleForSync,
+  syncQueuedSales,
+} from '../../services/offlineSalesSync.service';
 import type {
   Sale,
   CreateSalePayload,
@@ -55,9 +62,18 @@ export const salesAPI = {
    * Handles inventory decrement and audit trail
    */
   createSale: async (payload: CreateSalePayload): Promise<Sale> => {
-    const response = await axiosInstance.post<SaleResponse>('/sales', payload);
-    const sale = response.data.data || response.data as unknown as Sale;
-    return salesAPI.formatSale(sale);
+    try {
+      const response = await axiosInstance.post<SaleResponse>('/sales', payload);
+      const sale = response.data.data || response.data as unknown as Sale;
+      return salesAPI.formatSale(sale);
+    } catch (error) {
+      // Queue only non-MPesa sales for offline sync. MPesa requires live network callbacks.
+      if (payload.payment_method !== 'mpesa' && isNetworkOrOfflineError(error)) {
+        const queuedSale = queueSaleForSync(payload);
+        return salesAPI.formatSale(queuedSale);
+      }
+      throw error;
+    }
   },
 
   /**
@@ -137,6 +153,12 @@ export const salesAPI = {
       branch: sale.branch
     };
   },
+};
+
+export const salesSyncAPI = {
+  syncQueuedSales,
+  getQueuedSalesCount,
+  getConflictedSalesCount,
 };
 
 export default salesAPI;

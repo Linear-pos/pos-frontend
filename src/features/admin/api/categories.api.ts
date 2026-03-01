@@ -3,10 +3,10 @@ import { axiosInstance } from '@/services/api';
 export interface Category {
     id: string;
     name: string;
-    tenantId: string;
-    productCount: number;
-    createdAt: string;
-    updatedAt: string;
+    slug: string;
+    description: string | null;
+    created_at: string;
+    updated_at: string;
 }
 
 export interface CreateCategoryPayload {
@@ -27,10 +27,10 @@ export const categoriesAPI = {
             return data.map((name: string) => ({
                 id: name,
                 name: name,
-                tenantId: '',
-                productCount: 0,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
+                slug: name.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-'),
+                description: null,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
             }));
         }
 

@@ -200,7 +200,17 @@ export const LoginPage = () => {
             </Button>
           </form>
         </CardContent>
-        <CardFooter className="justify-center">
+        <CardFooter className="flex flex-col space-y-2">
+          <Button
+            type="button"
+            variant="ghost"
+            className="text-sm text-muted-foreground hover:text-primary"
+            onClick={() => navigate('/forgot-password')}
+            disabled={isLoading}
+          >
+            Forgot your password?
+          </Button>
+          
           <p className="text-sm text-muted-foreground flex items-center gap-2">
             2026 © OmniPos
           </p>

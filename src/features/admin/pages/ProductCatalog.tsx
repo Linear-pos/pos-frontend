@@ -90,7 +90,9 @@ export const ProductCatalog = () => {
 
     const fetchCategories = useCallback(async () => {
         try {
+            console.log('[ProductCatalog] Fetching categories...');
             const data = await categoriesAPI.getCategories();
+            console.log('[ProductCatalog] Categories fetched:', data);
             setCategories(data);
         } catch (err) {
             console.error('Failed to fetch categories:', err);

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ShoppingBag, X, Plus, Minus, Smartphone, CreditCard, Banknote, Loader2, AlertCircle, CheckCircle, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { salesAPI } from "@/features/sales/api";
+import { salesAPI, salesSyncAPI } from "@/features/sales/api";
 import { paymentService } from "@/services/payment.service";
 import { usePaymentStore } from "@/stores/payment.store";
 import type { Sale } from "@/types/sale";
@@ -43,13 +43,6 @@ const BAG_OPTIONS = [
 export const CheckoutPage = () => {
   const navigate = useNavigate();
   const { items, total, clearCart, removeItem, updateQuantity } = useCartStore();
-<<<<<<< Updated upstream
-=======
-
-  const handleQuantityChange = useCallback((productId: string, newQuantity: number) => {
-    updateQuantity(productId, newQuantity);
-  }, [updateQuantity]);
->>>>>>> Stashed changes
 
   // Payment state from store
   const {
@@ -73,6 +66,8 @@ export const CheckoutPage = () => {
   const [showReceipt, setShowReceipt] = useState(false);
   const [showMpesaModal, setShowMpesaModal] = useState(false);
   const [currentSale, setCurrentSale] = useState<Sale | null>(null);
+  const [queuedSalesCount, setQueuedSalesCount] = useState<number>(salesSyncAPI.getQueuedSalesCount());
+  const [conflictedSalesCount, setConflictedSalesCount] = useState<number>(salesSyncAPI.getConflictedSalesCount());
 
   // Derived state
   const isProcessing = paymentStatus === 'processing' || paymentStatus === 'waiting';
@@ -87,35 +82,35 @@ export const CheckoutPage = () => {
     };
   }, [isProcessing, resetPaymentState]);
 
-<<<<<<< Updated upstream
-  // Handle payment status timeout
-  useEffect(() => {
-    if (paymentStatus === 'waiting' || paymentStatus === 'waiting_confirmation') {
-      const timer = setTimeout(() => {
-        // if (paymentStatus !== 'success' && paymentStatus !== 'failed') { // Redundant check removed
-        setPaymentStatus('timeout');
-        setError('Payment request timed out. Please try again.');
-        // }
-      }, 120000); // 2 minutes timeout
-
-      return () => clearTimeout(timer);
-    }
-  }, [paymentStatus, setPaymentStatus, setError]);
-=======
 useEffect(() => {
   if (paymentStatus !== 'waiting') return;
 
   const timer = setTimeout(() => {
-      if (paymentStatus === 'waiting') {
-        setError('Payment request timed out. Please try again.');
-        setPaymentStatus('timeout');
-      }
+    if (paymentStatus === 'waiting') {
+      setError('Payment request timed out. Please try again.');
+      setPaymentStatus('timeout');
+    }
   }, 120000);
 
   return () => clearTimeout(timer);
 }, [paymentStatus, setPaymentStatus, setError]);
 
->>>>>>> Stashed changes
+  useEffect(() => {
+    const updateCount = () => {
+      setQueuedSalesCount(salesSyncAPI.getQueuedSalesCount());
+      setConflictedSalesCount(salesSyncAPI.getConflictedSalesCount());
+    };
+    const onSyncEvent = () => updateCount();
+
+    window.addEventListener("online", onSyncEvent);
+    window.addEventListener("omnipos:offline-sales-sync", onSyncEvent as EventListener);
+    updateCount();
+
+    return () => {
+      window.removeEventListener("online", onSyncEvent);
+      window.removeEventListener("omnipos:offline-sales-sync", onSyncEvent as EventListener);
+    };
+  }, []);
 
   // Redirect if cart is empty and not processing/showing receipt
   useEffect(() => {
@@ -160,11 +155,6 @@ useEffect(() => {
     return bag ? bag.price : 0;
   }, [selectedBag]);
 
-  // Re-calculate total with bag
-  const finalTotal = useMemo(() => {
-    return subtotal + tax + bagPrice;
-  }, [subtotal, tax, bagPrice]);
-
   // Quick add amounts for cash
   const QUICK_AMOUNTS = [50, 100, 200, 500, 1000, 2000];
 
@@ -195,10 +185,11 @@ useEffect(() => {
   const handleProcessPayment = useCallback(async (method: 'cash' | 'mpesa' | 'card', data: Omit<PaymentData, 'status'> & { status?: PaymentStatus } = {}) => {
     try {
       const reference = data.reference || buildPaymentReference();
+      const defaultStatus: PaymentStatus = method === "mpesa" ? "waiting" : "success";
       // Create the payload with all necessary fields for the API
       const apiPayload = {
         payment_method: method,
-        status: mapToSaleStatus(data.status || 'waiting'),
+        status: mapToSaleStatus(data.status || defaultStatus),
         reference,
         items: items.map(item => ({
           product_id: item.product_id,
@@ -224,7 +215,7 @@ useEffect(() => {
       setPaymentStatus('failed');
       throw new Error(errorMessage);
     }
-  }, [items, tax, finalTotal, selectedBag, bagPrice, setCurrentSaleId, setError, setPaymentStatus]);
+  }, [items, tax, selectedBag, bagPrice, setCurrentSaleId, setError, setPaymentStatus]);
 
   const handleReceiptClose = useCallback(() => {
     handleBackToPos();
@@ -429,6 +420,16 @@ useEffect(() => {
           <p className="text-muted-foreground text-sm">Complete purchase and payment</p>
         </div>
         <div className="flex items-center gap-2">
+          {queuedSalesCount > 0 && (
+            <Badge variant="secondary" className="text-sm">
+              {queuedSalesCount} queued for sync
+            </Badge>
+          )}
+          {conflictedSalesCount > 0 && (
+            <Badge variant="destructive" className="text-sm">
+              {conflictedSalesCount} sync conflicts
+            </Badge>
+          )}
           <Badge variant="outline" className="text-sm">
             {items.length} items
           </Badge>
@@ -613,11 +614,7 @@ useEffect(() => {
                   )}
                 </AnimatePresence>
 
-<<<<<<< Updated upstream
-                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
-=======
                 <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "cash" | "mpesa" | "card")}>
->>>>>>> Stashed changes
                   <TabsList className="grid grid-cols-3 w-full">
                     <TabsTrigger value="cash">
                       <Banknote className="h-4 w-4 mr-2" /> Cash

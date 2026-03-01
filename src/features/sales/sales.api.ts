@@ -1,4 +1,5 @@
 import { axiosInstance } from '../../services/api';
+import { isNetworkOrOfflineError, queueSaleForSync } from '../../services/offlineSalesSync.service';
 import type {
   Sale,
   CreateSalePayload,
@@ -60,21 +61,28 @@ export const salesAPI = {
   },
 
   createSale: async (payload: CreateSalePayload): Promise<Sale> => {
-    // Ensure product_id is sent as a string (UUID) and quantities are numeric
-    const cleanPayload = {
-      ...payload,
-      items: payload.items.map(item => ({
-        ...item,
-        product_id: String(item.product_id), // Force string for UUID safety
-        quantity: Number(item.quantity),
-        price: Number(item.price),
-      }))
-    };
+    try {
+      // Ensure product_id is sent as a string (UUID) and quantities are numeric
+      const cleanPayload = {
+        ...payload,
+        items: payload.items.map(item => ({
+          ...item,
+          product_id: String(item.product_id), // Force string for UUID safety
+          quantity: Number(item.quantity),
+          price: Number(item.price),
+        }))
+      };
 
-    // Backend returns { success: true, data: { ... } }
-    const response = await axiosInstance.post<BackendSingleResponse<Sale>>('/sales', cleanPayload);
-    const saleData = response.data.data;
-    return salesAPI.formatSale(saleData);
+      // Backend returns { success: true, data: { ... } }
+      const response = await axiosInstance.post<BackendSingleResponse<Sale>>('/sales', cleanPayload);
+      const saleData = response.data.data;
+      return salesAPI.formatSale(saleData);
+    } catch (error) {
+      if (payload.payment_method !== 'mpesa' && isNetworkOrOfflineError(error)) {
+        return salesAPI.formatSale(queueSaleForSync(payload));
+      }
+      throw error;
+    }
   },
 
   getSalesByDateRange: async (startDate: string, endDate: string, page = 1): Promise<SalesListResponse> => {

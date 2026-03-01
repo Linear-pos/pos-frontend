@@ -244,7 +244,7 @@ export const CategoryManager = ({ onCategoryChange, onClose }: CategoryManagerPr
                                     This category has {deletingCategory.productCount || 0} product(s).
                                     They will be uncategorized.
                                 </span>
-                            ) : null}
+                            )}
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>

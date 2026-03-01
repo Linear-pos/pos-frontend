@@ -4,6 +4,9 @@ import { createRoot } from "react-dom/client"
 // import "@fontsource-variable/inter"
 import "./index.css"
 import App from "./app/App"
+import { initializeOfflineSalesSync } from "./services/offlineSalesSync.service"
+
+initializeOfflineSalesSync()
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

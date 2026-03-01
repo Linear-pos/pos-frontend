@@ -36,6 +36,8 @@ interface CreateProductModalProps {
 
 export const CreateProductModal = ({ open, categories, onClose, onProductCreated }: CreateProductModalProps) => {
 
+    console.log('[CreateProductModal] Categories received:', categories);
+
     const { user } = useAuthStore();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);

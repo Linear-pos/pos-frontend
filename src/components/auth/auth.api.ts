@@ -8,6 +8,11 @@ interface BackendResponse<T> {
   message: string;
 }
 
+interface BackendMessageResponse {
+  success: boolean;
+  message: string;
+}
+
 export const authAPI = {
   /**
    * Login with email and password
@@ -83,6 +88,36 @@ export const authAPI = {
       user: data.user,
       access_token: data.token || data.access_token,
     } as AuthResponse;
+  },
+
+  /**
+   * Forgot password - send reset link to email (restricted to SYSTEM_ADMIN and BRANCH_MANAGER)
+   * Backend POST /auth/forgot-password returns { success: true, message: string }
+   */
+  forgotPassword: async (email: string): Promise<{ message: string }> => {
+    const response = await axiosInstance.post<BackendMessageResponse>('/auth/forgot-password', { email });
+    return { message: response.data.message };
+  },
+
+  /**
+   * Reset password - update password using token
+   * Backend POST /auth/reset-password returns { success: true, message: string }
+   */
+  resetPassword: async (token: string, newPassword: string): Promise<{ message: string }> => {
+    const response = await axiosInstance.post<BackendMessageResponse>('/auth/reset-password', {
+      token,
+      password: newPassword,
+    });
+    return { message: response.data.message };
+  },
+
+  /**
+   * Verify reset token - check if token is valid
+   * Backend POST /auth/verify-reset-token returns { success: true, data: { valid: boolean, email?: string } }
+   */
+  verifyResetToken: async (token: string): Promise<{ valid: boolean; email?: string }> => {
+    const response = await axiosInstance.post<BackendResponse<{ valid: boolean; email?: string }>>('/auth/verify-reset-token', { token });
+    return response.data.data;
   },
 };
 
