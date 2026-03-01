@@ -111,7 +111,7 @@ export const LoginPage = () => {
         <CardHeader className="space-y-4 text-center pb-8">
           <div className="flex justify-center">
             <img
-              src="/OmniPos.png"
+              src="/omnipos-nobg.png"
               alt="OmniPos Logo"
               className="h-16 w-auto"
             />

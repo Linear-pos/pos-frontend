@@ -115,7 +115,7 @@ export const SelectModePage = () => {
                     <div className="text-center mb-8">
                         <div className="flex justify-center mb-4">
                             <img
-                                src="/OmniPos.png"
+                                src="/omnipos-nobg.png"
                                 alt="OmniPos Logo"
                                 className="h-16 w-auto"
                             />

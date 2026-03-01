@@ -42,7 +42,7 @@ const BAG_OPTIONS = [
 
 export const CheckoutPage = () => {
   const navigate = useNavigate();
-  const { items, total, clearCart, removeItem, updateQuantity } = useCartStore();
+  const { items, clearCart, removeItem, updateQuantity } = useCartStore();
 
   // Payment state from store
   const {
@@ -82,35 +82,17 @@ export const CheckoutPage = () => {
     };
   }, [isProcessing, resetPaymentState]);
 
-useEffect(() => {
-  if (paymentStatus !== 'waiting') return;
-
-  const timer = setTimeout(() => {
-    if (paymentStatus === 'waiting') {
-      setError('Payment request timed out. Please try again.');
-      setPaymentStatus('timeout');
-    }
-  }, 120000);
-
-  return () => clearTimeout(timer);
-}, [paymentStatus, setPaymentStatus, setError]);
-
+// Handle payment status timeout
   useEffect(() => {
-    const updateCount = () => {
-      setQueuedSalesCount(salesSyncAPI.getQueuedSalesCount());
-      setConflictedSalesCount(salesSyncAPI.getConflictedSalesCount());
-    };
-    const onSyncEvent = () => updateCount();
+    if (paymentStatus === 'waiting') {
+      const timer = setTimeout(() => {
+        setPaymentStatus('timeout');
+        setError('Payment request timed out. Please try again.');
+      }, 120000); // 2 minutes timeout
 
-    window.addEventListener("online", onSyncEvent);
-    window.addEventListener("omnipos:offline-sales-sync", onSyncEvent as EventListener);
-    updateCount();
-
-    return () => {
-      window.removeEventListener("online", onSyncEvent);
-      window.removeEventListener("omnipos:offline-sales-sync", onSyncEvent as EventListener);
-    };
-  }, []);
+      return () => clearTimeout(timer);
+    }
+  }, [paymentStatus, setPaymentStatus, setError]);
 
   // Redirect if cart is empty and not processing/showing receipt
   useEffect(() => {
@@ -163,10 +145,10 @@ useEffect(() => {
     navigate("/pos");
   }, [navigate]);
 
-  const handleQuantityChange = (productId: string, newQuantity: number) => {
+  const handleQuantityChange = useCallback((productId: string, newQuantity: number) => {
     if (newQuantity < 1) return;
     updateQuantity(productId, newQuantity);
-  };
+  }, [updateQuantity]);
 
   // Payment processing
   const buildPaymentReference = () => {
@@ -229,7 +211,7 @@ useEffect(() => {
 
   const handleCashSubmit = async () => {
     const tendered = parseFloat(amountTendered) || 0;
-    if (tendered < total) {
+    if (tendered < finalTotal) {
       setError("Insufficient amount tendered");
       return;
     }
@@ -276,7 +258,7 @@ useEffect(() => {
       // 2. Initiate M-Pesa Payment with Real Sale ID
       const result = await paymentService.processMpesaPayment({
         phone_number: phoneNumber,
-        amount: total,
+        amount: finalTotal,
         sale_id: pendingSale.id,
         reference: pendingSale.reference
       });
@@ -364,8 +346,8 @@ useEffect(() => {
   // Update change when amount tendered changes
   useEffect(() => {
     const tendered = parseFloat(amountTendered) || 0;
-    setChange(Math.max(0, tendered - total));
-  }, [amountTendered, total]);
+    setChange(Math.max(0, tendered - finalTotal));
+  }, [amountTendered, finalTotal]);
 
   // Handle M-Pesa modal close
   const handleCloseMpesaModal = useCallback(() => {
@@ -388,16 +370,6 @@ useEffect(() => {
     // Small delay to allow state to reset before retrying
     setTimeout(handleMpesaSubmit, 300);
   };
-
-  // Cleanup payment state when component unmounts
-  useEffect(() => {
-    return () => {
-      // Only reset if not in a processing state
-      if (!isProcessing) {
-        resetPaymentState();
-      }
-    };
-  }, [isProcessing, resetPaymentState]);
 
   // Clear cart confirmation
   const handleClearCart = () => {
@@ -452,7 +424,7 @@ useEffect(() => {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold">Cart Items</h2>
             <Badge variant="secondary">
-              Total: KES {total.toFixed(2)}
+              Total: KES {finalTotal.toFixed(2)}
             </Badge>
           </div>
 
@@ -581,7 +553,7 @@ useEffect(() => {
                 <Separator />
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total</span>
-                  <span className="text-primary">KES {total.toFixed(2)}</span>
+                  <span className="text-primary">KES {finalTotal.toFixed(2)}</span>
                 </div>
               </div>
 
@@ -668,19 +640,19 @@ useEffect(() => {
                             variant="outline"
                             size="sm"
                             onClick={() => setAmountTendered((prev) =>
-                              (parseFloat(prev) || 0 + amt).toString()
+                              ((parseFloat(prev) || 0) + amt).toString()
                             )}
                           >
                             +{amt}
                           </Button>
                         ))}
-                        <Button
+                          <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setAmountTendered(total.toString())}
+                          onClick={() => setAmountTendered(finalTotal.toString())}
                           className="col-span-3"
                         >
-                          Exact Amount (KES {total.toFixed(2)})
+                          Exact Amount (KES {finalTotal.toFixed(2)})
                         </Button>
                       </div>
 
@@ -699,7 +671,7 @@ useEffect(() => {
                     <Button
                       className="w-full h-12 text-lg"
                       onClick={handleCashSubmit}
-                      disabled={isProcessing || !amountTendered || parseFloat(amountTendered) < total}
+                      disabled={isProcessing || !amountTendered || parseFloat(amountTendered) < finalTotal}
                     >
                       {isProcessing ? (
                         <>
@@ -707,7 +679,7 @@ useEffect(() => {
                           Processing...
                         </>
                       ) : (
-                        `Complete Sale (KES ${total.toFixed(2)})`
+                        `Complete Sale (KES ${finalTotal.toFixed(2)})`
                       )}
                     </Button>
                   </TabsContent>

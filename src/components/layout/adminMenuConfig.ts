@@ -13,7 +13,7 @@ import {
 import type { SidebarProps } from "./Sidebar";
 
 export const AdminMenuConfig: SidebarProps = {
-    brandLogo: "/OmniPos.png",
+    brandLogo: "/omnipos-nobg.png",
     brandName: "OmniPos",
     brandSubtitle: "System Administration",
     brandUrl: "/admin",

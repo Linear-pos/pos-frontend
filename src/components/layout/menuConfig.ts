@@ -9,7 +9,7 @@ import {
 import type { SidebarProps } from "./Sidebar";
 
 export const MenuConfig: SidebarProps = {
-  brandLogo: "/OmniPos.png",
+  brandLogo: "/omnipos-nobg.png",
   brandName: "OmniPos",
   brandSubtitle: "Point of Sale System",
   brandUrl: "/",
