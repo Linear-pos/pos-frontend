@@ -8,6 +8,11 @@ interface BackendResponse<T> {
   message: string;
 }
 
+interface BackendMessageResponse {
+  success: boolean;
+  message: string;
+}
+
 export const authAPI = {
   /**
    * Login with email and password
@@ -90,8 +95,8 @@ export const authAPI = {
    * Backend POST /auth/forgot-password returns { success: true, message: string }
    */
   forgotPassword: async (email: string): Promise<{ message: string }> => {
-    const response = await axiosInstance.post<BackendResponse<{ message: string }>>('/auth/forgot-password', { email });
-    return response.data.data;
+    const response = await axiosInstance.post<BackendMessageResponse>('/auth/forgot-password', { email });
+    return { message: response.data.message };
   },
 
   /**
@@ -99,11 +104,11 @@ export const authAPI = {
    * Backend POST /auth/reset-password returns { success: true, message: string }
    */
   resetPassword: async (token: string, newPassword: string): Promise<{ message: string }> => {
-    const response = await axiosInstance.post<BackendResponse<{ message: string }>>('/auth/reset-password', {
+    const response = await axiosInstance.post<BackendMessageResponse>('/auth/reset-password', {
       token,
       password: newPassword,
     });
-    return response.data.data;
+    return { message: response.data.message };
   },
 
   /**
