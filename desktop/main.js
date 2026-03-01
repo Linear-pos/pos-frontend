@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain, Menu } from "electron";
 import path from "path";
 import { fileURLToPath } from "url";
+import { autoUpdater } from 'electron-updater';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -75,8 +76,6 @@ const productService = {
   },
 };
 
-import pkg from 'electron-updater';
-const autoUpdater = pkg;
 
 // Configure autoUpdater
 autoUpdater.autoDownload = false; // User requested non-aggressive updates
