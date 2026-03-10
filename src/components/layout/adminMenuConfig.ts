@@ -9,6 +9,7 @@ import {
     CreditCard,
     Settings,
     User,
+    Barcode
 } from "lucide-react";
 import type { SidebarProps } from "./Sidebar";
 
@@ -65,6 +66,11 @@ export const AdminMenuConfig: SidebarProps = {
                     title: "Product Catalog",
                     url: "/admin/products",
                     icon: Package,
+                },
+                {
+                    title: "Print Barcodes",
+                    url: "/admin/products?missing_barcode=1",
+                    icon: Barcode,
                 },
                 {
                     title: "Sales",

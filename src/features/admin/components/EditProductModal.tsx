@@ -166,7 +166,7 @@ export const EditProductModal = ({ product, categories, open, onClose, onProduct
                                 <SelectContent>
                                     <SelectItem value="_none">No Category</SelectItem>
                                     {categories.map((cat) => (
-                                        <SelectItem key={cat.id} value={cat.name}>
+                                        <SelectItem key={cat.id} value={cat.id}>
                                             {cat.name}
                                         </SelectItem>
                                     ))}

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Search, Package, Upload, RefreshCw, Filter } from 'lucide-react';
+import { Search, Package, Upload, RefreshCw, Filter, Barcode, Plus } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -19,10 +20,13 @@ import { ProductTable } from '../components/ProductTable';
 import { CreateProductModal } from '../components/CreateProductModal';
 import { CategoryManager } from '../components/CategoryManager';
 import { BulkUploadModal } from '../components/BulkUploadModal';
+import { ProductsWithoutBarcodeModal } from '../components/ProductsWithoutBarcodeModal';
+import { ProductBarcodeModal } from '../components/ProductBarcodeModal';
 
 const ITEMS_PER_PAGE = 20;
 
 export const ProductCatalog = () => {
+    const [searchParams, setSearchParams] = useSearchParams();
     const [products, setProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(true);
@@ -31,6 +35,10 @@ export const ProductCatalog = () => {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
     const [showCategoryManager, setShowCategoryManager] = useState(false);
+    const [showMissingBarcodeModal, setShowMissingBarcodeModal] = useState(false);
+    const [showBarcodeModal, setShowBarcodeModal] = useState(false);
+
+    const [barcodeProduct, setBarcodeProduct] = useState<Product | null>(null);
 
     // Filters
     const [searchQuery, setSearchQuery] = useState('');
@@ -43,7 +51,9 @@ export const ProductCatalog = () => {
     const [totalCount, setTotalCount] = useState(0);
     const [activeCount, setActiveCount] = useState(0);
 
-    const fetchProducts = useCallback(async () => {
+    console.log(products)
+
+    const fetchProducts = useCallback(async (forceRefresh?: boolean) => {
         try {
             const params: ProductsQueryParams = {
                 page: currentPage,
@@ -69,7 +79,7 @@ export const ProductCatalog = () => {
                 params.search = searchQuery.trim();
             }
 
-            const response = await productsAPI.getProducts(params);
+            const response = await productsAPI.getProducts(params, forceRefresh);
             setProducts(response.data);
             setTotalPages(response.pagination.pages);
             setTotalCount(response.pagination.total);
@@ -122,7 +132,51 @@ export const ProductCatalog = () => {
     };
 
     const handleProductUpdated = () => {
-        fetchProducts();
+        // Force refresh by bypassing cache
+        console.log('[ProductCatalog] Product updated, forcing cache-busting refresh');
+        // Call fetchProducts with forceRefresh=true to bypass cache
+        setTimeout(() => {
+            fetchProducts(true);
+        }, 100);
+    };
+
+    // Also add a manual refresh function for testing
+    const forceRefreshProducts = () => {
+        console.log('[ProductCatalog] Manual refresh triggered');
+        fetchProducts(true);
+    };
+
+    const handleBarcodeModalOpen = (product: Product) => {
+        setBarcodeProduct(product);
+        setShowBarcodeModal(true);
+    };
+
+    const handleBarcodeModalClose = () => {
+        setShowBarcodeModal(false);
+        setBarcodeProduct(null);
+    };
+
+    const handleOpenBarcodeFromMissing = (product: Product) => {
+        handleCloseMissingBarcodeModal();
+        handleBarcodeModalOpen(product);
+    };
+
+    const handleOpenMissingBarcodeModal = () => {
+        setShowMissingBarcodeModal(true);
+        setSearchParams((prev) => {
+            const next = new URLSearchParams(prev);
+            next.set('missing_barcode', '1');
+            return next;
+        }, { replace: true });
+    };
+
+    const handleCloseMissingBarcodeModal = () => {
+        setShowMissingBarcodeModal(false);
+        setSearchParams((prev) => {
+            const next = new URLSearchParams(prev);
+            next.delete('missing_barcode');
+            return next;
+        }, { replace: true });
     };
 
     const handleCategoryManagerClose = () => {
@@ -157,6 +211,12 @@ export const ProductCatalog = () => {
     useEffect(() => {
         fetchCategories();
     }, [fetchCategories]);
+
+    useEffect(() => {
+        if (searchParams.get('missing_barcode') === '1') {
+            setShowMissingBarcodeModal(true);
+        }
+    }, [searchParams]);
 
     useEffect(() => {
         const debounceTimer = setTimeout(() => {
@@ -197,6 +257,14 @@ export const ProductCatalog = () => {
                     >
                         <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
                         Refresh
+                    </Button>
+                    <Button
+                        variant="secondary"
+                        onClick={handleOpenMissingBarcodeModal}
+                        className="gap-2"
+                    >
+                        <Barcode className="h-4 w-4" />
+                        Missing Barcodes
                     </Button>
                     <Button onClick={() => setShowCreateModal(true)} className="gap-2">
                         <Package className="h-4 w-4" />
@@ -288,7 +356,7 @@ export const ProductCatalog = () => {
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold text-green-600">
-                            ${products.reduce((sum, p) => sum + (p.price * (p.stock_quantity || 0)), 0).toLocaleString()}
+                            KES&nbsp;{products.reduce((sum, p) => sum + (p.price * (p.stock_quantity || 0)), 0).toLocaleString()}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
                             Total value of current stock
@@ -451,7 +519,7 @@ export const ProductCatalog = () => {
                                 <Package className="h-6 w-6" />
                             </div>
                             <p className="text-lg font-medium">{error}</p>
-                            <Button onClick={fetchProducts} variant="outline">
+                            <Button onClick={() => fetchProducts()} variant="outline">
                                 Try Again
                             </Button>
                         </div>
@@ -470,7 +538,12 @@ export const ProductCatalog = () => {
                             </div>
                             <div className="flex gap-2 justify-center">
                                 <Button onClick={() => setShowCreateModal(true)}>
+                                    <Plus className="h-4 w-4" />
                                     Add Product
+                                </Button>
+                                <Button onClick={forceRefreshProducts} variant="outline">
+                                    <RefreshCw className="h-4 w-4" />
+                                    Debug Refresh
                                 </Button>
                                 <Button
                                     variant="outline"
@@ -485,6 +558,7 @@ export const ProductCatalog = () => {
                             products={products}
                             categories={categories}
                             onProductUpdated={handleProductUpdated}
+                            onBarcode={handleBarcodeModalOpen}
                             onSort={handleSort}
                             sortBy={sortBy}
                             sortOrder={sortOrder}
@@ -559,6 +633,22 @@ export const ProductCatalog = () => {
                 open={showBulkUploadModal}
                 onClose={() => setShowBulkUploadModal(false)}
                 onUploadComplete={handleBulkUploadComplete}
+            />
+
+            <ProductsWithoutBarcodeModal
+                open={showMissingBarcodeModal}
+                categories={categories}
+                onClose={handleCloseMissingBarcodeModal}
+                onOpenBarcode={handleOpenBarcodeFromMissing}
+            />
+
+            <ProductBarcodeModal
+                open={showBarcodeModal}
+                product={barcodeProduct}
+                products={products}
+                onSelectProduct={handleBarcodeModalOpen}
+                onClose={handleBarcodeModalClose}
+                onBarcodeUpdated={fetchProducts}
             />
         </div>
     );

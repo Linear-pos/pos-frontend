@@ -24,7 +24,7 @@ import { toast } from 'sonner';
 
 import { ImageUpload } from '@/components/ui/image-upload';
 import { productsAPI, type CreateProductPayload } from '../api/products.api';
-import type { Category } from '../api/categories.api';
+import { categoriesAPI, type Category } from '../api/categories.api';
 
 
 interface CreateProductModalProps {
@@ -41,6 +41,9 @@ export const CreateProductModal = ({ open, categories, onClose, onProductCreated
     const { user } = useAuthStore();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [showNewCategoryDialog, setShowNewCategoryDialog] = useState(false);
+    const [newCategoryName, setNewCategoryName] = useState('');
+    const [creatingCategory, setCreatingCategory] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
         sku: '',
@@ -139,7 +142,38 @@ export const CreateProductModal = ({ open, categories, onClose, onProductCreated
         }
     };
 
+    const handleCreateCategory = async () => {
+        if (!newCategoryName.trim()) {
+            toast.error('Category name is required');
+            return;
+        }
+
+        setCreatingCategory(true);
+        try {
+            const newCategory = await categoriesAPI.createCategory({
+                name: newCategoryName.trim()
+            });
+            
+            toast.success('Category created successfully');
+            setNewCategoryName('');
+            setShowNewCategoryDialog(false);
+            
+            // Update form with the new category ID
+            setFormData({ ...formData, category: newCategory.id });
+            
+            // Refresh categories by calling the parent callback
+            onProductCreated();
+        } catch (err: any) {
+            toast.error('Failed to create category', {
+                description: err.response?.data?.message || 'Please try again'
+            });
+        } finally {
+            setCreatingCategory(false);
+        }
+    };
+
     return (
+        <>
         <Dialog open={open} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
@@ -199,22 +233,90 @@ export const CreateProductModal = ({ open, categories, onClose, onProductCreated
 
                         <div className="grid gap-2">
                             <Label htmlFor="category">Category</Label>
-                            <Select
-                                value={formData.category || '_none'}
-                                onValueChange={(value) => setFormData({ ...formData, category: value === '_none' ? '' : value })}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select category" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="_none">No Category</SelectItem>
-                                    {categories.map((cat) => (
-                                        <SelectItem key={cat.id} value={cat.name}>
-                                            {cat.name}
+                            <div className="space-y-2">
+                                <Select
+                                    value={formData.category || '_none'}
+                                    onValueChange={(value) => {
+                                        console.log('Category value changed:', value);
+                                        if (value === '_new') {
+                                        setShowNewCategoryDialog(true);
+                                        } else {
+                                            console.log('Setting category to:', value === '_none' ? '' : value);
+                                            setFormData({ ...formData, category: value === '_none' ? '' : value });
+                                            setNewCategoryName('');
+                                        }
+                                    }}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select category" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="_none">No Category</SelectItem>
+                                        {categories.map((cat) => (
+                                            <SelectItem key={cat.id} value={cat.id}>
+                                                {cat.name}
+                                            </SelectItem>
+                                        ))}
+                                        <SelectItem value="_new" className="text-blue-600">
+                                            + Add New Category
                                         </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                                    </SelectContent>
+                                </Select>
+                                
+                                {formData.category === '_creating' && (
+                                    <div className="mt-2 space-y-2">
+                                        <Input
+                                            placeholder="Enter new category name"
+                                            value={newCategoryName}
+                                            onChange={(e) => setNewCategoryName(e.target.value)}
+                                            className="w-full"
+                                        />
+                                        <div className="flex gap-2">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => {
+                                                    setFormData({ ...formData, category: '' });
+                                                    setNewCategoryName('');
+                                                }}
+                                            >
+                                                Cancel
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                onClick={async () => {
+                                                    if (!newCategoryName.trim()) {
+                                                        toast.error('Category name is required');
+                                                        return;
+                                                    }
+                                                    
+                                                    setCreatingCategory(true);
+                                                    try {
+                                                        const newCategory = await categoriesAPI.createCategory({
+                                                            name: newCategoryName.trim()
+                                                        });
+                                                        
+                                                        toast.success('Category created successfully');
+                                                        setFormData({ ...formData, category: newCategory.id });
+                                                        setNewCategoryName('');
+                                                    } catch (err: any) {
+                                                        toast.error('Failed to create category', {
+                                                            description: err.response?.data?.message || 'Please try again'
+                                                        });
+                                                    } finally {
+                                                        setCreatingCategory(false);
+                                                    }
+                                                }}
+                                                disabled={creatingCategory || !newCategoryName.trim()}
+                                            >
+                                                {creatingCategory ? 'Creating...' : 'Create & Select'}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
@@ -311,5 +413,49 @@ export const CreateProductModal = ({ open, categories, onClose, onProductCreated
                 </form>
             </DialogContent>
         </Dialog>
+
+        {/* New Category Dialog */}
+        <Dialog open={showNewCategoryDialog} onOpenChange={setShowNewCategoryDialog}>
+            <DialogContent className="sm:max-w-[400px]">
+                <DialogHeader>
+                    <DialogTitle>Add New Category</DialogTitle>
+                    <DialogDescription>
+                        Create a new product category.
+                    </DialogDescription>
+                </DialogHeader>
+                
+                <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                        <Label htmlFor="new-category-name">Category Name</Label>
+                        <Input
+                            id="new-category-name"
+                            value={newCategoryName}
+                            onChange={(e) => setNewCategoryName(e.target.value)}
+                            placeholder="Enter category name"
+                            disabled={creatingCategory}
+                        />
+                    </div>
+                </div>
+
+                <DialogFooter>
+                    <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={() => setShowNewCategoryDialog(false)}
+                        disabled={creatingCategory}
+                    >
+                        Cancel
+                    </Button>
+                    <Button 
+                        type="button" 
+                        onClick={handleCreateCategory}
+                        disabled={creatingCategory || !newCategoryName.trim()}
+                    >
+                        {creatingCategory ? 'Creating...' : 'Create Category'}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+        </>
     );
 };

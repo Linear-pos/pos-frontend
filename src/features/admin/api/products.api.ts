@@ -4,6 +4,7 @@ export interface Product {
     id: string;
     name: string;
     sku: string | null;
+    barcode?: string | null;
     description: string | null;
     category: string | null;
     price: number;
@@ -66,13 +67,19 @@ export interface ProductsQueryParams {
     category?: string;
     low_stock?: boolean;
     is_active?: boolean;
+    has_barcode?: boolean;
     sort_by?: 'name' | 'price' | 'created_at' | 'sku' | 'stock_quantity';
     sort_order?: 'asc' | 'desc';
 }
 
 export const productsAPI = {
-    getProducts: async (params?: ProductsQueryParams): Promise<ProductsListResponse> => {
-        const response = await axiosInstance.get<ProductsListResponse>('/products', { params });
+    getProducts: async (params?: ProductsQueryParams, forceRefresh?: boolean): Promise<ProductsListResponse> => {
+        const requestParams = { ...params } as any;
+        if (forceRefresh) {
+            // Add timestamp to bust cache
+            requestParams._t = Date.now();
+        }
+        const response = await axiosInstance.get<ProductsListResponse>('/products', { params: requestParams });
         return response.data;
     },
 
@@ -93,6 +100,18 @@ export const productsAPI = {
 
     deleteProduct: async (id: string): Promise<void> => {
         await axiosInstance.delete(`/products/${id}`);
+    },
+
+    generateBarcode: async (id: string): Promise<Product> => {
+        const response = await axiosInstance.post<{ success: boolean; data: Product }>(`/products/${id}/barcode/generate`);
+        return response.data.data;
+    },
+
+    downloadBarcodePng: async (id: string): Promise<Blob> => {
+        const response = await axiosInstance.get<Blob>(`/products/${id}/barcode/download`, {
+            responseType: 'blob',
+        });
+        return response.data;
     },
 
     bulkUpload: async (file: File): Promise<{ success: boolean; data: any; message: string }> => {
