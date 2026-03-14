@@ -92,7 +92,7 @@ export const router = createHashRouter([
   // Manager Routes
   {
     path: "/manager",
-    element: <ProtectedLayout requiredRole="BRANCH_MANAGER" />,
+    element: <ProtectedLayout requiredRole={["BRANCH_MANAGER", "SYSTEM_ADMIN"]} />,
     children: [
       {
         element: <ManagerDashboardLayout />,

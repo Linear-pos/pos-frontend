@@ -177,10 +177,11 @@ export default function TerminalManagement() {
             return;
         }
 
-        if (!formData.branchId || formData.branchId === '') {
-            toast.error('Please select a branch for this terminal');
-            return;
-        }
+        //not neccessary for manager(coupled to single branch) creates terminal
+        // if (!formData.branchId || formData.branchId === '') {
+        //     toast.error('Please select a branch for this terminal');
+        //     return;
+        // }
 
         createMutation.mutate(formData);
     };

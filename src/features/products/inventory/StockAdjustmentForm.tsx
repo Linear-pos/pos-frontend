@@ -3,6 +3,7 @@ import { inventoryAPI } from "../api/inventory.api";
 import type { RestockPayload } from "../api/inventory.api";
 import { productsAPI } from "../api/products.api";
 import type { Product } from "../../../types/product";
+import Select from "react-select";
 
 interface StockAdjustmentFormProps {
     onSuccess: () => void;
@@ -92,7 +93,7 @@ export const StockAdjustmentForm = ({
     };
 
     return (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 rounded-sm">
             <div className="bg-card text-card-foreground rounded-lg shadow-xl max-w-md w-full">
                 <div className="p-6 border-b">
                     <h2 className="text-xl font-bold">
@@ -110,26 +111,32 @@ export const StockAdjustmentForm = ({
                     {/* Product Search/Select */}
                     <div className="space-y-2">
                         <label className="text-sm font-medium">Product</label>
-                        <input
-                            type="text"
-                            placeholder="Search product..."
-                            className="w-full px-3 py-2 border rounded-md mb-2"
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
+                        <Select
+                            placeholder="Search and select a product..."
+                            options={products.map((p) => ({
+                                value: p.id,
+                                label: `${p.name} (Current: ${p.stock_quantity})`,
+                                product: p
+                            }))}
+                            value={selectedProduct ? {
+                                value: selectedProduct.id,
+                                label: `${selectedProduct.name} (Current: ${selectedProduct.stock_quantity})`,
+                                product: selectedProduct
+                            } : null}
+                            onChange={(selectedOption) => {
+                                if (selectedOption) {
+                                    handleProductSelect(selectedOption.value);
+                                } else {
+                                    setSelectedProduct(null);
+                                    setFormData(prev => ({ ...prev, productId: "", cost: 0 }));
+                                }
+                            }}
+                            onInputChange={(inputValue) => setSearchTerm(inputValue)}
+                            isClearable
+                            isSearchable
+                            className="w-full"
+                            classNamePrefix="react-select"
                         />
-                        <select
-                            required
-                            className="w-full px-3 py-2 border rounded-md"
-                            onChange={(e) => handleProductSelect(e.target.value)}
-                            value={selectedProduct?.id || ""}
-                        >
-                            <option value="">Select a product...</option>
-                            {products.map((p) => (
-                                <option key={p.id} value={p.id}>
-                                    {p.name} (Current: {p.stock_quantity})
-                                </option>
-                            ))}
-                        </select>
                     </div>
 
                     {/* Quantity */}

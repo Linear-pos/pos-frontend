@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDeviceModeStore } from '@/stores/deviceMode.store';
-import { useAuthStore } from '@/stores/auth.store';
+import { useCashierStore } from '@/stores/cashier.store';
 import { axiosInstance } from '@/services/api';
 import { PINPad } from '@/components/auth/PINPad';
 
@@ -10,11 +10,12 @@ import { PINPad } from '@/components/auth/PINPad';
 export const TerminalLoginPage = () => {
     const navigate = useNavigate();
     const { mode, clearMode } = useDeviceModeStore();
-    const { setAuth, setLoading, isLoading } = useAuthStore();
+    const { setCashier } = useCashierStore();
     const [pin, setPin] = useState('');
     const [localError, setLocalError] = useState<string | null>(null);
     const [isShaking, setIsShaking] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     // State for Reset Flow
     type FlowState = 'LOGIN' | 'NEW_PIN' | 'CONFIRM_PIN';
@@ -74,7 +75,7 @@ export const TerminalLoginPage = () => {
 
         if (mode.type !== 'terminal') return;
 
-        setLoading(true);
+        setIsLoading(true);
         setLocalError(null);
 
         try {
@@ -90,18 +91,18 @@ export const TerminalLoginPage = () => {
                 const payload = response.data?.data;
                 const shouldReset = payload?.requiresPinReset;
 
-
                 if (shouldReset === true || shouldReset === 'true') {
                     // Transition to Reset Flow
                     setTempPin(pin);
-                    setCashierId(payload.user.id);
+                    setCashierId(payload.cashier.id);
                     setPin('');
                     setFlowState('NEW_PIN');
-                    setLoading(false);
+                    setIsLoading(false);
                 } else {
                     // Success Login
                     setIsSuccess(true);
-                    setAuth(payload);
+                    const token = payload.token || payload.access_token;
+                    setCashier(payload.cashier, token);
                     setTimeout(() => navigate('/pos'), 500);
                 }
 
@@ -111,14 +112,14 @@ export const TerminalLoginPage = () => {
                     setLocalError('New PIN cannot be the same as temporary PIN');
                     triggerShake();
                     setPin('');
-                    setLoading(false);
+                    setIsLoading(false);
                     return;
                 }
 
                 setNewPinCandidate(pin);
                 setPin('');
                 setFlowState('CONFIRM_PIN');
-                setLoading(false);
+                setIsLoading(false);
 
             } else if (flowState === 'CONFIRM_PIN') {
                 // Step 3: Confirm and Reset
@@ -127,7 +128,7 @@ export const TerminalLoginPage = () => {
                     triggerShake();
                     setPin('');
                     setFlowState('NEW_PIN'); // Start over new pin entry
-                    setLoading(false);
+                    setIsLoading(false);
                     return;
                 }
 
@@ -142,7 +143,9 @@ export const TerminalLoginPage = () => {
                 });
 
                 setIsSuccess(true);
-                setAuth(resetResponse.data.data);
+                const resetPayload = resetResponse.data?.data;
+                const resetToken = resetPayload.token || resetPayload.access_token;
+                setCashier(resetPayload.cashier, resetToken);
                 setTimeout(() => navigate('/pos'), 500);
             }
         } catch (err: any) {
@@ -153,7 +156,7 @@ export const TerminalLoginPage = () => {
             triggerShake();
             // If reset failed, potentially stay in CONFIRM or go back unique error?
             // Usually stay to let them retry or correct.
-            setLoading(false);
+            setIsLoading(false);
         }
     };
 

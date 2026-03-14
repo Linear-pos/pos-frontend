@@ -13,7 +13,7 @@ import { AlertCircle, Loader2 } from "lucide-react";
 export const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { setAuth, setError, error, isLoading, setLoading } = useAuthStore();
+  const { setAuth, setError, error, isLoading, setLoading, logout } = useAuthStore();
 
   const [formData, setFormData] = useState<LoginPayload>({
     email: "",
@@ -68,11 +68,18 @@ export const LoginPage = () => {
       setError(null);
 
       const response = await authAPI.login(formData);
-      setAuth(response);
-
       const userRole = typeof response.user.role === 'string'
         ? response.user.role
         : response.user.role?.name;
+
+      // Platform-level SAAS_ADMIN should not access tenant POS app data.
+      if (userRole === 'SAAS_ADMIN') {
+        logout();
+        setError('This account does not have access to the POS app. Please use the platform dashboard.');
+        return;
+      }
+
+      setAuth(response);
 
       console.log('[LoginPage] Login Success:', {
         role: userRole,

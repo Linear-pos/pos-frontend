@@ -70,7 +70,7 @@ export const getTerminals = async (params?: {
         pages: number;
     };
 }> => {
-    const response = await axiosInstance.get('/api/terminals', { params });
+    const response = await axiosInstance.get('/terminals', { params });
     return response.data;
 };
 
@@ -80,7 +80,7 @@ export const getTerminals = async (params?: {
 export const getTerminalById = async (
     id: string
 ): Promise<{ success: boolean; data: Terminal }> => {
-    const response = await axiosInstance.get(`/api/terminals/${id}`);
+    const response = await axiosInstance.get(`/terminals/${id}`);
     return response.data;
 };
 
@@ -90,7 +90,7 @@ export const getTerminalById = async (
 export const createTerminal = async (
     data: CreateTerminalRequest
 ): Promise<{ success: boolean; data: Terminal }> => {
-    const response = await axiosInstance.post('/api/terminals', data);
+    const response = await axiosInstance.post('/terminals', data);
     return response.data;
 };
 
@@ -101,7 +101,7 @@ export const updateTerminal = async (
     id: string,
     data: Partial<CreateTerminalRequest>
 ): Promise<{ success: boolean; data: Terminal }> => {
-    const response = await axiosInstance.put(`/api/terminals/${id}`, data);
+    const response = await axiosInstance.put(`/terminals/${id}`, data);
     return response.data;
 };
 
@@ -111,7 +111,7 @@ export const updateTerminal = async (
 export const deactivateTerminal = async (
     id: string
 ): Promise<{ success: boolean; message: string }> => {
-    const response = await axiosInstance.post(`/api/terminals/${id}/deactivate`);
+    const response = await axiosInstance.post(`/terminals/${id}/deactivate`);
     return response.data;
 };
 
@@ -121,7 +121,7 @@ export const deactivateTerminal = async (
 export const updateTerminalHeartbeat = async (
     id: string
 ): Promise<{ success: boolean; message: string }> => {
-    const response = await axiosInstance.post(`/api/terminals/${id}/heartbeat`);
+    const response = await axiosInstance.post(`/terminals/${id}/heartbeat`);
     return response.data;
 };
 
@@ -131,7 +131,7 @@ export const updateTerminalHeartbeat = async (
 export const getTerminalDevices = async (
     terminalId: string
 ): Promise<{ success: boolean; data: TerminalDevice[] }> => {
-    const response = await axiosInstance.get(`/api/terminals/${terminalId}/devices`);
+    const response = await axiosInstance.get(`/terminals/${terminalId}/devices`);
     return response.data;
 };
 
@@ -141,7 +141,7 @@ export const getTerminalDevices = async (
 export const pairDevice = async (
     data: PairDeviceRequest
 ): Promise<{ success: boolean; data: TerminalDevice }> => {
-    const response = await axiosInstance.post('/api/terminals/pair', data);
+    const response = await axiosInstance.post('/terminals/pair', data);
     return response.data;
 };
 
@@ -153,7 +153,7 @@ export const revokeDevice = async (
     deviceId: string
 ): Promise<{ success: boolean; message: string }> => {
     const response = await axiosInstance.post(
-        `/api/terminals/${terminalId}/devices/${deviceId}/revoke`
+        `/terminals/${terminalId}/devices/${deviceId}/revoke`
     );
     return response.data;
 };
@@ -166,7 +166,7 @@ export const unpairDevice = async (
     deviceId: string
 ): Promise<{ success: boolean; message: string }> => {
     const response = await axiosInstance.delete(
-        `/api/terminals/${terminalId}/devices/${deviceId}`
+        `/terminals/${terminalId}/devices/${deviceId}`
     );
     return response.data;
 };
@@ -177,7 +177,7 @@ export const unpairDevice = async (
 export const getTerminalCategories = async (
     terminalId: string
 ): Promise<{ success: boolean; data: string[] }> => {
-    const response = await axiosInstance.get(`/api/terminals/${terminalId}/categories`);
+    const response = await axiosInstance.get(`/terminals/${terminalId}/categories`);
     return response.data;
 };
 
@@ -187,6 +187,6 @@ export const getTerminalCategories = async (
 export const getTerminalsByBranch = async (
     branchId: string
 ): Promise<{ success: boolean; data: Terminal[] }> => {
-    const response = await axiosInstance.get(`/api/terminals/branch/${branchId}`);
+    const response = await axiosInstance.get(`/terminals/branch/${branchId}`);
     return response.data;
 };

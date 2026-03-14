@@ -1,4 +1,4 @@
-export type UserRole = 'SYSTEM_ADMIN' | 'BRANCH_MANAGER' | 'CASHIER';
+export type UserRole = 'SAAS_ADMIN' | 'SYSTEM_ADMIN' | 'BRANCH_MANAGER' | 'CASHIER';
 
 export interface Role {
   id: string;

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { UserPlus, Edit, Trash2, RotateCcw, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,8 +21,10 @@ import { EditUserModal } from '../components/EditUserModal';
 import { DataTable } from '@/components/common/DataTable';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 export const UserManagement = () => {
+    const navigate = useNavigate();
     // Data State
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
@@ -41,9 +43,9 @@ export const UserManagement = () => {
     // Filters
     const [searchQuery, setSearchQuery] = useState('');
     const [roleFilter, setRoleFilter] = useState<string>('all');
-    const [statusFilter, setStatusFilter] = useState<string>('active');
+    const [statusFilter, setStatusFilter] = useState<string>('all');
 
-    const fetchUsers = async () => {
+    const fetchUsers = useCallback(async () => {
         setLoading(true);
         setError(null);
 
@@ -79,20 +81,11 @@ export const UserManagement = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [pagination.page, roleFilter, statusFilter, searchQuery]);
 
     useEffect(() => {
         fetchUsers();
-    }, [pagination.page, roleFilter, statusFilter]);
-
-    // Handle search specifically (reset page)
-    useEffect(() => {
-        if (pagination.page !== 1) {
-            setPagination(prev => ({ ...prev, page: 1 }));
-        } else {
-            fetchUsers();
-        }
-    }, [searchQuery]);
+    }, [fetchUsers]);
 
     const getRoleBadgeColor = (role: string) => {
         const colors: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -117,6 +110,7 @@ export const UserManagement = () => {
     };
 
     const handleResetPassword = async (user: User) => {
+        if (!user.email) return;
         if (!confirm(`Send password reset email to ${user.email}?`)) return;
 
         try {
@@ -189,14 +183,20 @@ export const UserManagement = () => {
                     {
                         key: 'email',
                         title: 'Email',
-                        render: (user) => <div className="text-sm text-muted-foreground">{user.email}</div>
+                        render: (user) => (
+                            <div className="text-sm text-muted-foreground">
+                                {user.email || <span className="text-muted-foreground">_</span>}
+                            </div>
+                        )
                     },
                     {
                         key: 'role',
                         title: 'Role',
                         render: (user) => (
                             <Badge variant={getRoleBadgeColor(user.role)}>
-                                {user.role.replace('_', ' ')}
+                                {
+                                    user.role ? user.role.replace('_', ' ').toUpperCase() : '_'
+                                }
                             </Badge>
                         )
                     },
@@ -213,7 +213,7 @@ export const UserManagement = () => {
                         key: 'status',
                         title: 'Status',
                         render: (user) => (
-                            <Badge variant={user.isActive ? 'secondary' : 'outline'}>
+                            <Badge className={user.isActive ? 'bg-green-500' : 'bg-red-500'}>
                                 {user.isActive ? 'Active' : 'Inactive'}
                             </Badge>
                         )
@@ -228,7 +228,22 @@ export const UserManagement = () => {
                         )
                     }
                 ]}
-                rowActions={(user) => (
+                rowActions={(user) => user.type === 'cashier' ? (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Open menu</span>
+                                <MoreVertical className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => navigate('/manager/cashiers')}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Manage Cashiers
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                ) : (
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="h-8 w-8 p-0">

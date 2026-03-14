@@ -34,13 +34,15 @@ export const SelectModePage = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    const userRole = typeof user?.role === 'string' ? user.role : user?.role?.name;
+
     // Check for return from login
     useEffect(() => {
-        if (location.state?.from === 'provisioning' && isAuthenticated && (user?.role === 'BRANCH_MANAGER' || user?.role === 'SYSTEM_ADMIN')) {
+        if (location.state?.from === 'provisioning' && isAuthenticated && (userRole === 'BRANCH_MANAGER' || userRole === 'SYSTEM_ADMIN')) {
             setView('TERMINAL_SELECT');
             fetchTerminals();
         }
-    }, [isAuthenticated, user, location.state]);
+    }, [isAuthenticated, userRole, location.state]);
 
     const handleManagementMode = () => {
         setManagementMode();

@@ -52,11 +52,6 @@ export const AdminMenuConfig: SidebarProps = {
                     url: "/admin/users",
                     icon: Users,
                 },
-                {
-                    title: "Users",
-                    url: "/admin/users",
-                    icon: Users,
-                },
             ],
         },
         {

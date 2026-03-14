@@ -34,7 +34,7 @@ export const EditUserModal = ({ user, open, onClose, onUserUpdated }: EditUserMo
 
     const [formData, setFormData] = useState({
         name: user.name,
-        email: user.email,
+        email: user.email || '',
         role_id: user.roleId,
         branch_id: user.branchId || '',
     });
@@ -50,7 +50,7 @@ export const EditUserModal = ({ user, open, onClose, onUserUpdated }: EditUserMo
         if (open) {
             setFormData({
                 name: user.name,
-                email: user.email,
+                email: user.email || '',
                 role_id: user.roleId,
                 branch_id: user.branchId || '',
             });

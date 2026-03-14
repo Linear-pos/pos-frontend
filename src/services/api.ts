@@ -1,8 +1,9 @@
 import axios, { AxiosError } from 'axios';
 import type { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '../stores/auth.store';
+import { useCashierStore } from '../stores/cashier.store';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 export const axiosInstance: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -31,7 +32,7 @@ axiosInstance.interceptors.request.use(
 
     // Only add token if not a public endpoint
     if (!isPublicEndpoint) {
-      const token = useAuthStore.getState().token;
+      const token = useAuthStore.getState().token || useCashierStore.getState().cashierToken;
 
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
@@ -50,7 +51,13 @@ axiosInstance.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
     // List of public endpoints - don't auto-redirect on errors for these
-    const publicEndpoints = ['/terminals/verify-code', '/auth/login', '/auth/register', '/cashiers/auth'];
+    const publicEndpoints = [
+      '/terminals/verify-code',
+      '/auth/login',
+      '/auth/register',
+      '/cashiers/auth',
+      '/cashiers/auth/reset-pin'
+    ];
     const isPublicEndpoint = publicEndpoints.some(endpoint =>
       error.config?.url?.includes(endpoint)
     );
@@ -59,6 +66,7 @@ axiosInstance.interceptors.response.use(
     if (error.response?.status === 401 && !isPublicEndpoint) {
       const authStore = useAuthStore.getState();
       authStore.logout();
+      useCashierStore.getState().clearCashier();
 
       // Redirect to login page
       if (window.location.pathname !== '/login') {

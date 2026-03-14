@@ -33,7 +33,8 @@ export function CashierLogin() {
 
             if (response.success) {
                 // Store cashier info and token
-                setCashier(response.data.cashier, response.data.token);
+                const token = response.data.token || response.data.access_token;
+                setCashier(response.data.cashier, token);
 
                 // Navigate to terminal selection
                 navigate('/cashier/terminal-select');

@@ -258,7 +258,7 @@ export default function CashierManagement() {
                                 {getRoleIcon(cashier.role)}
                                 <div>
                                     <p className="font-medium">{cashier.fullName}</p>
-                                    <p className="text-sm text-muted-foreground">{cashier.id.slice(0, 8)}</p>
+                                    {/* <p className="text-sm text-muted-foreground">{cashier.id.slice(0, 8)}</p> */}
                                 </div>
                             </div>
                         ),

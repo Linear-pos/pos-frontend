@@ -26,6 +26,11 @@ export const ProtectedLayout = ({ requiredRole }: ProtectedLayoutProps) => {
         ? user.role as UserRole
         : user?.role?.name as UserRole;
 
+    // SAAS_ADMIN is platform-level and should not access tenant/branch POS data in this app.
+    // if (userRole === 'SAAS_ADMIN') {
+    //     return <Navigate to="/unauthorized" replace />;
+    // }
+
     console.log('[ProtectedLayout] Check:', {
         path: location.pathname,
         userRole,

@@ -106,7 +106,7 @@ export const getShifts = async (params?: {
         pages: number;
     };
 }> => {
-    const response = await axiosInstance.get('/api/shifts', { params });
+    const response = await axiosInstance.get('/shifts', { params });
     return response.data;
 };
 
@@ -116,7 +116,7 @@ export const getShifts = async (params?: {
 export const getShiftById = async (
     id: string
 ): Promise<{ success: boolean; data: Shift }> => {
-    const response = await axiosInstance.get(`/api/shifts/${id}`);
+    const response = await axiosInstance.get(`/shifts/${id}`);
     return response.data;
 };
 
@@ -126,7 +126,7 @@ export const getShiftById = async (
 export const openShift = async (
     data: OpenShiftRequest
 ): Promise<{ success: boolean; data: Shift }> => {
-    const response = await axiosInstance.post('/api/shifts/open', data);
+    const response = await axiosInstance.post('/shifts/open', data);
     return response.data;
 };
 
@@ -137,7 +137,7 @@ export const closeShift = async (
     shiftId: string,
     data: CloseShiftRequest
 ): Promise<{ success: boolean; data: Shift }> => {
-    const response = await axiosInstance.post(`/api/shifts/${shiftId}/close`, data);
+    const response = await axiosInstance.post(`/shifts/${shiftId}/close`, data);
     return response.data;
 };
 
@@ -150,7 +150,7 @@ export const forceCloseShift = async (
     reason: string
 ): Promise<{ success: boolean; data: Shift }> => {
     const response = await axiosInstance.post(
-        `/api/shifts/${shiftId}/force-close`,
+        `/shifts/${shiftId}/force-close`,
         {
             closedByCashierId,
             reason,
@@ -167,7 +167,7 @@ export const recordCashDrop = async (
     data: CashDropRequest
 ): Promise<{ success: boolean; message: string }> => {
     const response = await axiosInstance.post(
-        `/api/shifts/${shiftId}/cash-drop`,
+        `/shifts/${shiftId}/cash-drop`,
         data
     );
     return response.data;
@@ -181,7 +181,7 @@ export const recordCashAddition = async (
     data: CashAdditionRequest
 ): Promise<{ success: boolean; message: string }> => {
     const response = await axiosInstance.post(
-        `/api/shifts/${shiftId}/cash-addition`,
+        `/shifts/${shiftId}/cash-addition`,
         data
     );
     return response.data;
@@ -193,7 +193,7 @@ export const recordCashAddition = async (
 export const getShiftReconciliation = async (
     shiftId: string
 ): Promise<{ success: boolean; data: ShiftReconciliation }> => {
-    const response = await axiosInstance.get(`/api/shifts/${shiftId}/reconciliation`);
+    const response = await axiosInstance.get(`/shifts/${shiftId}/reconciliation`);
     return response.data;
 };
 
@@ -204,7 +204,7 @@ export const reconcileShift = async (
     shiftId: string,
     reviewedBy: string
 ): Promise<{ success: boolean; message: string }> => {
-    const response = await axiosInstance.post(`/api/shifts/${shiftId}/reconcile`, {
+    const response = await axiosInstance.post(`/shifts/${shiftId}/reconcile`, {
         reviewedBy,
     });
     return response.data;
@@ -217,7 +217,7 @@ export const getShiftEvents = async (
     shiftId: string,
     eventType?: string
 ): Promise<{ success: boolean; data: ShiftEvent[] }> => {
-    const response = await axiosInstance.get(`/api/shifts/${shiftId}/events`, {
+    const response = await axiosInstance.get(`/shifts/${shiftId}/events`, {
         params: { eventType },
     });
     return response.data;
@@ -230,7 +230,7 @@ export const getCurrentShift = async (
     terminalId: string
 ): Promise<{ success: boolean; data: Shift }> => {
     const response = await axiosInstance.get(
-        `/api/shifts/terminal/${terminalId}/current`
+        `/shifts/terminal/${terminalId}/current`
     );
     return response.data;
 };
@@ -243,7 +243,7 @@ export const getCashierShifts = async (
     startDate?: string,
     endDate?: string
 ): Promise<{ success: boolean; data: Shift[] }> => {
-    const response = await axiosInstance.get(`/api/shifts/cashier/${cashierId}`, {
+    const response = await axiosInstance.get(`/shifts/cashier/${cashierId}`, {
         params: { startDate, endDate },
     });
     return response.data;

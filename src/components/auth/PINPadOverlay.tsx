@@ -1,13 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDeviceModeStore } from '@/stores/deviceMode.store';
-import { useAuthStore } from '@/stores/auth.store';
+import { useCashierStore } from '@/stores/cashier.store';
 import { axiosInstance } from '@/services/api';
 import { X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { PINPad } from '@/components/auth/PINPad';
-
-
 
 interface PINPadOverlayProps {
     onAuthenticated?: () => void;
@@ -21,10 +19,11 @@ interface PINPadOverlayProps {
 export const PINPadOverlay = ({ onAuthenticated }: PINPadOverlayProps) => {
     const navigate = useNavigate();
     const { mode, clearMode } = useDeviceModeStore();
-    const { setAuth, setLoading, isLoading } = useAuthStore();
+    const { setCashier } = useCashierStore();
     const [pin, setPin] = useState('');
     const [localError, setLocalError] = useState<string | null>(null);
     const [isShaking, setIsShaking] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     // State for Reset Flow
     type FlowState = 'LOGIN' | 'NEW_PIN' | 'CONFIRM_PIN';
@@ -87,7 +86,7 @@ export const PINPadOverlay = ({ onAuthenticated }: PINPadOverlayProps) => {
 
         if (mode.type !== 'terminal') return;
 
-        setLoading(true);
+        setIsLoading(true);
         setLocalError(null);
 
         try {
@@ -104,12 +103,13 @@ export const PINPadOverlay = ({ onAuthenticated }: PINPadOverlayProps) => {
 
                 if (shouldReset) {
                     setTempPin(pin);
-                    setCashierId(payload.user.id);
+                    setCashierId(payload.cashier.id);
                     setPin('');
                     setFlowState('NEW_PIN');
-                    setLoading(false);
+                    setIsLoading(false);
                 } else {
-                    setAuth(payload);
+                    const token = payload.token || payload.access_token;
+                    setCashier(payload.cashier, token);
                     if (onAuthenticated) onAuthenticated();
                 }
             } else if (flowState === 'NEW_PIN') {
@@ -117,20 +117,20 @@ export const PINPadOverlay = ({ onAuthenticated }: PINPadOverlayProps) => {
                     setLocalError('New PIN cannot be the same as temporary PIN');
                     triggerShake();
                     setPin('');
-                    setLoading(false);
+                    setIsLoading(false);
                     return;
                 }
                 setNewPinCandidate(pin);
                 setPin('');
                 setFlowState('CONFIRM_PIN');
-                setLoading(false);
+                setIsLoading(false);
             } else if (flowState === 'CONFIRM_PIN') {
                 if (pin !== newPinCandidate) {
                     setLocalError('PINs do not match. Try again.');
                     triggerShake();
                     setPin('');
                     setFlowState('NEW_PIN');
-                    setLoading(false);
+                    setIsLoading(false);
                     return;
                 }
 
@@ -143,7 +143,9 @@ export const PINPadOverlay = ({ onAuthenticated }: PINPadOverlayProps) => {
                     newPin: pin
                 });
 
-                setAuth(resetResponse.data.data);
+                const resetPayload = resetResponse.data?.data;
+                const resetToken = resetPayload.token || resetPayload.access_token;
+                setCashier(resetPayload.cashier, resetToken);
                 if (onAuthenticated) onAuthenticated();
             }
         } catch (err: any) {
@@ -151,7 +153,7 @@ export const PINPadOverlay = ({ onAuthenticated }: PINPadOverlayProps) => {
             setLocalError(errorMessage);
             setPin('');
             triggerShake();
-            setLoading(false);
+            setIsLoading(false);
         }
     };
 

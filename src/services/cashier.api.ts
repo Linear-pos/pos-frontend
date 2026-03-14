@@ -3,14 +3,18 @@ import { axiosInstance } from './api';
 export interface CashierAuthRequest {
     tenantId: string;
     pin: string;
+    branchId?: string;
+    terminalId?: string;
 }
 
 export interface CashierAuthResponse {
     success: boolean;
     data: {
         cashier: Cashier;
-        token: string;
-        expiresAt: string;
+        access_token: string;
+        token?: string;
+        expiresIn?: string;
+        requiresPinReset?: boolean;
     };
     message: string;
 }
@@ -19,16 +23,17 @@ export interface Cashier {
     id: string;
     tenantId: string;
     branchId: string | null;
-    userId: string | null;
     fullName: string;
     role: 'cashier' | 'supervisor' | 'manager';
     isActive: boolean;
     canOpenShift: boolean;
     canCloseShift: boolean;
     canOverridePrices: boolean;
-    lastLoginAt: Date | null;
-    createdAt: Date;
-    updatedAt: Date;
+    lastLoginAt: string | null;
+    createdAt: string;
+    updatedAt: string;
+    tenantName?: string;
+    branchName?: string;
 }
 
 export interface CreateCashierRequest {
@@ -36,7 +41,6 @@ export interface CreateCashierRequest {
     pin?: string;
     role?: 'cashier' | 'supervisor' | 'manager';
     branchId?: string;
-    userId?: string;
     canOpenShift?: boolean;
     canCloseShift?: boolean;
     canOverridePrices?: boolean;
@@ -49,7 +53,7 @@ export const authenticateCashier = async (
     data: CashierAuthRequest
 ): Promise<CashierAuthResponse> => {
     const response = await axiosInstance.post<CashierAuthResponse>(
-        '/api/cashiers/auth',
+        '/cashiers/auth',
         data
     );
     return response.data;
@@ -62,7 +66,7 @@ export const verifyCashierToken = async (
     token: string
 ): Promise<{ success: boolean; data: Cashier }> => {
     const response = await axiosInstance.post(
-        '/api/cashiers/auth/verify',
+        '/cashiers/auth/verify',
         {},
         {
             headers: {
@@ -93,7 +97,7 @@ export const getCashiers = async (params?: {
         pages: number;
     };
 }> => {
-    const response = await axiosInstance.get('/api/cashiers', { params });
+    const response = await axiosInstance.get('/cashiers', { params });
     return response.data;
 };
 
@@ -103,7 +107,7 @@ export const getCashiers = async (params?: {
 export const getCashierById = async (
     id: string
 ): Promise<{ success: boolean; data: Cashier }> => {
-    const response = await axiosInstance.get(`/api/cashiers/${id}`);
+    const response = await axiosInstance.get(`/cashiers/${id}`);
     return response.data;
 };
 
@@ -121,7 +125,7 @@ export const createCashier = async (
     };
     message: string;
 }> => {
-    const response = await axiosInstance.post('/api/cashiers', data);
+    const response = await axiosInstance.post('/cashiers', data);
     return response.data;
 };
 
@@ -132,7 +136,7 @@ export const updateCashier = async (
     id: string,
     data: Partial<CreateCashierRequest>
 ): Promise<{ success: boolean; data: Cashier }> => {
-    const response = await axiosInstance.put(`/api/cashiers/${id}`, data);
+    const response = await axiosInstance.put(`/cashiers/${id}`, data);
     return response.data;
 };
 
@@ -142,7 +146,7 @@ export const updateCashier = async (
 export const deleteCashier = async (
     id: string
 ): Promise<{ success: boolean; message: string }> => {
-    const response = await axiosInstance.delete(`/api/cashiers/${id}`);
+    const response = await axiosInstance.delete(`/cashiers/${id}`);
     return response.data;
 };
 
@@ -152,7 +156,7 @@ export const deleteCashier = async (
 export const resetCashierPin = async (
     id: string
 ): Promise<{ success: boolean; data: { temporaryPin: string; expiresIn: string }; message: string }> => {
-    const response = await axiosInstance.post(`/api/cashiers/${id}/reset-pin`);
+    const response = await axiosInstance.post(`/cashiers/${id}/reset-pin`);
     return response.data;
 };
 
@@ -162,7 +166,7 @@ export const resetCashierPin = async (
 export const unlockCashier = async (
     id: string
 ): Promise<{ success: boolean; message: string }> => {
-    const response = await axiosInstance.post(`/api/cashiers/${id}/unlock`);
+    const response = await axiosInstance.post(`/cashiers/${id}/unlock`);
     return response.data;
 };
 
@@ -172,6 +176,6 @@ export const unlockCashier = async (
 export const getCashiersByBranch = async (
     branchId: string
 ): Promise<{ success: boolean; data: Cashier[] }> => {
-    const response = await axiosInstance.get(`/api/cashiers/branch/${branchId}`);
+    const response = await axiosInstance.get(`/cashiers/branch/${branchId}`);
     return response.data;
 };

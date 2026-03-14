@@ -3,15 +3,17 @@ import { axiosInstance } from '@/services/api';
 export interface User {
     id: string;
     name: string;
-    email: string;
+    email: string | null;
     role: string;
-    roleId: string;
+    roleId: string | null;
     tenantId: string;
     branchId: string | null;
     branchName: string | null;
     isActive: boolean;
     createdAt: string;
     updatedAt: string;
+    type?: 'user' | 'cashier';
+    cashierRole?: string | null;
 }
 
 export interface UsersListResponse {

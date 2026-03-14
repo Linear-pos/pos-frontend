@@ -7,11 +7,16 @@ import { useDeviceModeStore } from "@/stores/deviceMode.store";
  * This is the landing page when users visit "/"
  */
 export const DefaultRedirect = () => {
-    const { isAuthenticated } = useAuthStore();
+    const { isAuthenticated, user } = useAuthStore();
     const { mode } = useDeviceModeStore();
 
     // If authenticated, redirect to appropriate dashboard  
     if (isAuthenticated) {
+        const roleName = typeof user?.role === 'string' ? user.role : user?.role?.name;
+        if (roleName === 'SYSTEM_ADMIN') return <Navigate to="/admin" replace />;
+        if (roleName === 'BRANCH_MANAGER') return <Navigate to="/manager" replace />;
+        if (roleName === 'CASHIER') return <Navigate to="/pos" replace />;
+        if (roleName === 'SAAS_ADMIN') return <Navigate to="/unauthorized" replace />;
         return <Navigate to="/pos" replace />;
     }
 

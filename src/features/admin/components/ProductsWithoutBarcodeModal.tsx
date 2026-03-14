@@ -77,8 +77,10 @@ export const ProductsWithoutBarcodeModal = ({
       if (status === 'active') params.is_active = true;
       if (status === 'inactive') params.is_active = false;
 
-      const response = await productsAPI.getProducts(params);
+      // const response = await productsAPI.getProducts(params);
+      const response = await productsAPI.getProducts(params)
       setItems(response.data);
+      console.log("82", response.data);
       setPages(response.pagination.pages || 1);
       setTotal(response.pagination.total || 0);
     } catch (error: any) {
