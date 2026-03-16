@@ -6,7 +6,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { subscriptionsAPI, type Subscription, type UsageStats, type Invoice } from '../api/subscriptions.api';
+import { subscriptionsAPI, type Subscription, type UsageStats, type Invoice, type PricingData } from '../api/subscriptions.api';
 import { CreditCard, TrendingUp, Users, Package, Building2, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -14,6 +14,7 @@ const LicensingManagement = () => {
     const [subscription, setSubscription] = useState<Subscription | null>(null);
     const [usage, setUsage] = useState<UsageStats | null>(null);
     const [invoices, setInvoices] = useState<Invoice[]>([]);
+    const [pricing, setPricing] = useState<PricingData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -32,15 +33,17 @@ const LicensingManagement = () => {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [subData, usageData, invoicesData] = await Promise.all([
+            const [subData, usageData, invoicesData, pricingData] = await Promise.all([
                 subscriptionsAPI.getCurrentSubscription(),
                 subscriptionsAPI.getUsageStats(),
                 subscriptionsAPI.getInvoices(),
+                subscriptionsAPI.getPricing(),
             ]);
 
             setSubscription(subData);
             setUsage(usageData);
             setInvoices(invoicesData);
+            setPricing(pricingData);
             setSelectedBranches(subData.maxBranches);
         } catch (err: any) {
             setError(err.response?.data?.message || 'Failed to load subscription data');
@@ -92,18 +95,27 @@ const LicensingManagement = () => {
         }
     };
 
+    const resolveTier = (branches: number) => {
+        if (!pricing) return null;
+        return pricing.pricing.find(
+            (tier) => branches >= tier.minBranches && branches <= tier.maxBranches
+        ) || pricing.pricing[pricing.pricing.length - 1] || null;
+    };
+
     const calculatePrice = (branches: number) => {
-        if (branches <= 0) return 0;
-        if (branches === 1) return 5000;
-        return 5000 + ((branches - 1) * 3000);
+        const tier = resolveTier(branches);
+        return tier ? tier.pricePerMonth : (subscription?.pricePerMonth || 0);
     };
 
     const getStatusBadge = (status: string) => {
         const variants: Record<string, { variant: any; icon: any }> = {
             trial: { variant: 'secondary', icon: Clock },
             active: { variant: 'default', icon: CheckCircle2 },
+            past_due: { variant: 'secondary', icon: AlertCircle },
             suspended: { variant: 'destructive', icon: AlertCircle },
             cancelled: { variant: 'outline', icon: AlertCircle },
+            expired: { variant: 'outline', icon: AlertCircle },
+            paused: { variant: 'secondary', icon: Clock },
         };
 
         const config = variants[status] || variants.trial;
@@ -149,6 +161,9 @@ const LicensingManagement = () => {
     const daysRemaining = subscription.trialEndsAt
         ? Math.ceil((new Date(subscription.trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
         : null;
+
+    const selectedTier = resolveTier(selectedBranches);
+    const maxBranchesAllowed = pricing?.pricing?.[pricing.pricing.length - 1]?.maxBranches ?? 20;
 
     return (
         <div className="space-y-6">
@@ -251,7 +266,7 @@ const LicensingManagement = () => {
             <Card>
                 <CardHeader>
                     <CardTitle>Adjust Your Plan</CardTitle>
-                    <CardDescription>Add or remove branches from your subscription</CardDescription>
+                    <CardDescription>Tiered pricing based on branch count</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <div className="space-y-4">
@@ -263,32 +278,44 @@ const LicensingManagement = () => {
                             value={[selectedBranches]}
                             onValueChange={(value) => setSelectedBranches(value[0])}
                             min={1}
-                            max={20}
+                            max={maxBranchesAllowed}
                             step={1}
                             className="w-full"
                         />
                         <div className="flex items-center justify-between text-sm text-muted-foreground">
                             <span>1 branch</span>
-                            <span>20 branches</span>
+                            <span>{maxBranchesAllowed} branches</span>
                         </div>
                     </div>
 
                     <div className="p-4 bg-muted rounded-lg space-y-2">
                         <div className="flex justify-between">
-                            <span>Base Price (1 branch)</span>
-                            <span>KES 5,000</span>
+                            <span>Selected Tier</span>
+                            <span>
+                                {selectedTier
+                                    ? `${selectedTier.minBranches}–${selectedTier.maxBranches} branches`
+                                    : 'N/A'}
+                            </span>
                         </div>
-                        {selectedBranches > 1 && (
-                            <div className="flex justify-between">
-                                <span>Additional Branches ({selectedBranches - 1} × KES 3,000)</span>
-                                <span>KES {((selectedBranches - 1) * 3000).toLocaleString()}</span>
-                            </div>
-                        )}
                         <div className="flex justify-between font-bold text-lg pt-2 border-t">
                             <span>Total Monthly Cost</span>
                             <span>KES {calculatePrice(selectedBranches).toLocaleString()}</span>
                         </div>
                     </div>
+
+                    {pricing && (
+                        <div className="rounded-lg border p-4 space-y-2">
+                            <p className="text-sm font-medium">Tiered pricing (KES/month)</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                                {pricing.pricing.map((tier, idx) => (
+                                    <div key={`${tier.minBranches}-${tier.maxBranches}-${idx}`} className="flex justify-between">
+                                        <span>{tier.minBranches}–{tier.maxBranches} branches</span>
+                                        <span>KES {tier.pricePerMonth.toLocaleString()}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     <div className="flex gap-2">
                         {selectedBranches > subscription.maxBranches && (
