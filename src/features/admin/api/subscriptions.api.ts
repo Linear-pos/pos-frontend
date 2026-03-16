@@ -4,7 +4,7 @@ export interface Subscription {
     id: string;
     tenantId: string;
     planType: string;
-    status: 'trial' | 'active' | 'suspended' | 'cancelled';
+    status: 'trial' | 'active' | 'past_due' | 'suspended' | 'cancelled' | 'expired' | 'paused';
     maxBranches: number;
     pricePerMonth: number;
     trialEndsAt: string | null;
@@ -38,13 +38,14 @@ export interface UsageStats {
 }
 
 export interface PricingTier {
-    branches: number;
+    minBranches: number;
+    maxBranches: number;
     pricePerMonth: number;
 }
 
 export interface PricingData {
-    basePricePerMonth: number;
-    pricePerAdditionalBranch: number;
+    currency: string;
+    interval: 'month' | 'year';
     pricing: PricingTier[];
 }
 
