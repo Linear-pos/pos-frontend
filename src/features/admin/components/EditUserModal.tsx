@@ -67,8 +67,8 @@ export const EditUserModal = ({ user, open, onClose, onUserUpdated }: EditUserMo
             const payload: UpdateUserPayload = {
                 name: formData.name,
                 email: formData.email,
-                role_id: formData.role_id,
-                branch_id: formData.branch_id || null,
+                role_id: formData.role_id || undefined,
+                branch_id: formData.branch_id || undefined,
             };
 
             await usersAPI.updateUser(user.id, payload);
@@ -122,7 +122,7 @@ export const EditUserModal = ({ user, open, onClose, onUserUpdated }: EditUserMo
                         <div className="grid gap-2">
                             <Label htmlFor="edit-role">Role</Label>
                             <Select
-                                value={formData.role_id}
+                                value={formData.role_id || ''}
                                 onValueChange={(value) => setFormData({ ...formData, role_id: value })}
                             >
                                 <SelectTrigger>

@@ -42,6 +42,13 @@ export const PINPadOverlay = ({ onAuthenticated }: PINPadOverlayProps) => {
         const handleGlobalKeyDown = (e: KeyboardEvent) => {
             if (isLoading) return;
 
+            // Secret shortcut: Alt+M to access manager login
+            if (e.altKey && e.key === 'm') {
+                e.preventDefault();
+                navigate('/login');
+                return;
+            }
+
             if (e.key >= '0' && e.key <= '9') {
                 handleNumberClick(parseInt(e.key));
             } else if (e.key === 'Backspace') {
@@ -160,7 +167,7 @@ export const PINPadOverlay = ({ onAuthenticated }: PINPadOverlayProps) => {
     const handleSwitchMode = () => {
         if (window.confirm('Switch device mode? Terminal will need to be set up again.')) {
             clearMode();
-            navigate('/select-mode');
+            navigate('/login');
         }
     };
 

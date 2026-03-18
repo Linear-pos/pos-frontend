@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "@/stores/auth.store";
+import { useCashierStore } from "@/stores/cashier.store";
 import { useDeviceModeStore } from "@/stores/deviceMode.store";
 import {
     DropdownMenu,
@@ -26,22 +27,29 @@ export const ProfileDropdown = ({
     const navigate = useNavigate();
     const location = useLocation();
     const { user, logout, hasRole } = useAuthStore();
+    const { cashier, isAuthenticated: isCashierAuthenticated, clearCashier } = useCashierStore();
     const { mode } = useDeviceModeStore();
 
-    if (!user) return null;
-
-    const userRole = typeof user.role === "string" ? user.role : user.role?.name;
+    const userRole = typeof user?.role === "string" ? user.role : user?.role?.name;
     const isOnDashboard = location.pathname.startsWith("/dashboard");
     const isOnPOS = location.pathname.startsWith("/pos");
     const canAccessDashboard = hasRole(["SYSTEM_ADMIN", "BRANCH_MANAGER"]);
     const isCashier = userRole === "CASHIER";
+    const isTerminalMode = mode.type === 'terminal';
+    const isLoggedInAsCashier = isTerminalMode && isCashierAuthenticated() && cashier;
 
+    // Handle logout for both users and cashiers
     const handleLogout = () => {
-        logout();
-        if (mode.type === 'terminal') {
+        if (isLoggedInAsCashier) {
+            clearCashier();
             navigate('/pos');
         } else {
-            navigate("/login");
+            logout();
+            if (mode.type === 'terminal') {
+                navigate('/pos');
+            } else {
+                navigate("/login");
+            }
         }
     };
 
@@ -75,7 +83,34 @@ export const ProfileDropdown = ({
             .join(" ");
     };
 
-    // If user is a cashier, show the static nametag with a logout button
+    // If logged in as a cashier in terminal mode, show cashier profile
+    if (isLoggedInAsCashier && cashier) {
+        return (
+            <div className="flex items-center gap-3 px-3 py-1.5 rounded-full bg-card border shadow-sm transition-all hover:shadow-md">
+                <div className="flex flex-col items-end">
+                    <span className="text-sm font-semibold leading-none">{cashier.fullName}</span>
+                    <span className={`text-[10px] font-bold mt-1 px-1.5 py-0.5 rounded uppercase tracking-wider ${getRoleBadgeColor('CASHIER')}`}>
+                        {formatRoleName(cashier.role?.toUpperCase() || 'CASHIER')}
+                    </span>
+                </div>
+                <div className="h-8 w-px bg-border" />
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-full text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                    onClick={handleLogout}
+                    title="Log out"
+                >
+                    <LogOut className="h-4 w-4" />
+                </Button>
+            </div>
+        );
+    }
+
+    // If no user is logged in, return null
+    if (!user) return null;
+
+    // If user is a cashier (user role, not terminal cashier), show the static nametag with a logout button
     if (isCashier) {
         return (
             <div className="flex items-center gap-3 px-3 py-1.5 rounded-full bg-card border shadow-sm transition-all hover:shadow-md">

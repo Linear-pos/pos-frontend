@@ -190,3 +190,22 @@ export const getTerminalsByBranch = async (
     const response = await axiosInstance.get(`/terminals/branch/${branchId}`);
     return response.data;
 };
+
+/**
+ * Validate terminal code (public - no auth required)
+ */
+export const validateTerminalCode = async (code: string): Promise<{
+    success: boolean;
+    valid: boolean;
+    message?: string;
+    data?: {
+        terminalId: string;
+        terminalCode: string;
+        terminalName: string;
+        tenantId: string;
+        branchId: string;
+    };
+}> => {
+    const response = await axiosInstance.get(`/terminals/validate/${code}`);
+    return response.data;
+};

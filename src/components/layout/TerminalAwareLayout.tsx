@@ -1,57 +1,50 @@
-import type { ReactNode } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useDeviceModeStore } from '@/stores/deviceMode.store';
+import { useCashierStore } from '@/stores/cashier.store';
 import { PINPadOverlay } from '@/components/auth/PINPadOverlay';
-import { ProtectedLayout } from './ProtectedLayout';
-import { UpdateStatusListener } from '@/components/updater/UpdateStatusListener';
-import type { UserRole } from '@/types/user';
-
-interface TerminalAwareLayoutProps {
-    requiredRole?: UserRole | UserRole[];
-    children?: ReactNode;
-}
 
 /**
  * Terminal-Aware Layout
  * Handles routing for terminal devices:
  * - If terminal mode + not authenticated → Shows POS with PIN overlay
  * - If terminal mode + authenticated → Shows POS normally
- * - If not terminal mode → Uses standard ProtectedLayout
+ * - If not terminal mode → Redirects to root for Terminal Setup
  */
-export const TerminalAwareLayout = ({ requiredRole }: TerminalAwareLayoutProps) => {
-    const { isAuthenticated, isLoading } = useAuth();
+export const TerminalAwareLayout = () => {
+    const { isAuthenticated: isUserAuthenticated, isLoading } = useAuth();
     const { mode } = useDeviceModeStore();
+    const { isAuthenticated: isCashierAuthenticated } = useCashierStore();
 
     console.log('[TerminalAwareLayout] Render:', {
         modeType: mode.type,
-        isAuthenticated,
+        isUserAuthenticated,
+        isCashierAuthenticated,
         isLoading,
         timestamp: new Date().toISOString()
     });
+
+    // If uninitialized, redirect to root (shows Terminal Setup)
+    if (mode.type === 'uninitialized') {
+        console.log('[TerminalAwareLayout] Uninitialized mode, redirecting to root for setup');
+        return <Navigate to="/" replace />;
+    }
 
     // Terminal mode logic - handle FIRST to prevent ProtectedLayout redirect
     if (mode.type === 'terminal') {
         console.log('[TerminalAwareLayout] Terminal mode detected, rendering POS with overlay');
 
-
-
         // In terminal mode, always render the POS
-        // If not authenticated, show PIN overlay
+        // If no cashier is authenticated, show PIN overlay
         return (
             <>
                 <Outlet />
-                {!isAuthenticated && <PINPadOverlay />}
+                {!isCashierAuthenticated() && <PINPadOverlay />}
             </>
         );
     }
 
-    // Only use ProtectedLayout for non-terminal modes
-    console.log('[TerminalAwareLayout] Non-terminal mode, using ProtectedLayout');
-    return (
-        <>
-            <UpdateStatusListener />
-            <ProtectedLayout requiredRole={requiredRole} />
-        </>
-    );
+    // Management mode - redirect to root which will show Terminal Setup
+    console.log('[TerminalAwareLayout] Management mode, redirecting to root for setup');
+    return <Navigate to="/" replace />;
 };

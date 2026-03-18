@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -17,8 +18,10 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { usersAPI, type CreateUserPayload } from '../api/users.api';
-import { useAuthStore } from '@/stores/auth.store';
+import { rolesAPI } from '../api/roles.api';
+import { branchesAPI } from '../api/branches.api';
+import { invitationsAPI } from '../api/invitations.api';
+import { toast } from 'sonner';
 
 interface CreateUserModalProps {
     open: boolean;
@@ -27,31 +30,44 @@ interface CreateUserModalProps {
 }
 
 export const CreateUserModal = ({ open, onClose, onUserCreated }: CreateUserModalProps) => {
-    const user = useAuthStore((state) => state.user);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const [formData, setFormData] = useState({
         name: '',
         email: '',
-        password: '',
         roleId: '',
         branchId: '',
     });
 
-    // Reset form when modal opens
+    const { data: branchesData } = useQuery({
+        queryKey: ['branches'],
+        queryFn: () => branchesAPI.getBranches({ limit: 100 }),
+        enabled: open,
+    });
+
+    const { data: rolesData, isLoading: rolesLoading } = useQuery({
+        queryKey: ['roles'],
+        queryFn: () => rolesAPI.getRoles(),
+        enabled: open,
+    });
+
+    const getRoleName = (roleId: string) => {
+        const role = rolesData?.find(r => r.id === roleId);
+        return role?.name || '';
+    };
+
     useEffect(() => {
         if (open) {
             setFormData({
                 name: '',
                 email: '',
-                password: '',
                 roleId: '',
                 branchId: '',
             });
             setError(null);
         }
-    }, [open]);
+    }, [open, rolesData]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -59,19 +75,23 @@ export const CreateUserModal = ({ open, onClose, onUserCreated }: CreateUserModa
         setError(null);
 
         try {
-            const payload: CreateUserPayload = {
+            const roleName = getRoleName(formData.roleId);
+            
+            await invitationsAPI.inviteUser({
                 name: formData.name,
                 email: formData.email,
-                password: formData.password,
-                roleId: formData.roleId,
-                tenantId: user?.tenant_id || '',
-                branchId: formData.branchId || null,
-            };
+                role: roleName,
+                branchId: formData.branchId || undefined,
+            });
 
-            await usersAPI.createUser(payload);
+            toast.success('Invitation sent', {
+                description: `An invitation email has been sent to ${formData.email}`,
+            });
+            
             onUserCreated();
+            onClose();
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to create user');
+            setError(err.response?.data?.message || 'Failed to send invitation');
         } finally {
             setLoading(false);
         }
@@ -81,9 +101,9 @@ export const CreateUserModal = ({ open, onClose, onUserCreated }: CreateUserModa
         <Dialog open={open} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
-                    <DialogTitle>Create New User</DialogTitle>
+                    <DialogTitle>Invite User</DialogTitle>
                     <DialogDescription>
-                        Add a new user to the system. They will receive login credentials via email.
+                        Send an invitation to join your organization. They will set their own password.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -117,21 +137,6 @@ export const CreateUserModal = ({ open, onClose, onUserCreated }: CreateUserModa
                         </div>
 
                         <div className="grid gap-2">
-                            <Label htmlFor="password">Password</Label>
-                            <Input
-                                id="password"
-                                type="password"
-                                value={formData.password}
-                                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                required
-                                minLength={8}
-                            />
-                            <p className="text-xs text-muted-foreground">
-                                Minimum 8 characters
-                            </p>
-                        </div>
-
-                        <div className="grid gap-2">
                             <Label htmlFor="role">Role</Label>
                             <Select
                                 value={formData.roleId}
@@ -139,12 +144,14 @@ export const CreateUserModal = ({ open, onClose, onUserCreated }: CreateUserModa
                                 required
                             >
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Select role" />
+                                    <SelectValue placeholder={rolesLoading ? "Loading..." : "Select role"} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="role-system-admin">System Admin</SelectItem>
-                                    <SelectItem value="role-branch-manager">Branch Manager</SelectItem>
-                                    <SelectItem value="role-cashier">Cashier</SelectItem>
+                                    {rolesData?.map((role) => (
+                                        <SelectItem key={role.id} value={role.id}>
+                                            {role.name.replace(/_/g, ' ')}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -160,9 +167,11 @@ export const CreateUserModal = ({ open, onClose, onUserCreated }: CreateUserModa
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="_none">No Branch</SelectItem>
-                                    {/* TODO: Load branches from API */}
-                                    <SelectItem value="branch-1">Main Branch</SelectItem>
-                                    <SelectItem value="branch-2">Downtown Branch</SelectItem>
+                                    {branchesData?.data?.map((branch) => (
+                                        <SelectItem key={branch.id} value={branch.id}>
+                                            {branch.name}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                             <p className="text-xs text-muted-foreground">
@@ -176,7 +185,7 @@ export const CreateUserModal = ({ open, onClose, onUserCreated }: CreateUserModa
                             Cancel
                         </Button>
                         <Button type="submit" disabled={loading}>
-                            {loading ? 'Creating...' : 'Create User'}
+                            {loading ? 'Sending...' : 'Send Invitation'}
                         </Button>
                     </DialogFooter>
                 </form>

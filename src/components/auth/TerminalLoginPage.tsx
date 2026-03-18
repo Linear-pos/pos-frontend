@@ -27,7 +27,7 @@ export const TerminalLoginPage = () => {
     useEffect(() => {
         // Redirect if not in terminal mode
         if (mode.type !== 'terminal') {
-            navigate('/select-mode');
+            navigate('/login');
         }
     }, [mode, navigate]);
 
@@ -168,7 +168,7 @@ export const TerminalLoginPage = () => {
     const handleSwitchMode = () => {
         if (window.confirm('Switch to management mode? This will require re-entering the terminal code later.')) {
             clearMode();
-            navigate('/select-mode');
+            navigate('/login');
         }
     };
 

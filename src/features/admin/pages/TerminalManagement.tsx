@@ -63,6 +63,15 @@ export default function TerminalManagement() {
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [page, setPage] = useState(1);
 
+    const generateTerminalCode = () => {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        let code = '';
+        for (let i = 0; i < 6; i++) {
+            code += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return code;
+    };
+
     // Modals
     const [createModal, setCreateModal] = useState(false);
     const [editModal, setEditModal] = useState(false);
@@ -74,7 +83,7 @@ export default function TerminalManagement() {
     // Form state
     const [formData, setFormData] = useState({
         name: '',
-        terminalCode: '',
+        terminalCode: generateTerminalCode(),
         maxConcurrentShifts: 1,
         offlineModeEnabled: false,
         branchId: branchId || '',
@@ -164,7 +173,7 @@ export default function TerminalManagement() {
     const resetForm = () => {
         setFormData({
             name: '',
-            terminalCode: '',
+            terminalCode: generateTerminalCode(),
             maxConcurrentShifts: 1,
             offlineModeEnabled: false,
             branchId: branchId || '',
@@ -421,12 +430,23 @@ export default function TerminalManagement() {
                         </div>
                         <div>
                             <Label htmlFor="code">Terminal Code *</Label>
-                            <Input
-                                id="code"
-                                value={formData.terminalCode}
-                                onChange={(e) => setFormData({ ...formData, terminalCode: e.target.value })}
-                                placeholder="TERM001"
-                            />
+                            <div className="flex gap-2">
+                                <Input
+                                    id="code"
+                                    value={formData.terminalCode}
+                                    onChange={(e) => setFormData({ ...formData, terminalCode: e.target.value.toUpperCase() })}
+                                    placeholder="ABC123"
+                                    className="flex-1"
+                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setFormData({ ...formData, terminalCode: generateTerminalCode() })}
+                                    title="Regenerate Code"
+                                >
+                                    Regenerate
+                                </Button>
+                            </div>
                         </div>
                         <div>
                             <Label htmlFor="shifts">Max Concurrent Shifts</Label>
