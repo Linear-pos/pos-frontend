@@ -39,7 +39,7 @@ export interface CreateUserPayload {
 export interface UpdateUserPayload {
     name?: string;
     email?: string;
-    role_id?: string;
+    role_id?: string | null;
     branch_id?: string | null;
 }
 

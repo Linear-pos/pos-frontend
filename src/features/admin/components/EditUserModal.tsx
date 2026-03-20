@@ -20,6 +20,8 @@ import {
 } from '@/components/ui/select';
 import { usersAPI, type User, type UpdateUserPayload } from '../api/users.api';
 import { branchesAPI } from '../api/branches.api';
+import { rolesAPI } from '../api/roles.api';
+import { useAuthStore } from '@/stores/auth.store';
 
 interface EditUserModalProps {
     user: User;
@@ -46,17 +48,27 @@ export const EditUserModal = ({ user, open, onClose, onUserUpdated }: EditUserMo
         enabled: open,
     });
 
+    // Fetch roles when modal opens
+    const { data: rolesData } = useQuery({
+        queryKey: ['roles'],
+        queryFn: () => rolesAPI.getRoles(),
+        enabled: open,
+    });
+
+    // Get current user's role for default
+    const { user: currentUser } = useAuthStore();
+
     useEffect(() => {
         if (open) {
             setFormData({
                 name: user.name,
                 email: user.email || '',
-                role_id: user.roleId,
+                role_id: user.roleId || currentUser?.role_id || '',
                 branch_id: user.branchId || '',
             });
             setError(null);
         }
-    }, [open, user]);
+    }, [open, user, currentUser?.role_id]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -67,8 +79,8 @@ export const EditUserModal = ({ user, open, onClose, onUserUpdated }: EditUserMo
             const payload: UpdateUserPayload = {
                 name: formData.name,
                 email: formData.email,
-                role_id: formData.role_id || undefined,
-                branch_id: formData.branch_id || undefined,
+                role_id: formData.role_id || null,
+                branch_id: formData.branch_id || null,
             };
 
             await usersAPI.updateUser(user.id, payload);
@@ -122,16 +134,18 @@ export const EditUserModal = ({ user, open, onClose, onUserUpdated }: EditUserMo
                         <div className="grid gap-2">
                             <Label htmlFor="edit-role">Role</Label>
                             <Select
-                                value={formData.role_id || ''}
+                                value={formData.role_id || undefined}
                                 onValueChange={(value) => setFormData({ ...formData, role_id: value })}
                             >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select role" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="role-system-admin">System Admin</SelectItem>
-                                    <SelectItem value="role-branch-manager">Branch Manager</SelectItem>
-                                    <SelectItem value="role-cashier">Cashier</SelectItem>
+                                    {rolesData?.map((role) => (
+                                        <SelectItem key={role.id} value={role.id}>
+                                            {role.displayName}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>

@@ -17,7 +17,7 @@ const AdminDashboardLayout = () => {
             <AppSidebar {...AdminMenuConfig} />
             <SidebarInset>
                 <AdminHeader title="System Administration" />
-                <div className="px-4 py-2 bg-muted/50 border-b">
+                <div className="px-4 py-2 bg-muted/50 border-b flex justify-between items-center">
                     <Badge variant="outline" className="text-sm bg-card text-card-foreground">
                         {tenantDisplay}
                     </Badge>

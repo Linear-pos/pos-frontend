@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Search, Sun, Moon, X } from "lucide-react";
 import { useTheme } from "@/app/providers/ThemeProvider";
 import { ProfileDropdown } from "@/components/common/ProfileDropdown";
+import { NotificationBell } from "../notifications/NotificationBell";
 
 interface BreadcrumbItem {
   label: string;
@@ -129,6 +130,8 @@ const Header = ({
                 <Sun className="h-4 w-4 dark:hidden" />
                 <Moon className="h-4 w-4 hidden dark:inline" />
               </Button>
+
+              <NotificationBell />
 
               {/* Profile Dropdown */}
               <ProfileDropdown variant="ghost" size="sm" showAvatar={true} />

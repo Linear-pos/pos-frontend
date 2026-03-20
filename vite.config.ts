@@ -14,7 +14,17 @@ export default defineConfig({
   server: {
     proxy: {
       '/ws': {
-        target: 'http://localhost:3000',
+        // Point to backend origin. If VITE_API_URL is set (e.g. http://localhost:3001/api),
+        // derive the origin for WS proxying.
+        target: (() => {
+          const raw = process.env.VITE_API_URL;
+          if (!raw) return 'http://localhost:3000';
+          try {
+            return new URL(raw).origin;
+          } catch {
+            return 'http://localhost:3000';
+          }
+        })(),
         ws: true,
       },
     },

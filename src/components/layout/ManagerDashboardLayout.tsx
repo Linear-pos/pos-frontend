@@ -17,7 +17,7 @@ const ManagerDashboardLayout = () => {
             <AppSidebar {...ManagerMenuConfig} />
             <SidebarInset>
                 <AdminHeader title="Branch Operations" />
-                <div className="px-4 py-2 bg-muted/50 border-b">
+                <div className="px-4 py-2 bg-muted/50 border-b flex justify-between items-center">
                     <Badge variant="outline" className="text-sm bg-card text-card-foreground">
                         {branchDisplay}
                     </Badge>
