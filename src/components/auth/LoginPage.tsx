@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, replace } from "react-router-dom";
 import { useAuthStore } from "../../stores/auth.store";
 import { authAPI } from "./auth.api";
 import type { LoginPayload } from "../../types/user";
@@ -81,6 +81,9 @@ export const LoginPage = () => {
 
       setAuth(response);
 
+      // Remove login page from browser history after successful login
+      window.history.replaceState({}, '', window.location.href);
+
       console.log('[LoginPage] Login Success:', {
         role: userRole,
         user: response.user,
@@ -112,8 +115,6 @@ export const LoginPage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
-      {/* Background decorations could go here if needed */}
-
       <Card className="w-full max-w-md shadow-xl border-border">
         <CardHeader className="space-y-4 text-center pb-8">
           <div className="flex justify-center">
