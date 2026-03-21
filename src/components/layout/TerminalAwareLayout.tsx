@@ -34,12 +34,12 @@ export const TerminalAwareLayout = () => {
     if (mode.type === 'terminal') {
         console.log('[TerminalAwareLayout] Terminal mode detected, rendering POS with overlay');
 
-        // In terminal mode, always render the POS
-        // If no cashier is authenticated, show PIN overlay
+        // In terminal mode, authentication is via cashier PIN (cashier.store),
+        // not via management user session (auth.store).
         return (
-            <>
+            <>  
                 <Outlet />
-                {!isCashierAuthenticated() && <PINPadOverlay />}
+                {!isCashierAuthenticated && <PINPadOverlay />}
             </>
         );
     }

@@ -132,16 +132,20 @@ function setupAutoUpdater(win) {
 }
 
 function createWindow() {
+  const iconPath = path.join(__dirname, "assets/icon.png");
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
-    icon: path.join(__dirname, "../public/Logo.png"),
+    icon: iconPath,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
       preload: path.join(__dirname, "preload.js"),
     },
   });
+
+  // Ensure icon is set
+  win.setIcon(iconPath);
 
   // Create application menu with DevTools shortcuts
   const template = [
