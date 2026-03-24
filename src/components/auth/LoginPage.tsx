@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useLocation, replace } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "../../stores/auth.store";
 import { authAPI } from "./auth.api";
 import type { LoginPayload } from "../../types/user";
@@ -75,7 +75,8 @@ export const LoginPage = () => {
       // Platform-level SAAS_ADMIN should not access tenant POS app data.
       if (userRole === 'SAAS_ADMIN') {
         logout();
-        setError('This account does not have access to the POS app. Please use the platform dashboard.');
+        if(import.meta.env.ENVIRONMENT == "DEVELOPEMENT") setError('This account does not have access to the POS app. Please use the platform dashboard.');
+        setError('Invalid Credentials')
         return;
       }
 

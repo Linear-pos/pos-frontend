@@ -105,7 +105,7 @@ export const router = createHashRouter([
           createLazyRoute("analytics", () => import("../features/admin/dashboard/pages/AnalyticsPage"), "Analytics"),
           createLazyRoute(
             "reports",
-            () => Promise.resolve({ default: () => <PagePlaceholder pageName="Reports" /> }),
+            () => import("../features/reports/ReportsPage"),
             "Reports"
           ),
           createLazyRoute(
@@ -160,7 +160,7 @@ export const router = createHashRouter([
           createLazyRoute("analytics", () => import("../features/admin/dashboard/pages/AnalyticsPage"), "Analytics"),
           createLazyRoute(
             "reports",
-            () => Promise.resolve({ default: () => <PagePlaceholder pageName="Reports" /> }),
+            () => import("../features/reports/ReportsPage"),
             "Reports"
           ),
           createLazyRoute(

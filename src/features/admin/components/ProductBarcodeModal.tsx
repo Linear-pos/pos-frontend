@@ -228,13 +228,13 @@ export const ProductBarcodeModal = ({
           <div className="grid gap-4 py-2">
             <div className="grid gap-2">
               <Label>Product</Label>
-              <Input value={product.name} readOnly />
+              <Input value={product.name} disabled />
             </div>
 
             <div className="grid gap-2">
               <Label>Barcode</Label>
               <div className="flex gap-2">
-                <Input value={barcodeValue ?? ''} readOnly placeholder="No barcode yet" />
+                <Input value={barcodeValue ?? ''} disabled placeholder="No barcode yet" />
                 <Button variant="outline" onClick={handleCopy} disabled={!hasBarcode}>
                   <Copy className="h-4 w-4" />
                 </Button>
